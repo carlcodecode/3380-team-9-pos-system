@@ -5,6 +5,7 @@ import { getUserRole } from '../utils/roleHelper.js';
 
 // Register new customer
 export const register = async (req, res) => {
+  console.log('📝 Register request received:', { ...req.body, password: '***' });
   const connection = await pool.getConnection();
   
   try {
@@ -86,8 +87,8 @@ export const register = async (req, res) => {
 
   } catch (error) {
     await connection.rollback();
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    console.error('❌ Registration error:', error);
+    res.status(500).json({ error: 'Registration failed', details: error.message });
   } finally {
     connection.release();
   }
@@ -95,6 +96,7 @@ export const register = async (req, res) => {
 
 // Login
 export const login = async (req, res) => {
+  console.log('🔐 Login request received:', { username: req.body.username });
   try {
     const { username, password } = req.body;
 
@@ -185,8 +187,8 @@ export const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('❌ Login error:', error);
+    res.status(500).json({ error: 'Login failed', details: error.message });
   }
 };
 

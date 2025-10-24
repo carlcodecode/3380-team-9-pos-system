@@ -1,25 +1,29 @@
-// ...existing code...
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { toast } from 'sonner@2.0.3';
-import { motion } from 'motion/react';
+import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 import { Package } from 'lucide-react';
 
 export const Login = ({ onSwitchToRegister }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = login(username, password);
-    if (success) {
+    setLoading(true);
+
+    try {
+      await login({ username, password });
       toast.success('Welcome back!');
-    } else {
-      toast.error('Invalid credentials. Try: customer1, admin, or staff1');
+    } catch (error) {
+      toast.error(error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +63,7 @@ export const Login = ({ onSwitchToRegister }) => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
                 required
+                disabled={loading}
                 className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
               />
             </div>
@@ -74,15 +79,17 @@ export const Login = ({ onSwitchToRegister }) => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
+                disabled={loading}
                 className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
               />
             </div>
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full bg-black hover:bg-black text-white rounded-lg h-12 btn-glossy"
             >
-              Sign In
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
@@ -107,18 +114,15 @@ export const Login = ({ onSwitchToRegister }) => {
             <div className="text-xs space-y-2 text-black">
               <div className="flex justify-between">
                 <span className="text-gray-500">Customer:</span>
-                <span>customer1</span>
+                <span>customer1 / customer1</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Admin:</span>
-                <span>admin</span>
+                <span>admin / admin</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Staff:</span>
-                <span>staff1</span>
-              </div>
-              <div className="pt-2 border-t border-gray-200 text-gray-500">
-                Password: any
+                <span>staff / staff</span>
               </div>
             </div>
           </div>
@@ -127,4 +131,3 @@ export const Login = ({ onSwitchToRegister }) => {
     </div>
   );
 };
-// ...existing code...

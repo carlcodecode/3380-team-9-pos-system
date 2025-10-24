@@ -3,9 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { toast } from 'sonner@2.0.3';
-import { motion } from 'motion/react';
+import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 import { Package } from 'lucide-react';
 
 export const Register = ({ onSwitchToLogin }) => {
@@ -13,21 +12,42 @@ export const Register = ({ onSwitchToLogin }) => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
     username: '',
     password: '',
-    role: 'customer',
-    address: '',
+    confirmPassword: '',
   });
+  const [loading, setLoading] = useState(false);
   const { register } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = register(formData, formData.password);
-    if (success) {
+
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await register({
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      });
       toast.success('Account created successfully!');
-    } else {
-      toast.error('Registration failed. Please try again.');
+    } catch (error) {
+      toast.error(error.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,7 +113,7 @@ export const Register = ({ onSwitchToLogin }) => {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-black">
-                  Email
+                  Email *
                 </Label>
                 <Input
                   id="email"
@@ -101,29 +121,14 @@ export const Register = ({ onSwitchToLogin }) => {
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
                   required
+                  disabled={loading}
                   className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-black">
-                  Phone
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  required
-                  className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
-                />
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-black">
-                  Username
+                  Username *
                 </Label>
                 <Input
                   id="username"
@@ -131,13 +136,16 @@ export const Register = ({ onSwitchToLogin }) => {
                   value={formData.username}
                   onChange={(e) => handleChange('username', e.target.value)}
                   required
+                  disabled={loading}
                   className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
                 />
               </div>
+            </div>
 
+            <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-black">
-                  Password
+                  Password *
                 </Label>
                 <Input
                   id="password"
@@ -145,48 +153,35 @@ export const Register = ({ onSwitchToLogin }) => {
                   value={formData.password}
                   onChange={(e) => handleChange('password', e.target.value)}
                   required
+                  disabled={loading}
+                  placeholder="Min 6 characters"
                   className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role" className="text-black">
-                Account Type
-              </Label>
-              <Select value={formData.role} onValueChange={(value) => handleChange('role', value)}>
-                <SelectTrigger className="bg-white border border-gray-200 rounded-lg h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200">
-                  <SelectItem value="customer">Customer</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {formData.role === 'customer' && (
               <div className="space-y-2">
-                <Label htmlFor="address" className="text-black">
-                  Delivery Address
+                <Label htmlFor="confirmPassword" className="text-black">
+                  Confirm Password *
                 </Label>
                 <Input
-                  id="address"
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => handleChange('address', e.target.value)}
-                  placeholder="123 Main St, City, State ZIP"
+                  id="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                  required
+                  disabled={loading}
+                  placeholder="Confirm password"
                   className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
                 />
               </div>
-            )}
+            </div>
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full bg-black hover:bg-black text-white rounded-lg h-12 btn-glossy"
             >
-              Create Account
+              {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
 
