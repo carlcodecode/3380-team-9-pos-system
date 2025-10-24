@@ -1,0 +1,28 @@
+.hero {
+  width: 100%;
+  min-height: 80vh;
+  background: #F4F2E6 url('../../assets/hero.png') no-repeat right center;
+  background-size: contain;
+  background-position: right center;
+  color: black;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.hero-text {
+  text-align: left;
+  max-width: 800px;
+  width: 50%;
+}
+
+.hero-text h1 {
+  font-size: 60px;
+  font-weight: 600;
+}
+
+.hero-text p {
+  max-width: 700px;
+  margin: 10px auto 20px;
+  line-height: 1.4;
+}

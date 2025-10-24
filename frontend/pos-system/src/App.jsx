@@ -1,21 +1,15 @@
-import { useState, useEffect } from 'react'
-import './App.css'
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React from 'react'
+import Navbar from './components/navbar/Navbar'
+import Hero from './components/hero/Hero'
+import Instructions from './components/instructions/Instructions'
 
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  // Connect to backend
-  useEffect(() => {
-    fetch("http://18.188.240.121:3000/api/test")
-      .then(res => res.json())
-      .then(data => console.log(data))
-      .catch(console.error);
-  }, []);
-
+const App = () => {
   return (
-    <></>
+    <div>
+      <Navbar />
+      <Hero />
+      <Instructions />
+    </div>
   )
 }
 

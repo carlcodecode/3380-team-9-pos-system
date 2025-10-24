@@ -1,0 +1,52 @@
+.instructions-section {
+  text-align: center;
+  margin: 80px auto;
+}
+
+.instructions-section h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 60px;
+}
+
+.instructions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.instruction {
+  flex-basis: 30%;
+  text-align: center;
+}
+
+.instruction img {
+  width: 100%;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.instruction h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.instruction p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+}
+
+@media (max-width: 900px) {
+  .instructions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .instruction {
+    flex-basis: 80%;
+  }
+}
