@@ -93,10 +93,7 @@ export const Login = ({ onSwitchToRegister }) => {
             </Button>
           </form>
 
-          <div className="space-y-4 text-center">
-            <button className="text-sm text-gray-500 hover:text-black transition-colors">
-              Forgot password?
-            </button>
+          <div className="text-center">
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
               <span>Don't have an account?</span>
               <button
@@ -105,25 +102,6 @@ export const Login = ({ onSwitchToRegister }) => {
               >
                 Sign up
               </button>
-            </div>
-          </div>
-
-          {/* Demo credentials */}
-          <div className="mt-8 p-6 rounded-lg border border-gray-200 bg-gray-50">
-            <p className="text-xs text-gray-500 mb-3">Demo Credentials:</p>
-            <div className="text-xs space-y-2 text-black">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Customer:</span>
-                <span>customer1 / customer1</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Admin:</span>
-                <span>admin / admin</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Staff:</span>
-                <span>staff / staff</span>
-              </div>
             </div>
           </div>
         </div>
