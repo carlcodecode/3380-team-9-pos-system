@@ -79,4 +79,4 @@ const adminLogin = await makeRequest('/api/auth/login', 'POST', { username: 'adm
 console.log(`   Status: ${adminLogin.status}`);
 console.log(`   Response:`, adminLogin.data);
 
-console.log('\n✅ All tests completed!');
+console.log('\nAll tests completed!');

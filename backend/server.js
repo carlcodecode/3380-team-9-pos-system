@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import pool, { testConnection } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 dotenv.config();
 
@@ -25,10 +26,10 @@ app.use(cors({
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) === -1) {
-      console.log('❌ CORS blocked origin:', origin);
+      console.log('CORS blocked origin:', origin);
       return callback(new Error('CORS policy violation'), false);
     }
-    console.log('✅ CORS allowed origin:', origin);
+    console.log('CORS allowed origin:', origin);
     return callback(null, true);
   },
   credentials: true,
@@ -47,6 +48,7 @@ app.use((req, res, next) => {
 
 // ============ ROUTES ============
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -54,7 +56,7 @@ app.get('/api/health', async (req, res) => {
     const [rows] = await pool.query('SELECT NOW() AS time');
     res.json({ 
       status: 'ok', 
-      message: 'Server and database connected ✅',
+      message: 'Server and database connected',
       timestamp: rows[0].time,
       environment: process.env.NODE_ENV || 'development'
     });
@@ -79,9 +81,9 @@ app.use((err, req, res, next) => {
 
 // ============ START SERVER ============
 app.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   
   // Test database connection
   await testConnection();
