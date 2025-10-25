@@ -178,6 +178,63 @@ export const deleteMeal = async (id) => {
 };
 
 // ==============================
+// PROMOTION MANAGEMENT
+// ==============================
+export const getAllPromos = async () => {
+  const res = await fetch(`${API_BASE_URL}/promotions`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load promotions');
+  return res.json();
+};
+
+export const getPromoById = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/promotions/${id}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get promotion');
+  return res.json();
+};
+
+export const createPromo = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/promotions`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Failed to create promotion');
+  }
+  return res.json();
+};
+
+export const updatePromo = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/promotions/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Failed to update promotion');
+  }
+  return res.json();
+};
+
+export const deletePromo = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/promotions/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Failed to delete promotion');
+  }
+  return res.json();
+};
 
 // ==============================
 // Token helper
