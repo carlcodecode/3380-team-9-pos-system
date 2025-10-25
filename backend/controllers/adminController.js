@@ -12,15 +12,15 @@ export const createStaff = async (req, res) => {
 
 		// Validation
 		if (!email || !password || !username) {
-			return res.status(400).json({
+			return res.json({
 				error: 'Email, username, and password are required'
-			});
+			}, 400);
 		}
 
 		if (password.length < 6) {
-			return res.status(400).json({
+			return res.json({
 				error: 'Password must be at least 6 characters'
-			});
+			}, 400);
 		}
 
 		await connection.beginTransaction();
@@ -33,9 +33,9 @@ export const createStaff = async (req, res) => {
 
 		if (existingUsers.length > 0) {
 			await connection.rollback();
-			return res.status(409).json({
+			return res.json({
 				error: 'Email or username already registered'
-			});
+			}, 409);
 		}
 
 		// Hash password
@@ -69,7 +69,7 @@ export const createStaff = async (req, res) => {
 
 		await connection.commit();
 
-		res.status(201).json({
+		res.json({
 			message: 'Staff user created successfully',
 			staff: {
 				id: userId,
@@ -80,12 +80,12 @@ export const createStaff = async (req, res) => {
 				lastName: lastName || '',
 				role: 'staff'
 			}
-		});
+		}, 201);
 
 	} catch (error) {
 		await connection.rollback();
 		console.error('Create staff error:', error);
-		res.status(500).json({ error: 'Failed to create staff user', details: error.message });
+		res.json({ error: 'Failed to create staff user', details: error.message }, 500);
 	} finally {
 		connection.release();
 	}
@@ -121,7 +121,7 @@ ORDER BY ua.user_id
 
 	} catch (error) {
 		console.error('Get all staff error:', error);
-		res.status(500).json({ error: 'Failed to retrieve staff users', details: error.message });
+		res.json({ error: 'Failed to retrieve staff users', details: error.message }, 500);
 	}
 };
 
@@ -145,7 +145,7 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 `, [id]);
 
 		if (staff.length === 0) {
-			return res.status(404).json({ error: 'Staff user not found' });
+			return res.json({ error: 'Staff user not found' }, 404);
 		}
 
 		const user = staff[0];
@@ -158,7 +158,7 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 
 	} catch (error) {
 		console.error('Get staff by ID error:', error);
-		res.status(500).json({ error: 'Failed to retrieve staff user', details: error.message });
+		res.json({ error: 'Failed to retrieve staff user', details: error.message }, 500);
 	}
 };
 
@@ -183,7 +183,7 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 
 		if (existingStaff.length === 0) {
 			await connection.rollback();
-			return res.status(404).json({ error: 'Staff user not found' });
+			return res.json({ error: 'Staff user not found' }, 404);
 		}
 
 		// Check for email/username conflicts if updating them
@@ -207,7 +207,7 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 
 			if (conflicts.length > 0) {
 				await connection.rollback();
-				return res.status(409).json({ error: 'Email or username already in use' });
+				return res.json({ error: 'Email or username already in use' }, 409);
 			}
 		}
 
@@ -226,7 +226,7 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 		if (password) {
 			if (password.length < 6) {
 				await connection.rollback();
-				return res.status(400).json({ error: 'Password must be at least 6 characters' });
+				return res.json({ error: 'Password must be at least 6 characters' }, 400);
 			}
 			const passwordHash = await bcrypt.hash(password, 10);
 			updateFields.push('user_password = ?');
@@ -293,7 +293,7 @@ WHERE ua.user_id = ?
 	} catch (error) {
 		await connection.rollback();
 		console.error('Update staff error:', error);
-		res.status(500).json({ error: 'Failed to update staff user', details: error.message });
+		res.json({ error: 'Failed to update staff user', details: error.message }, 500);
 	} finally {
 		connection.release();
 	}
@@ -319,7 +319,7 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 
 		if (existingStaff.length === 0) {
 			await connection.rollback();
-			return res.status(404).json({ error: 'Staff user not found' });
+			return res.json({ error: 'Staff user not found' }, 404);
 		}
 
 		// Delete from STAFF table first (foreign key constraint)
@@ -335,7 +335,7 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 	} catch (error) {
 		await connection.rollback();
 		console.error('Delete staff error:', error);
-		res.status(500).json({ error: 'Failed to delete staff user', details: error.message });
+		res.json({ error: 'Failed to delete staff user', details: error.message }, 500);
 	} finally {
 		connection.release();
 	}
