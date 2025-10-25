@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import * as api from '../services/api';
 
 const AuthContext = createContext(undefined);
 
@@ -45,6 +45,12 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const data = await api.login(credentials);
+
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
       setUser(data.user);
       return data;
     } catch (err) {
