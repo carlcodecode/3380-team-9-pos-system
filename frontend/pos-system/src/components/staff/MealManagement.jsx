@@ -56,7 +56,8 @@ export const MealManagement = () => {
       try {
         setLoading(true);
         const data = await api.getAllMeals();
-        setMeals(data.meals || []);
+        console.log('getAllMeals() raw result:', data);
+        setMeals(data);
       } catch (err) {
         setError('Failed to load meals');
       } finally {
