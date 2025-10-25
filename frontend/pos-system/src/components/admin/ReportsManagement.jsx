@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Button } from '../../../components/ui/button.jsx';
-import { Input } from '../../../components/ui/input.jsx';
-import { Label } from '../../../components/ui/label.jsx';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import {
   Table,
   TableBody,
@@ -9,13 +9,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../components/ui/table.jsx';
+} from '../ui/table';
 import {
+  FileText,
   Search,
   Download,
-  ArrowLeft,
   BarChart3,
-  FileText,
+  ArrowLeft,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -28,8 +28,7 @@ const mockMealReports = [
   { staffName: 'Tom Brown', staffId: '005', mealId: '009', mealName: 'Asian Fusion', createdAt: '10/23/25 08:30 AM' },
 ];
 
-export const ReportGeneration = ({ onBack }) => {
-  const [viewMode, setViewMode] = useState('dashboard');
+export const ReportsManagement = ({ viewMode, onNavigate }) => {
   const [reportDateFrom, setReportDateFrom] = useState('2025-10-01');
   const [reportDateTo, setReportDateTo] = useState('2025-10-24');
   const [reportStaffSearch, setReportStaffSearch] = useState('');
@@ -42,108 +41,110 @@ export const ReportGeneration = ({ onBack }) => {
   });
 
   // Reports Dashboard
-  const renderReportsDashboard = () => (
-    <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-lg border border-gray-200 p-8"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2"
-              onClick={onBack}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-            <h2 className="text-black">Reports - Staff Activity</h2>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {/* Available Reports */}
-          <div>
-            <h3 className="text-black mb-4">Available Reports</h3>
-            <div className="space-y-3">
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-4 h-4 text-black" />
-                  <span className="text-black">Staff Creation/Updates Log</span>
-                </div>
-                <p className="text-sm text-gray-500">View all staff account creations and modifications</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-4 h-4 text-black" />
-                  <span className="text-black">Meals Created by Staff</span>
-                </div>
-                <p className="text-sm text-gray-500">Track meal creation activity by staff members</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-4 h-4 text-black" />
-                  <span className="text-black">Custom: Staff Productivity (Meals/Stock)</span>
-                </div>
-                <p className="text-sm text-gray-500">Analyze staff productivity metrics</p>
-              </div>
+  if (viewMode === 'reports') {
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-lg border border-gray-200 p-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                onClick={() => onNavigate('dashboard')}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <h2 className="text-black">Reports - Staff Activity</h2>
             </div>
           </div>
 
-          {/* Filters */}
-          <div>
-            <h3 className="text-black mb-4">Filters</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label>Date Range - From</Label>
-                <Input
-                  type="date"
-                  value={reportDateFrom}
-                  onChange={(e) => setReportDateFrom(e.target.value)}
-                  className="rounded-lg border-gray-200"
-                />
+          <div className="space-y-6">
+            {/* Available Reports */}
+            <div>
+              <h3 className="text-black mb-4">Available Reports</h3>
+              <div className="space-y-3">
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="w-4 h-4 text-black" />
+                    <span className="text-black">Staff Creation/Updates Log</span>
+                  </div>
+                  <p className="text-sm text-gray-500">View all staff account creations and modifications</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="w-4 h-4 text-black" />
+                    <span className="text-black">Meals Created by Staff</span>
+                  </div>
+                  <p className="text-sm text-gray-500">Track meal creation activity by staff members</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="w-4 h-4 text-black" />
+                    <span className="text-black">Custom: Staff Productivity (Meals/Stock)</span>
+                  </div>
+                  <p className="text-sm text-gray-500">Analyze staff productivity metrics</p>
+                </div>
               </div>
-              <div>
-                <Label>Date Range - To</Label>
-                <Input
-                  type="date"
-                  value={reportDateTo}
-                  onChange={(e) => setReportDateTo(e.target.value)}
-                  className="rounded-lg border-gray-200"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label>Staff ID/Name</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+
+            {/* Filters */}
+            <div>
+              <h3 className="text-black mb-4">Filters</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Date Range - From</Label>
                   <Input
-                    placeholder="Search staff..."
-                    value={reportStaffSearch}
-                    onChange={(e) => setReportStaffSearch(e.target.value)}
-                    className="pl-10 rounded-lg border-gray-200"
+                    type="date"
+                    value={reportDateFrom}
+                    onChange={(e) => setReportDateFrom(e.target.value)}
+                    className="rounded-lg border-gray-200"
                   />
                 </div>
+                <div>
+                  <Label>Date Range - To</Label>
+                  <Input
+                    type="date"
+                    value={reportDateTo}
+                    onChange={(e) => setReportDateTo(e.target.value)}
+                    className="rounded-lg border-gray-200"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label>Staff ID/Name</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search staff..."
+                      value={reportStaffSearch}
+                      onChange={(e) => setReportStaffSearch(e.target.value)}
+                      className="pl-10 rounded-lg border-gray-200"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <Button
-            className="w-full bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2"
-            onClick={() => setViewMode('view')}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Run Report
-          </Button>
-        </div>
-      </motion.div>
-    </div>
-  );
+            <Button
+              className="w-full bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2"
+              onClick={() => onNavigate('report-view')}
+            >
+              <BarChart3 className="w-4 h-4" />
+              Run Report
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   // Report View
-  const renderReportView = () => {
+  if (viewMode === 'report-view') {
     const topCreator = mockMealReports.reduce((acc, report) => {
       acc[report.staffName] = (acc[report.staffName] || 0) + 1;
       return acc;
@@ -167,7 +168,7 @@ export const ReportGeneration = ({ onBack }) => {
                 variant="ghost"
                 size="sm"
                 className="gap-2"
-                onClick={() => setViewMode('dashboard')}
+                onClick={() => onNavigate('reports')}
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back
@@ -189,7 +190,7 @@ export const ReportGeneration = ({ onBack }) => {
                 variant="outline"
                 size="sm"
                 className="rounded-lg border-gray-200"
-                onClick={() => setViewMode('dashboard')}
+                onClick={() => onNavigate('reports')}
               >
                 New Report
               </Button>
@@ -249,12 +250,7 @@ export const ReportGeneration = ({ onBack }) => {
         </motion.div>
       </div>
     );
-  };
+  }
 
-  return (
-    <>
-      {viewMode === 'dashboard' && renderReportsDashboard()}
-      {viewMode === 'view' && renderReportView()}
-    </>
-  );
+  return null;
 };

@@ -4,7 +4,7 @@ import { CartProvider } from './contexts/CartContext';
 import { Login } from './components/auth/Login';
 import { Register } from './components/auth/Register';
 import { CustomerDashboard } from './components/customer/CustomerDashboard';
-// import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AdminDashboard } from './components/admin/AdminDashboard';
 import { StaffDashboard } from './components/staff/StaffDashboard';
 import { Toaster } from './components/ui/sonner';
 
@@ -25,7 +25,7 @@ function AppContent() {
     case 'customer':
       return <CustomerDashboard />;
     case 'admin':
-      // return <AdminDashboard />;
+      return <AdminDashboard />;
     case 'staff':
       return <StaffDashboard />;
     default:
