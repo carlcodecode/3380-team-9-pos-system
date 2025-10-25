@@ -2,13 +2,14 @@ import pool from '../config/database.js';
 
 // Create new meal
 export const createMeal = async (req, res) => {
-	console.log('Create meal request received:', req.body);
-	const connection = await pool.getConnection();
+  console.log('Create meal request received:', req.body);
+  const connection = await pool.getConnection();
 
 	try {
 		const {
 			meal_name,
 			meal_description,
+			img_url,
 			meal_status,
 			nutrition_facts,
 			start_date,
@@ -19,43 +20,42 @@ export const createMeal = async (req, res) => {
 		} = req.body;
 
 		// Validation
-		if (!meal_name || !meal_description || meal_status === undefined || !start_date || !end_date || price === undefined || cost_to_make === undefined) {
+		if (!meal_name || !meal_description || !img_url || meal_status === undefined || !start_date || !end_date || price === undefined || cost_to_make === undefined) {
 			return res.json({
-				error: 'Meal name, description, status, dates, price, and cost are required'
+				error: 'Meal name, description, image URL, status, dates, price, and cost are required'
 			}, 400);
 		}
 
-		if (price < 0 || cost_to_make < 0) {
-			return res.json({
-				error: 'Price and cost must be non-negative'
-			}, 400);
-		}
+    if (price < 0 || cost_to_make < 0) {
+      return res.status(400).json({ error: 'Price and cost must be non-negative' });
+    }
 
-		await connection.beginTransaction();
+    await connection.beginTransaction();
 
-		// Get staff_id for created_by
-		const staffUserId = req.user.staffId;
-		const [staff] = await connection.query(
-			'SELECT staff_id FROM STAFF WHERE user_ref = ?',
-			[staffUserId]
-		);
+    // Get staff_id for created_by
+    const staffUserId = req.user.userId;
+    const [staff] = await connection.query(
+      'SELECT staff_id FROM STAFF WHERE user_ref = ?',
+      [staffUserId]
+    );
 
-		if (staff.length === 0) {
-			await connection.rollback();
-			return res.json({ error: 'Staff user not found' }, 403);
-		}
+    if (staff.length === 0) {
+      await connection.rollback();
+      return res.status(403).json({ error: 'Staff user not found' });
+    }
 
-		const createdById = staff[0].staff_id;
+    const createdById = staff[0].staff_id;
 
 		// Insert into MEAL table
 		const [mealResult] = await connection.query(
 			`INSERT INTO MEAL (
-				meal_name, meal_description, meal_status, nutrition_facts,
+				meal_name, meal_description, img_url, meal_status, nutrition_facts,
 				start_date, end_date, price, cost_to_make, created_by
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				meal_name,
 				meal_description,
+				img_url,
 				meal_status,
 				JSON.stringify(nutrition_facts || {}),
 				start_date,
@@ -66,54 +66,52 @@ export const createMeal = async (req, res) => {
 			]
 		);
 
-		const mealId = mealResult.insertId;
-		
-		// Initialize stock for the new meal
-		const quantity_in_stock = 0;
-		const reorder_threshold = 10;
-		const needs_reorder = 1; 
-		const stock_fulfillment_time = 0;
+    const mealId = mealResult.insertId;
 
-		await connection.query(
-		`
-		INSERT INTO STOCK (
-			meal_ref, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_by, updated_by, created_at, last_updated_at
-		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-		`,
-		[mealId, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, createdById, createdById]
-		);
+    // Initialize stock for the new meal
+    const quantity_in_stock = 0;
+    const reorder_threshold = 10;
+    const needs_reorder = 1;
+    const stock_fulfillment_time = 60;
 
+    await connection.query(
+      `
+      INSERT INTO STOCK (
+        meal_ref, quantity_in_stock, reorder_threshold, needs_reorder,
+        stock_fulfillment_time, created_at, last_updated_at, created_by
+      )
+      VALUES (?, ?, ?, ?, ?, NOW(), NOW(), ?)
+      `,
+      [mealId, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, createdById]
+    );
 
-		// Insert meal types if provided
-		if (meal_types.length > 0) {
-			for (const typeName of meal_types) {
-				// Get or create meal type
-				let [existingType] = await connection.query(
-					'SELECT meal_type_id FROM MEAL_TYPE WHERE meal_type = ?',
-					[typeName]
-				);
+    // Insert meal types if provided
+    if (meal_types.length > 0) {
+      for (const typeName of meal_types) {
+        let [existingType] = await connection.query(
+          'SELECT meal_type_id FROM MEAL_TYPE WHERE meal_type = ?',
+          [typeName]
+        );
 
-				let typeId;
-				if (existingType.length === 0) {
-					const [typeResult] = await connection.query(
-						'INSERT INTO MEAL_TYPE (meal_type) VALUES (?)',
-						[typeName]
-					);
-					typeId = typeResult.insertId;
-				} else {
-					typeId = existingType[0].meal_type_id;
-				}
+        let typeId;
+        if (existingType.length === 0) {
+          const [typeResult] = await connection.query(
+            'INSERT INTO MEAL_TYPE (meal_type) VALUES (?)',
+            [typeName]
+          );
+          typeId = typeResult.insertId;
+        } else {
+          typeId = existingType[0].meal_type_id;
+        }
 
-				// Link meal to type
-				await connection.query(
-					'INSERT INTO MEAL_TYPE_LINK (meal_ref, meal_type_ref) VALUES (?, ?)',
-					[mealId, typeId]
-				);
-			}
-		}
+        await connection.query(
+          'INSERT INTO MEAL_TYPE_LINK (meal_ref, meal_type_ref) VALUES (?, ?)',
+          [mealId, typeId]
+        );
+      }
+    }
 
-		await connection.commit();
+    await connection.commit();
 
 		res.json({
 			message: 'Meal created successfully',
@@ -121,6 +119,7 @@ export const createMeal = async (req, res) => {
 				meal_id: mealId,
 				meal_name,
 				meal_description,
+				img_url,
 				meal_status,
 				nutrition_facts: nutrition_facts || {},
 				start_date,
@@ -150,6 +149,7 @@ export const getAllMeals = async (req, res) => {
         m.meal_id,
         m.meal_name,
         m.meal_description,
+		m.img_url,
         m.meal_status,
         m.start_date,
         m.end_date,
@@ -191,6 +191,7 @@ export const getMealById = async (req, res) => {
         m.meal_id,
         m.meal_name,
         m.meal_description,
+		m.img_url,
         m.meal_status,
         m.start_date,
         m.end_date,
@@ -223,14 +224,15 @@ export const getMealById = async (req, res) => {
 
 // Update meal
 export const updateMeal = async (req, res) => {
-	console.log('Update meal request received:', { id: req.params.id, ...req.body });
-	const connection = await pool.getConnection();
+  console.log('Update meal request received:', { id: req.params.id, ...req.body });
+  const connection = await pool.getConnection();
 
 	try {
 		const { id } = req.params;
 		const {
 			meal_name,
 			meal_description,
+			img_url,
 			meal_status,
 			nutrition_facts,
 			start_date,
@@ -240,36 +242,33 @@ export const updateMeal = async (req, res) => {
 			meal_types
 		} = req.body;
 
-		await connection.beginTransaction();
+    await connection.beginTransaction();
 
-		// Check if meal exists
-		const [existingMeals] = await connection.query(
-			'SELECT meal_id FROM MEAL WHERE meal_id = ?',
-			[id]
-		);
+    const [existingMeals] = await connection.query(
+      'SELECT meal_id FROM MEAL WHERE meal_id = ?',
+      [id]
+    );
 
-		if (existingMeals.length === 0) {
-			await connection.rollback();
-			return res.json({ error: 'Meal not found' }, 404);
-		}
+    if (existingMeals.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Meal not found' });
+    }
 
-		// Get staff_id for updated_by
-		const staffUserId = req.user.staffId;
-		const [staff] = await connection.query(
-			'SELECT staff_id FROM STAFF WHERE user_ref = ?',
-			[staffUserId]
-		);
+    const staffUserId = req.user.userId;
+    const [staff] = await connection.query(
+      'SELECT staff_id FROM STAFF WHERE user_ref = ?',
+      [staffUserId]
+    );
 
-		if (staff.length === 0) {
-			await connection.rollback();
-			return res.json({ error: 'Staff user not found' }, 403);
-		}
+    if (staff.length === 0) {
+      await connection.rollback();
+      return res.status(403).json({ error: 'Staff user not found' });
+    }
 
-		const updatedById = staff[0].staff_id;
+    const updatedById = staff[0].staff_id;
 
-		// Update MEAL table
-		const updateFields = [];
-		const updateParams = [];
+    const updateFields = [];
+    const updateParams = [];
 
 		if (meal_name !== undefined) {
 			updateFields.push('meal_name = ?');
@@ -278,6 +277,10 @@ export const updateMeal = async (req, res) => {
 		if (meal_description !== undefined) {
 			updateFields.push('meal_description = ?');
 			updateParams.push(meal_description);
+		}
+		if (img_url !== undefined) {
+			updateFields.push('img_url = ?');
+			updateParams.push(img_url);
 		}
 		if (meal_status !== undefined) {
 			updateFields.push('meal_status = ?');
@@ -312,51 +315,45 @@ export const updateMeal = async (req, res) => {
 			updateParams.push(cost_to_make);
 		}
 
-		if (updateFields.length > 0) {
-			updateFields.push('updated_by = ?');
-			updateParams.push(updatedById);
-			updateParams.push(id);
+    if (updateFields.length > 0) {
+      updateFields.push('updated_by = ?');
+      updateParams.push(updatedById);
+      updateParams.push(id);
 
-			await connection.query(
-				`UPDATE MEAL SET ${updateFields.join(', ')} WHERE meal_id = ?`,
-				updateParams
-			);
-		}
+      await connection.query(
+        `UPDATE MEAL SET ${updateFields.join(', ')} WHERE meal_id = ?`,
+        updateParams
+      );
+    }
 
-		// Update meal types if provided
-		if (meal_types !== undefined) {
-			// Remove existing type links
-			await connection.query(
-				'DELETE FROM MEAL_TYPE_LINK WHERE meal_ref = ?',
-				[id]
-			);
+    if (meal_types !== undefined) {
+      await connection.query('DELETE FROM MEAL_TYPE_LINK WHERE meal_ref = ?', [id]);
 
-			// Add new type links
-			for (const typeName of meal_types) {
-				let [existingType] = await connection.query(
-					'SELECT meal_type_id FROM MEAL_TYPE WHERE meal_type = ?',
-					[typeName]
-				);
+      for (const typeName of meal_types) {
+        let [existingType] = await connection.query(
+          'SELECT meal_type_id FROM MEAL_TYPE WHERE meal_type = ?',
+          [typeName]
+        );
 
-				let typeId;
-				if (existingType.length === 0) {
-					const [typeResult] = await connection.query(
-						'INSERT INTO MEAL_TYPE (meal_type) VALUES (?)',
-						[typeName]
-					);
-					typeId = typeResult.insertId;
-				} else {
-					typeId = existingType[0].meal_type_id;
-				}
+        let typeId;
+        if (existingType.length === 0) {
+          const [typeResult] = await connection.query(
+            'INSERT INTO MEAL_TYPE (meal_type) VALUES (?)',
+            [typeName]
+          );
+          typeId = typeResult.insertId;
+        } else {
+          typeId = existingType[0].meal_type_id;
+        }
 
-				await connection.query(
-					'INSERT INTO MEAL_TYPE_LINK (meal_ref, meal_type_ref) VALUES (?, ?)',
-					[id, typeId]
-				);
-			}
-		}
+        await connection.query(
+          'INSERT INTO MEAL_TYPE_LINK (meal_ref, meal_type_ref) VALUES (?, ?)',
+          [id, typeId]
+        );
+      }
+    }
 
-		await connection.commit();
+    await connection.commit();
 
 		// Get updated meal data
 		const [updatedMeals] = await pool.query(`
@@ -364,6 +361,7 @@ export const updateMeal = async (req, res) => {
 				m.meal_id,
 				m.meal_name,
 				m.meal_description,
+				m.img_url,
 				m.meal_status,
 				m.nutrition_facts,
 				m.start_date,

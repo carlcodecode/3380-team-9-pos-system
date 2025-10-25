@@ -16,6 +16,7 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
   const [formData, setFormData] = useState({
     meal_name: '',
     meal_description: '',
+    img_url: '',
     meal_status: 'active',
     start_date: '',
     end_date: '',
@@ -37,6 +38,7 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
       setFormData({
         meal_name: meal.meal_name || '',
         meal_description: meal.meal_description || '',
+        img_url: meal.img_url || '',
         meal_status: meal.meal_status === 1 ? 'active' : 'inactive',
         start_date: formatDate(meal.start_date) || '',
         end_date: formatDate(meal.end_date) || '',
@@ -50,6 +52,7 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
       setFormData({
         meal_name: '',
         meal_description: '',
+        img_url: '',
         meal_status: 'active',
         start_date: '',
         end_date: '',
@@ -66,6 +69,7 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
       setFormData({
         meal_name: '',
         meal_description: '',
+        img_url: '',
         meal_status: 'active',
         start_date: '',
         end_date: '',
@@ -87,6 +91,7 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
     if (
       !formData.meal_name.trim() ||
       !formData.meal_description.trim() ||
+      !formData.img_url.trim() ||
       !formData.start_date ||
       !formData.end_date ||
       formData.price === '' ||
@@ -133,6 +138,11 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
             <div>
               <Label className="block mb-1 text-gray-700">Description *</Label>
               <Textarea name="meal_description" value={formData.meal_description} onChange={handleInputChange} />
+            </div>
+
+            <div>
+              <Label className="block mb-1 text-gray-700">Image Url *</Label>
+              <Input name="img_url" value={formData.img_url} onChange={handleInputChange} />
             </div>
 
             {/* Dates */}
