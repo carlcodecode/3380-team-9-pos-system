@@ -19,6 +19,7 @@ export const AdminDashboard = () => {
   const { logout } = useAuth();
   const [viewMode, setViewMode] = useState('dashboard');
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const totalStaff = mockStaff.length;
   const activeStaff = mockStaff.filter(s => s.status === 'active').length;
@@ -28,6 +29,10 @@ export const AdminDashboard = () => {
     setViewMode(view);
     if (view === 'staff-add') {
       setSelectedStaff(null);
+    }
+    // Refresh AdminOverview when navigating back to dashboard
+    if (view === 'dashboard') {
+      setRefreshKey(prev => prev + 1);
     }
   };
 
@@ -51,6 +56,7 @@ export const AdminDashboard = () => {
         {/* Dynamic Content Based on View Mode */}
         {viewMode === 'dashboard' && (
           <AdminOverview
+            key={refreshKey}
             totalStaff={totalStaff}
             activeStaff={activeStaff}
             inactiveStaff={inactiveStaff}
