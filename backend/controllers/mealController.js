@@ -378,21 +378,23 @@ export const updateMeal = async (req, res) => {
 			GROUP BY m.meal_id
 		`, [id]);
 
-    const meal = updatedMeals[0];
-    res.json({
-      message: 'Meal updated successfully',
-      meal: {
-        ...meal,
-        meal_types: meal.meal_types ? meal.meal_types.split(',') : [],
-      },
-    });
-  } catch (error) {
-    await connection.rollback();
-    console.error('Update meal error:', error);
-    res.status(500).json({ error: 'Failed to update meal', details: error.message });
-  } finally {
-    connection.release();
-  }
+		const meal = updatedMeals[0];
+		res.json({
+			message: 'Meal updated successfully',
+			meal: {
+				...meal,
+				nutrition_facts: JSON.parse(meal.nutrition_facts || '{}'),
+				meal_types: meal.meal_types ? meal.meal_types.split(',') : []
+			}
+		});
+
+	} catch (error) {
+		await connection.rollback();
+		console.error('Update meal error:', error);
+		res.json({ error: 'Failed to update meal', details: error.message }, 500);
+	} finally {
+		connection.release();
+	}
 };
 
 // Delete meal

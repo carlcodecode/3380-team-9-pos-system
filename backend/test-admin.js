@@ -66,7 +66,7 @@ console.log(`   Status: ${createResult.status}`);
 console.log(`   Response:`, createResult.data);
 
 // Verify the created staff has the correct values
-if (createResult.status === 200) {
+if (createResult.status === 201) {
 	const staff = createResult.data.staff;
 	console.log('   Verifying created staff data...');
 	if (staff.phone_number !== createData.phone_number) {
