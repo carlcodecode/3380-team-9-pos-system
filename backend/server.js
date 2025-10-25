@@ -1,92 +1,164 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+import http from 'http';
+import url from 'url';
 import pool, { testConnection } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import mealRoutes from './routes/mealRoutes.js';
 
-dotenv.config();
-
-const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ============ MIDDLEWARE ============
-// CORS - Allow multiple origins
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3002',
-  'http://localhost:5173',
-  process.env.FRONTEND_URL
-].filter(Boolean);
+// ============ MIDDLEWARE FUNCTIONS ============
 
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log('CORS blocked origin:', origin);
-      return callback(new Error('CORS policy violation'), false);
-    }
-    console.log('CORS allowed origin:', origin);
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// CORS middleware
+function corsMiddleware(req, res) {
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:5173',
+    process.env.FRONTEND_URL
+  ].filter(Boolean);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+  const origin = req.headers.origin;
+  if (!origin || allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
+
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return true;
+  }
+
+  return false;
+}
+
+// JSON body parser middleware
+function jsonParserMiddleware(req, callback) {
+  if (req.method === 'POST' || req.method === 'PUT') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        req.body = body ? JSON.parse(body) : {};
+        callback();
+      } catch (error) {
+        callback(error);
+      }
+    });
+  } else {
+    req.body = {};
+    callback();
+  }
+}
 
 // Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
-});
+function loggingMiddleware(req) {
+  console.log(`${req.method} ${req.url}`);
+}
 
-// ============ ROUTES ============
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/meals', mealRoutes);
+// ============ ROUTING SYSTEM ============
+
+function handleRequest(req, res) {
+  // Parse URL
+  const parsedUrl = url.parse(req.url, true);
+  const pathname = parsedUrl.pathname;
+  const method = req.method;
+
+  // Enhanced response methods
+  res.json = (data, statusCode = 200) => {
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(data));
+  };
+
+  res.status = (code) => {
+    res.statusCode = code;
+    return res;
+  };
+
+  // CORS handling
+  if (corsMiddleware(req, res)) {
+    return; // Preflight request handled
+  }
+
+  // Request logging
+  loggingMiddleware(req);
+
+  // Parse JSON body
+  jsonParserMiddleware(req, (error) => {
+    if (error) {
+      return res.json({ error: 'Invalid JSON' }, 400);
+    }
+
+    // Route handling
+    try {
+      // Auth routes
+      if (pathname.startsWith('/api/auth')) {
+        return authRoutes(req, res, pathname, method);
+      }
+
+      // Admin routes
+      if (pathname.startsWith('/api/admin')) {
+        return adminRoutes(req, res, pathname, method);
+      }
+
+      // Meal routes
+      if (pathname.startsWith('/api/meals')) {
+        return mealRoutes(req, res, pathname, method);
+      }
+
+      // Health check
+      if (pathname === '/api/health' && method === 'GET') {
+        return handleHealthCheck(req, res);
+      }
+
+      // 404 handler
+      res.json({ error: 'Route not found' }, 404);
+
+    } catch (error) {
+      console.error('Server error:', error);
+      res.json({ error: 'Internal server error' }, 500);
+    }
+  });
+}
 
 // Health check endpoint
-app.get('/api/health', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT NOW() AS time');
-    res.json({ 
-      status: 'ok', 
-      message: 'Server and database connected',
-      timestamp: rows[0].time,
-      environment: process.env.NODE_ENV || 'development'
+function handleHealthCheck(req, res) {
+  pool.query('SELECT NOW() AS time')
+    .then(([rows]) => {
+      res.json({
+        status: 'ok',
+        message: 'Server and database connected',
+        timestamp: rows[0].time,
+        environment: process.env.NODE_ENV || 'development'
+      });
+    })
+    .catch((error) => {
+      res.json({
+        status: 'error',
+        error: error.message
+      }, 500);
     });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'error', 
-      error: error.message 
-    });
-  }
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+}
 
 // ============ START SERVER ============
-app.listen(PORT, async () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  
+
+const server = http.createServer(handleRequest);
+
+server.listen(PORT, async () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+
   // Test database connection
   await testConnection();
 });
+
+export default server;

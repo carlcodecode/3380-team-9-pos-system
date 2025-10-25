@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { getUserRole } from '../utils/roleHelper.js';
 
 // Middleware to verify JWT token
 export const authenticateToken = (req, res, next) => {
@@ -6,12 +7,14 @@ export const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
+    res.json({ error: 'Access token required' }, 401);
+    return;
   }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
+      res.json({ error: 'Invalid or expired token' }, 403);
+      return;
     }
     req.user = user;
     next();
@@ -22,11 +25,13 @@ export const authenticateToken = (req, res, next) => {
 export const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      res.json({ error: 'Authentication required' }, 401);
+      return;
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+      res.json({ error: 'Insufficient permissions' }, 403);
+      return;
     }
 
     next();

@@ -1,14 +1,38 @@
-import express from 'express';
 import { createStaff, getAllStaff, getStaffById, updateStaff, deleteStaff } from '../controllers/adminController.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
-const router = express.Router();
+export default function adminRoutes(req, res, pathname, method) {
+  // All routes require admin role
+  const withAuth = (handler) => authenticateToken(req, res, () => requireRole('admin')(req, res, handler));
+  const withStaffAuth = (handler) => authenticateToken(req, res, () => requireRole('staff')(req, res, handler));
 
-// All routes require admin role
-router.post('/staff', authenticateToken, requireRole('admin'), createStaff);
-router.get('/staff', authenticateToken, requireRole('admin'), getAllStaff);
-router.get('/staff/:id', authenticateToken, requireRole('admin'), getStaffById);
-router.put('/staff/:id', authenticateToken, requireRole('admin'), updateStaff);
-router.delete('/staff/:id', authenticateToken, requireRole('admin'), deleteStaff);
+  // Staff management routes
+  if (pathname === '/api/admin/staff' && method === 'POST') {
+    return withAuth(() => createStaff(req, res));
+  }
 
-export default router;
+  if (pathname === '/api/admin/staff' && method === 'GET') {
+    return withAuth(() => getAllStaff(req, res));
+  }
+
+  // Staff by ID routes
+  const staffIdMatch = pathname.match(/^\/api\/admin\/staff\/(\d+)$/);
+  if (staffIdMatch) {
+    const id = staffIdMatch[1];
+
+    if (method === 'GET') {
+      return withAuth(() => getStaffById({ ...req, params: { id } }, res));
+    }
+
+    if (method === 'PUT') {
+      return withAuth(() => updateStaff({ ...req, params: { id } }, res));
+    }
+
+    if (method === 'DELETE') {
+      return withAuth(() => deleteStaff({ ...req, params: { id } }, res));
+    }
+  }
+
+  // Method not allowed
+  res.json({ error: 'Method not allowed' }, 405);
+}
