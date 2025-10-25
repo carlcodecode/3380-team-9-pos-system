@@ -14,7 +14,7 @@ const mockActivity = [
 
 export const AdminOverview = ({ totalStaff, activeStaff, inactiveStaff, onNavigate, onLogout }) => {
   return (
-    <div className="grid lg:grid-cols-4 gap-8">
+    <div className="grid lg:grid-cols-5 gap-8 mt-8">
       {/* Sidebar */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
@@ -55,7 +55,7 @@ export const AdminOverview = ({ totalStaff, activeStaff, inactiveStaff, onNaviga
       </motion.div>
 
       {/* Main Content */}
-      <div className="lg:col-span-3 space-y-6">
+      <div className="lg:col-span-4 space-y-6">
         {/* System Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
