@@ -119,7 +119,7 @@ if (adminToken) {
 		const getAllStaff = await makeRequest('/api/admin/staff', 'GET', null, adminToken);
 		if (getAllStaff.data && getAllStaff.data.staff && Array.isArray(getAllStaff.data.staff)) {
 			const testStaff = getAllStaff.data.staff.filter(staff =>
-				staff.username && staff.username.startsWith('test')
+				staff.username && staff.username.toLowerCase().includes('test')
 			);
 
 			for (const staff of testStaff) {
@@ -159,12 +159,12 @@ const cleanupMealCategories = async () => {
 
 const cleanupStocks = async () => {
 	try {
-		// This will be handled by foreign key constraints when meals are deleted
-		// But let's also clean up any orphaned stock records
-		const [result] = await pool.query(
-			'DELETE FROM STOCK WHERE quantity_in_stock = ? OR reorder_threshold = ?',
-			[50, 10] // Common test values
-		);
+		// Clean up stock records where the referenced meal exists and has "test" in the name (case insensitive)
+		const [result] = await pool.query(`
+			DELETE s FROM STOCK s
+			INNER JOIN MEAL m ON s.meal_ref = m.meal_id
+			WHERE LOWER(m.meal_name) LIKE LOWER('%test%')
+		`);
 		console.log(`✓ Deleted ${result.affectedRows} test stock records from database`);
 	} catch (error) {
 		console.log(`✗ Database stock cleanup failed: ${error.message}`);
@@ -173,10 +173,10 @@ const cleanupStocks = async () => {
 
 const cleanupUsers = async () => {
 	try {
-		// Only clean up test users, not real users
+		// Only clean up test users, not real users (case insensitive)
 		const [result] = await pool.query(
-			'DELETE FROM USER_ACCOUNT WHERE username LIKE ?',
-			['test%']
+			'DELETE FROM USER_ACCOUNT WHERE LOWER(username) LIKE LOWER(?)',
+			['%test%']
 		);
 		console.log(`✓ Deleted ${result.affectedRows} test users from database`);
 	} catch (error) {

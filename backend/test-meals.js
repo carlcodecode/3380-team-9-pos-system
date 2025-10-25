@@ -85,7 +85,7 @@ if (createResult.status !== 201) {
 	process.exit(1);
 }
 
-const mealId = createResult.data.meal_id;
+const mealId = createResult.data.meal.meal_id;
 
 // Test 4: Get all meals (should now have 1 meal)
 console.log('4. Testing GET /api/meals (get all meals after creation)...');
