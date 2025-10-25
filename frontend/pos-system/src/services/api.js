@@ -123,6 +123,26 @@ export const updateStock = async (id, data) => {
   return res.json();  
 };
 
+export const updateStockSettings = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/stocks/${id}/settings`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update stock settings');
+  return res.json();  
+};
+
+export const restockMeal = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/stocks/${id}/restock`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to restock meal');
+  return res.json();  
+};
+
 // ==============================
 // MEAL MANAGEMENT
 // ==============================
