@@ -20,15 +20,15 @@ export const createMeal = async (req, res) => {
 
 		// Validation
 		if (!meal_name || !meal_description || meal_status === undefined || !start_date || !end_date || price === undefined || cost_to_make === undefined) {
-			return res.status(400).json({
+			return res.json({
 				error: 'Meal name, description, status, dates, price, and cost are required'
-			});
+			}, 400);
 		}
 
 		if (price < 0 || cost_to_make < 0) {
-			return res.status(400).json({
+			return res.json({
 				error: 'Price and cost must be non-negative'
-			});
+			}, 400);
 		}
 
 		await connection.beginTransaction();
@@ -42,7 +42,7 @@ export const createMeal = async (req, res) => {
 
 		if (staff.length === 0) {
 			await connection.rollback();
-			return res.status(403).json({ error: 'Staff user not found' });
+			return res.json({ error: 'Staff user not found' }, 403);
 		}
 
 		const createdById = staff[0].staff_id;
@@ -67,6 +67,23 @@ export const createMeal = async (req, res) => {
 		);
 
 		const mealId = mealResult.insertId;
+		
+		// Initialize stock for the new meal
+		const quantity_in_stock = 0;
+		const reorder_threshold = 10;
+		const needs_reorder = 1; 
+		const stock_fulfillment_time = 0;
+
+		await connection.query(
+		`
+		INSERT INTO STOCK (
+			meal_ref, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_at, last_updated_at
+		)
+		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+		`,
+		[mealId, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time]
+		);
+
 
 		// Insert meal types if provided
 		if (meal_types.length > 0) {
@@ -98,7 +115,7 @@ export const createMeal = async (req, res) => {
 
 		await connection.commit();
 
-		res.status(201).json({
+		res.json({
 			message: 'Meal created successfully',
 			meal: {
 				meal_id: mealId,
@@ -112,12 +129,12 @@ export const createMeal = async (req, res) => {
 				cost_to_make,
 				meal_types
 			}
-		});
+		}, 201);
 
 	} catch (error) {
 		await connection.rollback();
 		console.error('Create meal error:', error);
-		res.status(500).json({ error: 'Failed to create meal', details: error.message });
+		res.json({ error: 'Failed to create meal', details: error.message }, 500);
 	} finally {
 		connection.release();
 	}
@@ -160,7 +177,7 @@ export const getAllMeals = async (req, res) => {
 
 	} catch (error) {
 		console.error('Get all meals error:', error);
-		res.status(500).json({ error: 'Failed to retrieve meals', details: error.message });
+		res.json({ error: 'Failed to retrieve meals', details: error.message }, 500);
 	}
 };
 
@@ -191,7 +208,7 @@ export const getMealById = async (req, res) => {
 		`, [id]);
 
 		if (meals.length === 0) {
-			return res.status(404).json({ error: 'Meal not found' });
+			return res.json({ error: 'Meal not found' }, 404);
 		}
 
 		const meal = meals[0];
@@ -205,7 +222,7 @@ export const getMealById = async (req, res) => {
 
 	} catch (error) {
 		console.error('Get meal by ID error:', error);
-		res.status(500).json({ error: 'Failed to retrieve meal', details: error.message });
+		res.json({ error: 'Failed to retrieve meal', details: error.message }, 500);
 	}
 };
 
@@ -238,7 +255,7 @@ export const updateMeal = async (req, res) => {
 
 		if (existingMeals.length === 0) {
 			await connection.rollback();
-			return res.status(404).json({ error: 'Meal not found' });
+			return res.json({ error: 'Meal not found' }, 404);
 		}
 
 		// Get staff_id for updated_by
@@ -250,7 +267,7 @@ export const updateMeal = async (req, res) => {
 
 		if (staff.length === 0) {
 			await connection.rollback();
-			return res.status(403).json({ error: 'Staff user not found' });
+			return res.json({ error: 'Staff user not found' }, 403);
 		}
 
 		const updatedById = staff[0].staff_id;
@@ -286,7 +303,7 @@ export const updateMeal = async (req, res) => {
 		if (price !== undefined) {
 			if (price < 0) {
 				await connection.rollback();
-				return res.status(400).json({ error: 'Price must be non-negative' });
+				return res.json({ error: 'Price must be non-negative' }, 400);
 			}
 			updateFields.push('price = ?');
 			updateParams.push(price);
@@ -294,7 +311,7 @@ export const updateMeal = async (req, res) => {
 		if (cost_to_make !== undefined) {
 			if (cost_to_make < 0) {
 				await connection.rollback();
-				return res.status(400).json({ error: 'Cost must be non-negative' });
+				return res.json({ error: 'Cost must be non-negative' }, 400);
 			}
 			updateFields.push('cost_to_make = ?');
 			updateParams.push(cost_to_make);
@@ -381,7 +398,7 @@ export const updateMeal = async (req, res) => {
 	} catch (error) {
 		await connection.rollback();
 		console.error('Update meal error:', error);
-		res.status(500).json({ error: 'Failed to update meal', details: error.message });
+		res.json({ error: 'Failed to update meal', details: error.message }, 500);
 	} finally {
 		connection.release();
 	}
@@ -405,7 +422,7 @@ export const deleteMeal = async (req, res) => {
 
 		if (existingMeals.length === 0) {
 			await connection.rollback();
-			return res.status(404).json({ error: 'Meal not found' });
+			return res.json({ error: 'Meal not found' }, 404);
 		}
 
 		// Delete meal type links (cascade will handle this, but being explicit)
@@ -421,7 +438,7 @@ export const deleteMeal = async (req, res) => {
 	} catch (error) {
 		await connection.rollback();
 		console.error('Delete meal error:', error);
-		res.status(500).json({ error: 'Failed to delete meal', details: error.message });
+		res.json({ error: 'Failed to delete meal', details: error.message }, 500);
 	} finally {
 		connection.release();
 	}

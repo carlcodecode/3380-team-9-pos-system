@@ -1,94 +1,99 @@
+// src/services/api.js
+
+// Base API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-class ApiService {
-  constructor() {
-    this.baseURL = API_BASE_URL;
-  }
+// Helper: build request with auth token
+const getHeaders = (isJSON = true) => {
+  const token = localStorage.getItem('token');
+  const headers = {};
 
-  // Get auth token from localStorage
-  getToken() {
-    return localStorage.getItem('authToken');
-  }
+  if (isJSON) headers['Content-Type'] = 'application/json';
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  // Set auth token
-  setToken(token) {
-    localStorage.setItem('authToken', token);
-  }
+  return headers;
+};
 
-  // Remove auth token
-  removeToken() {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-  }
+// ==============================
+// AUTH
+// ==============================
+export const login = async (credentials) => {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(credentials),
+  });
+  if (!res.ok) throw new Error('Login failed');
+  return res.json();
+};
 
-  // Generic request method
-  async request(endpoint, options = {}) {
-    const token = this.getToken();
-    
-    const config = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
+export const register = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Registration failed');
+  return res.json();
+};
 
-    try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, config);
-      const data = await response.json();
+export const logout = async () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+};
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Request failed');
-      }
+// ==============================
+// STAFF MANAGEMENT
+// ==============================
+export const getAllStaff = async () => {
+  const res = await fetch(`${API_BASE_URL}/admin/staff`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load staff');
+  return res.json();
+};
 
-      return data;
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
-  }
+export const getStaffById = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/admin/staff/${id}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get staff');
+  return res.json();
+};
 
-  // Auth endpoints
-  async register(userData) {
-    const data = await this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-    
-    if (data.token) {
-      this.setToken(data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-    }
-    
-    return data;
-  }
+export const createStaff = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/admin/staff`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to create staff');
+  return res.json();
+};
 
-  async login(credentials) {
-    const data = await this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    
-    if (data.token) {
-      this.setToken(data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-    }
-    
-    return data;
-  }
+export const updateStaff = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/admin/staff/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update staff');
+  return res.json();
+};
 
-  async logout() {
-    try {
-      await this.request('/auth/logout', { method: 'POST' });
-    } finally {
-      this.removeToken();
-    }
-  }
+export const deleteStaff = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/admin/staff/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete staff');
+  return res.json();
+};
 
-  async getCurrentUser() {
-    return this.request('/auth/me');
-  }
-}
-
-export default new ApiService();
+// ==============================
+// Token helper
+// ==============================
+export const getToken = () => localStorage.getItem('token');
+export const removeToken = () => localStorage.removeItem('token');

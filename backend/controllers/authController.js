@@ -7,21 +7,21 @@ import { getUserRole } from '../utils/roleHelper.js';
 export const register = async (req, res) => {
   console.log('Register request received:', { ...req.body, password: '***' });
   const connection = await pool.getConnection();
-  
+
   try {
     const { email, password, firstName, lastName, username } = req.body;
 
     // Validation
     if (!email || !password || !username) {
-      return res.status(400).json({ 
-        error: 'Email, username, and password are required' 
-      });
+      return res.json({
+        error: 'Email, username, and password are required'
+      }, 400);
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ 
-        error: 'Password must be at least 6 characters' 
-      });
+      return res.json({
+        error: 'Password must be at least 6 characters'
+      }, 400);
     }
 
     await connection.beginTransaction();
@@ -34,9 +34,9 @@ export const register = async (req, res) => {
 
     if (existingUsers.length > 0) {
       await connection.rollback();
-      return res.status(409).json({ 
-        error: 'Email or username already registered' 
-      });
+      return res.json({
+        error: 'Email or username already registered'
+      }, 409);
     }
 
     // Hash password
@@ -60,9 +60,9 @@ export const register = async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign(
-      { 
-        userId, 
-        email, 
+      {
+        userId,
+        email,
         username,
         role: 'customer',
         customerId: customerResult.insertId
@@ -71,7 +71,7 @@ export const register = async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.status(201).json({
+    res.json({
       message: 'Registration successful',
       token,
       user: {
@@ -83,12 +83,12 @@ export const register = async (req, res) => {
         lastName: lastName || '',
         role: 'customer'
       }
-    });
+    }, 201);
 
   } catch (error) {
     await connection.rollback();
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed', details: error.message });
+    res.json({ error: 'Registration failed', details: error.message }, 500);
   } finally {
     connection.release();
   }
@@ -101,9 +101,9 @@ export const login = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ 
-        error: 'Username and password are required' 
-      });
+      return res.json({
+        error: 'Username and password are required'
+      }, 400);
     }
 
     // Find user
@@ -113,9 +113,9 @@ export const login = async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ 
-        error: 'Invalid username or password' 
-      });
+      return res.json({
+        error: 'Invalid username or password'
+      }, 401);
     }
 
     const user = users[0];
@@ -124,9 +124,9 @@ export const login = async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, user.user_password);
 
     if (!isValidPassword) {
-      return res.status(401).json({ 
-        error: 'Invalid username or password' 
-      });
+      return res.json({
+        error: 'Invalid username or password'
+      }, 401);
     }
 
     const role = getUserRole(user.user_role);
@@ -138,7 +138,7 @@ export const login = async (req, res) => {
         'SELECT customer_id, first_name, last_name FROM CUSTOMER WHERE user_ref = ?',
         [user.user_id]
       );
-      
+
       if (customers.length > 0) {
         additionalData = {
           customerId: customers[0].customer_id,
@@ -151,7 +151,7 @@ export const login = async (req, res) => {
         'SELECT staff_id, first_name, last_name FROM STAFF WHERE user_ref = ?',
         [user.user_id]
       );
-      
+
       if (staff.length > 0) {
         additionalData = {
           staffId: staff[0].staff_id,
@@ -163,8 +163,8 @@ export const login = async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign(
-      { 
-        userId: user.user_id, 
+      {
+        userId: user.user_id,
         email: user.email,
         username: user.username,
         role,
@@ -188,7 +188,7 @@ export const login = async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed', details: error.message });
+    res.json({ error: 'Login failed', details: error.message }, 500);
   }
 };
 
@@ -201,13 +201,13 @@ export const getCurrentUser = async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.json({ error: 'User not found' }, 404);
     }
 
     const user = users[0];
     const role = getUserRole(user.user_role);
 
-    res.json({ 
+    res.json({
       user: {
         id: user.user_id,
         username: user.username,
@@ -217,7 +217,7 @@ export const getCurrentUser = async (req, res) => {
     });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ error: 'Failed to get user data' });
+    res.json({ error: 'Failed to get user data' }, 500);
   }
 };
 
