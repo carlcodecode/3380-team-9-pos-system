@@ -9,7 +9,11 @@
     "dev": "node --watch server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["pos", "bento", "api"],
+  "keywords": [
+    "pos",
+    "bento",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
