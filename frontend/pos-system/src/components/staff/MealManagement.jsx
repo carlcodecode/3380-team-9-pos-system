@@ -50,6 +50,7 @@ export const MealManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingMeal, setEditingMeal] = useState(null);
 
   useEffect(() => {
     const fetchMeals = async () => {
@@ -69,13 +70,27 @@ export const MealManagement = () => {
   }, []);
 
   const handleSaveMeal = async (mealData) => {
-    try {
-      const newMeal = await api.createMeal(mealData);
-      setMeals((prev) => [...prev, newMeal.meal || newMeal]);
-    } catch (err) {
-      console.error(err);
+  try {
+    let result;
+
+    if (mealData.meal_id) {
+      result = await api.updateMeal(mealData.meal_id, mealData);
+
+      // Update the existing meal in the list
+      setMeals((prev) =>
+        prev.map((meal) =>
+          meal.meal_id === mealData.meal_id ? result.meal || result : meal
+        )
+      );
+    } else {
+      result = await api.createMeal(mealData);
+      setMeals((prev) => [...prev, result.meal || result]);
     }
-  };
+
+  } catch (err) {
+    console.error('Error saving meal:', err);
+  }
+};
   
   if (loading) return <div>Loading meals...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -91,7 +106,10 @@ export const MealManagement = () => {
         <Button 
           size="sm" 
           className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-          onClick={() => setShowAddForm(true)}
+          onClick={() => {
+            setShowAddForm(true);
+            setEditingMeal(null);
+          }}
         >
           Add New Meal
         </Button>
@@ -99,8 +117,12 @@ export const MealManagement = () => {
 
       <MealForm
         open={showAddForm}
-        onClose={() => setShowAddForm(false)}
+        onClose={() => {
+          setShowAddForm(false);
+          setEditingMeal(null);
+        }}
         onSave={handleSaveMeal}
+        meal={editingMeal}
       />
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -116,14 +138,14 @@ export const MealManagement = () => {
                 <div className="text-sm text-gray-500 mb-2">
                   {discountedPrice ? (
                     <>
-                      <span className="line-through text-gray-400">${meal.price}</span>
-                      <span className="ml-2 text-black">${discountedPrice}</span>
+                      <span className="line-through text-gray-400">${meal.price / 100}</span>
+                      <span className="ml-2 text-black">${discountedPrice / 100}</span>
                       <Badge className="ml-2 bg-black text-white border-0 text-xs">
                         Discounted
                       </Badge>
                     </>
                   ) : (
-                    <span>${meal.price}</span>
+                    <span>${meal.price / 100}</span>
                   )}
                 </div>
                 
@@ -133,6 +155,10 @@ export const MealManagement = () => {
                   variant="outline" 
                   size="sm"
                   className="border-gray-200 hover:bg-gray-100 rounded-lg"
+                  onClick={() => {
+                  setShowAddForm(true);
+                  setEditingMeal(meal);
+                }}
                 >
                   Edit
                 </Button>
@@ -141,8 +167,8 @@ export const MealManagement = () => {
                   size="sm"
                   className={
                     meal.status === 'available'
-                      ? 'bg-black hover:bg-black text-white rounded-lg'
-                      : 'bg-gray-200 text-black rounded-lg'
+                      ? 'bg-black text-white rounded-lg hover:bg-black'
+                      : 'bg-gray-200 text-black rounded-lg hover:bg-gray-200'
                   }
                 >
                   {meal.status === 'available' ? 'Active' : 'Inactive'}

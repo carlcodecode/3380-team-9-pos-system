@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 
-export const MealForm = ({ open, onClose, onSave }) => {
+export const MealForm = ({ open, onClose, onSave, meal }) => {
   const [formData, setFormData] = useState({
     meal_name: '',
     meal_description: '',
@@ -24,25 +24,66 @@ export const MealForm = ({ open, onClose, onSave }) => {
     meal_types: [],
   });
 
-   const [mealTypesInput, setMealTypesInput] = useState('');
-   const handleMealTypesChange = (e) => {
-    setMealTypesInput(e.target.value);
-  };
+  const [mealTypesInput, setMealTypesInput] = useState('');
 
-  // Handle generic text/number inputs
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  useEffect(() => {
+    if (meal) {
 
-  // Handle comma-separated meal types
-  const handleMealTypes = (e) => {
-    const types = e.target.value.split(',').map((t) => t.trim()).filter(Boolean);
-    setFormData((prev) => ({ ...prev, meal_types: types }));
-  };
+      const formatDate = (date) => {
+      if (!date) return '';
+      return date.split('T')[0]; // keep only YYYY-MM-DD
+    };
 
-  // Handle form submit
-  const handleSubmit = async () => {
+      setFormData({
+        meal_name: meal.meal_name || '',
+        meal_description: meal.meal_description || '',
+        meal_status: meal.meal_status || 'active',
+        start_date: meal.start_date || '',
+        end_date: meal.end_date || '',
+        price: meal.price || '',
+        cost_to_make: meal.cost_to_make || '',
+        meal_types: meal.meal_types || [],
+        meal_id: meal.meal_id,
+      });
+      setMealTypesInput(meal.meal_types?.join(', ') || '');
+    } else {
+      setFormData({
+        meal_name: '',
+        meal_description: '',
+        meal_status: 'active',
+        start_date: '',
+        end_date: '',
+        price: '',
+        cost_to_make: '',
+        meal_types: [],
+      });
+      setMealTypesInput('');
+    }
+  }, [meal]);
+
+  useEffect(() => {
+    if (!open) {
+      setFormData({
+        meal_name: '',
+        meal_description: '',
+        meal_status: 'active',
+        start_date: '',
+        end_date: '',
+        price: '',
+        cost_to_make: '',
+        meal_types: [],
+      });
+      setMealTypesInput('');
+    }
+  }, [open]);
+
+  const handleMealTypesChange = (e) => setMealTypesInput(e.target.value);
+  const handleInputChange = (e) =>
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     if (
       !formData.meal_name.trim() ||
       !formData.meal_description.trim() ||
@@ -58,33 +99,17 @@ export const MealForm = ({ open, onClose, onSave }) => {
     try {
       const payload = {
         ...formData,
-        meal_types: mealTypesInput
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+        meal_types: mealTypesInput.split(',').map((t) => t.trim()).filter(Boolean),
         price: parseFloat(formData.price),
         cost_to_make: parseFloat(formData.cost_to_make),
       };
 
       await onSave(payload);
-      toast.success('Meal created successfully');
-
-      // Reset form
-      setFormData({
-        meal_name: '',
-        meal_description: '',
-        meal_status: 'active',
-        start_date: '',
-        end_date: '',
-        price: '',
-        cost_to_make: '',
-        meal_types: [],
-      });
-
+      toast.success(meal ? 'Meal updated successfully' : 'Meal created successfully');
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to create meal');
+      toast.error('Failed to save meal');
     }
   };
 
@@ -93,127 +118,73 @@ export const MealForm = ({ open, onClose, onSave }) => {
       <DialogContent className="rounded-lg max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-black text-lg font-semibold">
-            Add New Meal
+            {meal ? 'Edit Meal' : 'Add New Meal'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 mt-4">
-          {/* Basic Info */}
-          <div className="space-y-3">
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-6 mt-4">
+            {/* Meal name + description */}
             <div>
               <Label className="block mb-1 text-gray-700">Meal Name *</Label>
-              <Input
-                name="meal_name"
-                value={formData.meal_name}
-                onChange={handleInputChange}
-                placeholder="Enter meal name"
-              />
+              <Input name="meal_name" value={formData.meal_name} onChange={handleInputChange} />
             </div>
 
             <div>
               <Label className="block mb-1 text-gray-700">Description *</Label>
-              <Textarea
-                name="meal_description"
-                value={formData.meal_description}
-                onChange={handleInputChange}
-                rows={3}
-                placeholder="Enter a short description"
-              />
+              <Textarea name="meal_description" value={formData.meal_description} onChange={handleInputChange} />
             </div>
-          </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-5">
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <Label className="block mb-1 text-gray-700">Start Date *</Label>
+                <Input type="date" name="start_date" value={formData.start_date} onChange={handleInputChange} />
+              </div>
+              <div>
+                <Label className="block mb-1 text-gray-700">End Date *</Label>
+                <Input type="date" name="end_date" value={formData.end_date} onChange={handleInputChange} />
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <Label className="block mb-1 text-gray-700">Price (cents)*</Label>
+                <Input type="number" name="price" value={formData.price} onChange={handleInputChange} min="0" />
+              </div>
+              <div>
+                <Label className="block mb-1 text-gray-700">Cost to Make (cents)*</Label>
+                <Input type="number" name="cost_to_make" value={formData.cost_to_make} onChange={handleInputChange} min="0" />
+              </div>
+            </div>
+
+            {/* Meal Types */}
             <div>
-              <Label className="block mb-1 text-gray-700">Start Date *</Label>
-              <Input
-                type="date"
-                name="start_date"
-                value={formData.start_date}
-                onChange={handleInputChange}
-              />
+              <Label className="block mb-1 text-gray-700">Meal Types (comma-separated)</Label>
+              <Input placeholder="e.g. Vegan, Gluten-Free" value={mealTypesInput} onChange={handleMealTypesChange} />
             </div>
+
+            {/* Status */}
             <div>
-              <Label className="block mb-1 text-gray-700">End Date *</Label>
-              <Input
-                type="date"
-                name="end_date"
-                value={formData.end_date}
-                onChange={handleInputChange}
-              />
+              <Label className="block mb-1 text-gray-700">Status</Label>
+              <select name="meal_status" value={formData.meal_status} onChange={handleInputChange} className="w-full border border-gray-300 rounded-md p-2 text-sm">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
             </div>
           </div>
 
-          {/* Pricing */}
-          <div className="grid grid-cols-2 gap-5">
-            <div>
-              <Label className="block mb-1 text-gray-700">Price (cents)*</Label>
-              <Input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                min="0"
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <Label className="block mb-1 text-gray-700">Cost to Make (cents)*</Label>
-              <Input
-                type="number"
-                name="cost_to_make"
-                value={formData.cost_to_make}
-                onChange={handleInputChange}
-                min="0"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          {/* Meal Types */}
-          <div>
-            <Label className="block mb-1 text-gray-700">
-              Meal Types (comma-separated)
-            </Label>
-            <Input
-            placeholder="e.g. Vegan, Gluten-Free"
-            value={mealTypesInput}
-            onChange={handleMealTypesChange}
-            />
-          </div>
-
-          {/* Status */}
-          <div>
-            <Label className="block mb-1 text-gray-700">Status</Label>
-            <select
-              name="meal_status"
-              value={formData.meal_status}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-        </div>
-
-        <DialogFooter className="mt-8 flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="rounded-lg border-gray-200"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            className="bg-black text-white rounded-lg"
-          >
-            Save Meal
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="mt-8 flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose} className="rounded-lg border-gray-200">
+              Cancel
+            </Button>
+            <Button type="submit" className="bg-black text-white rounded-lg hover:bg-black">
+              {meal ? 'Save Changes' : 'Add Meal'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
 };
-
