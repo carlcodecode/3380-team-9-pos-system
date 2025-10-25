@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import pool, { testConnection } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
+import mealCategoryRoutes from './routes/mealCategoryRoutes.js';
 
 dotenv.config();
 
