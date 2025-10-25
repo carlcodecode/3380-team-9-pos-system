@@ -9,8 +9,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ============ MIDDLEWARE ============
-// CORS - Allow multiple origins
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
@@ -77,7 +75,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ============ START SERVER ============
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
