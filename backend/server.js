@@ -6,6 +6,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import mealRoutes from './routes/mealRoutes.js';
 import mealCategoryRoutes from './routes/mealCategoryRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
+import promoRoutes from './routes/promoRoutes.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -18,7 +19,7 @@ function corsMiddleware(req, res) {
     'http://localhost:3001',
     'http://localhost:3002',
     'http://localhost:5173',
-    process.env.FRONTEND_URL
+    process.env.FRONTEND_URL,
   ].filter(Boolean);
 
   const origin = req.headers.origin;
@@ -44,7 +45,7 @@ function corsMiddleware(req, res) {
 function jsonParserMiddleware(req, callback) {
   if (req.method === 'POST' || req.method === 'PUT') {
     let body = '';
-    req.on('data', chunk => {
+    req.on('data', (chunk) => {
       body += chunk.toString();
     });
     req.on('end', () => {
@@ -126,6 +127,11 @@ function handleRequest(req, res) {
         return stockRoutes(req, res, pathname, method);
       }
 
+      // Promo routes
+      if (pathname.startsWith('/api/promotions')) {
+        return promoRoutes(req, res, pathname, method);
+      }
+
       // Health check
       if (pathname === '/api/health' && method === 'GET') {
         return handleHealthCheck(req, res);
@@ -133,7 +139,6 @@ function handleRequest(req, res) {
 
       // 404 handler
       res.json({ error: 'Route not found' }, 404);
-
     } catch (error) {
       console.error('Server error:', error);
       res.json({ error: 'Internal server error' }, 500);
@@ -143,20 +148,24 @@ function handleRequest(req, res) {
 
 // Health check endpoint
 function handleHealthCheck(req, res) {
-  pool.query('SELECT NOW() AS time')
+  pool
+    .query('SELECT NOW() AS time')
     .then(([rows]) => {
       res.json({
         status: 'ok',
         message: 'Server and database connected',
         timestamp: rows[0].time,
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
       });
     })
     .catch((error) => {
-      res.json({
-        status: 'error',
-        error: error.message
-      }, 500);
+      res.json(
+        {
+          status: 'error',
+          error: error.message,
+        },
+        500,
+      );
     });
 }
 
