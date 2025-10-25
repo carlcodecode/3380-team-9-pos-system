@@ -5,35 +5,26 @@ export const createMeal = async (req, res) => {
   console.log('Create meal request received:', req.body);
   const connection = await pool.getConnection();
 
-  try {
-    const {
-      meal_name,
-      meal_description,
-      meal_status,
-      start_date,
-      end_date,
-      price,
-      cost_to_make,
-      meal_types = [],
-    } = req.body;
+	try {
+		const {
+			meal_name,
+			meal_description,
+			img_url,
+			meal_status,
+			nutrition_facts,
+			start_date,
+			end_date,
+			price,
+			cost_to_make,
+			meal_types = []
+		} = req.body;
 
-	const normalizedStatus =
-  		meal_status === 'active' || meal_status === 1 || meal_status === true ? 1 : 0;
-
-    // Validation
-    if (
-      !meal_name ||
-      !meal_description ||
-      meal_status === undefined ||
-      !start_date ||
-      !end_date ||
-      price === undefined ||
-      cost_to_make === undefined
-    ) {
-      return res.status(400).json({
-        error: 'Meal name, description, status, dates, price, and cost are required',
-      });
-    }
+		// Validation
+		if (!meal_name || !meal_description || !img_url || meal_status === undefined || !start_date || !end_date || price === undefined || cost_to_make === undefined) {
+			return res.json({
+				error: 'Meal name, description, image URL, status, dates, price, and cost are required'
+			}, 400);
+		}
 
     if (price < 0 || cost_to_make < 0) {
       return res.status(400).json({ error: 'Price and cost must be non-negative' });
@@ -55,23 +46,25 @@ export const createMeal = async (req, res) => {
 
     const createdById = staff[0].staff_id;
 
-    // Insert into MEAL table
-    const [mealResult] = await connection.query(
-      `INSERT INTO MEAL (
-        meal_name, meal_description, meal_status,
-        start_date, end_date, price, cost_to_make, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        meal_name,
-        meal_description,
-        normalizedStatus,
-        start_date,
-        end_date,
-        price,
-        cost_to_make,
-        createdById,
-      ]
-    );
+		// Insert into MEAL table
+		const [mealResult] = await connection.query(
+			`INSERT INTO MEAL (
+				meal_name, meal_description, img_url, meal_status, nutrition_facts,
+				start_date, end_date, price, cost_to_make, created_by
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			[
+				meal_name,
+				meal_description,
+				img_url,
+				meal_status,
+				JSON.stringify(nutrition_facts || {}),
+				start_date,
+				end_date,
+				price,
+				cost_to_make,
+				createdById
+			]
+		);
 
     const mealId = mealResult.insertId;
 
@@ -120,27 +113,30 @@ export const createMeal = async (req, res) => {
 
     await connection.commit();
 
-    res.status(201).json({
-      message: 'Meal created successfully',
-      meal: {
-        meal_id: mealId,
-        meal_name,
-        meal_description,
-        meal_status,
-        start_date,
-        end_date,
-        price,
-        cost_to_make,
-        meal_types,
-      },
-    });
-  } catch (error) {
-    await connection.rollback();
-    console.error('Create meal error:', error);
-    res.status(500).json({ error: 'Failed to create meal', details: error.message });
-  } finally {
-    connection.release();
-  }
+		res.json({
+			message: 'Meal created successfully',
+			meal: {
+				meal_id: mealId,
+				meal_name,
+				meal_description,
+				img_url,
+				meal_status,
+				nutrition_facts: nutrition_facts || {},
+				start_date,
+				end_date,
+				price,
+				cost_to_make,
+				meal_types
+			}
+		}, 201);
+
+	} catch (error) {
+		await connection.rollback();
+		console.error('Create meal error:', error);
+		res.json({ error: 'Failed to create meal', details: error.message }, 500);
+	} finally {
+		connection.release();
+	}
 };
 
 // Get all meals
@@ -153,6 +149,7 @@ export const getAllMeals = async (req, res) => {
         m.meal_id,
         m.meal_name,
         m.meal_description,
+		m.img_url,
         m.meal_status,
         m.start_date,
         m.end_date,
@@ -194,6 +191,7 @@ export const getMealById = async (req, res) => {
         m.meal_id,
         m.meal_name,
         m.meal_description,
+		m.img_url,
         m.meal_status,
         m.start_date,
         m.end_date,
@@ -229,18 +227,20 @@ export const updateMeal = async (req, res) => {
   console.log('Update meal request received:', { id: req.params.id, ...req.body });
   const connection = await pool.getConnection();
 
-  try {
-    const { id } = req.params;
-    const {
-      meal_name,
-      meal_description,
-      meal_status,
-      start_date,
-      end_date,
-      price,
-      cost_to_make,
-      meal_types,
-    } = req.body;
+	try {
+		const { id } = req.params;
+		const {
+			meal_name,
+			meal_description,
+			img_url,
+			meal_status,
+			nutrition_facts,
+			start_date,
+			end_date,
+			price,
+			cost_to_make,
+			meal_types
+		} = req.body;
 
     await connection.beginTransaction();
 
@@ -270,42 +270,50 @@ export const updateMeal = async (req, res) => {
     const updateFields = [];
     const updateParams = [];
 
-    if (meal_name !== undefined) {
-      updateFields.push('meal_name = ?');
-      updateParams.push(meal_name);
-    }
-    if (meal_description !== undefined) {
-      updateFields.push('meal_description = ?');
-      updateParams.push(meal_description);
-    }
-    if (meal_status !== undefined) {
-      updateFields.push('meal_status = ?');
-      updateParams.push(meal_status === 'active' || meal_status === 1 || meal_status === true ? 1 : 0);
-    }
-    if (start_date !== undefined) {
-      updateFields.push('start_date = ?');
-      updateParams.push(start_date);
-    }
-    if (end_date !== undefined) {
-      updateFields.push('end_date = ?');
-      updateParams.push(end_date);
-    }
-    if (price !== undefined) {
-      if (price < 0) {
-        await connection.rollback();
-        return res.status(400).json({ error: 'Price must be non-negative' });
-      }
-      updateFields.push('price = ?');
-      updateParams.push(price);
-    }
-    if (cost_to_make !== undefined) {
-      if (cost_to_make < 0) {
-        await connection.rollback();
-        return res.status(400).json({ error: 'Cost must be non-negative' });
-      }
-      updateFields.push('cost_to_make = ?');
-      updateParams.push(cost_to_make);
-    }
+		if (meal_name !== undefined) {
+			updateFields.push('meal_name = ?');
+			updateParams.push(meal_name);
+		}
+		if (meal_description !== undefined) {
+			updateFields.push('meal_description = ?');
+			updateParams.push(meal_description);
+		}
+		if (img_url !== undefined) {
+			updateFields.push('img_url = ?');
+			updateParams.push(img_url);
+		}
+		if (meal_status !== undefined) {
+			updateFields.push('meal_status = ?');
+			updateParams.push(meal_status);
+		}
+		if (nutrition_facts !== undefined) {
+			updateFields.push('nutrition_facts = ?');
+			updateParams.push(JSON.stringify(nutrition_facts));
+		}
+		if (start_date !== undefined) {
+			updateFields.push('start_date = ?');
+			updateParams.push(start_date);
+		}
+		if (end_date !== undefined) {
+			updateFields.push('end_date = ?');
+			updateParams.push(end_date);
+		}
+		if (price !== undefined) {
+			if (price < 0) {
+				await connection.rollback();
+				return res.json({ error: 'Price must be non-negative' }, 400);
+			}
+			updateFields.push('price = ?');
+			updateParams.push(price);
+		}
+		if (cost_to_make !== undefined) {
+			if (cost_to_make < 0) {
+				await connection.rollback();
+				return res.json({ error: 'Cost must be non-negative' }, 400);
+			}
+			updateFields.push('cost_to_make = ?');
+			updateParams.push(cost_to_make);
+		}
 
     if (updateFields.length > 0) {
       updateFields.push('updated_by = ?');
@@ -347,23 +355,28 @@ export const updateMeal = async (req, res) => {
 
     await connection.commit();
 
-    const [updatedMeals] = await pool.query(`
-      SELECT
-        m.meal_id,
-        m.meal_name,
-        m.meal_description,
-        m.meal_status,
-        m.start_date,
-        m.end_date,
-        m.price,
-        m.cost_to_make,
-        GROUP_CONCAT(mt.meal_type) as meal_types
-      FROM MEAL m
-      LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
-      LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
-      WHERE m.meal_id = ?
-      GROUP BY m.meal_id
-    `, [id]);
+		// Get updated meal data
+		const [updatedMeals] = await pool.query(`
+			SELECT
+				m.meal_id,
+				m.meal_name,
+				m.meal_description,
+				m.img_url,
+				m.meal_status,
+				m.nutrition_facts,
+				m.start_date,
+				m.end_date,
+				m.price,
+				m.cost_to_make,
+				m.created_at,
+				m.last_updated_at,
+				GROUP_CONCAT(mt.meal_type) as meal_types
+			FROM MEAL m
+			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
+			LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
+			WHERE m.meal_id = ?
+			GROUP BY m.meal_id
+		`, [id]);
 
     const meal = updatedMeals[0];
     res.json({
