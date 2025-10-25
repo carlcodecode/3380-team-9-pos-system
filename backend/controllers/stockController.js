@@ -40,28 +40,28 @@ export const getStockById = async (req, res) => {
 
 export const updateStock = async (req, res) => {
   const { id } = req.params;
-  const { current_stock, reorder_threshold, stock_fulfillment_time } = req.body;
+  const { quantity_in_stock, reorder_threshold, stock_fulfillment_time } = req.body;
 
-  if (current_stock == null || reorder_threshold == null || stock_fulfillment_time == null) {
+  if (quantity_in_stock == null || reorder_threshold == null || stock_fulfillment_time == null) {
     return res.status(400).json({
-      error: 'current_stock, reorder_threshold, and stock_fulfillment_time are required',
+      error: 'quantity_in_stock, reorder_threshold, and stock_fulfillment_time are required',
     });
   }
 
   try {
-    const needs_reorder = current_stock <= reorder_threshold ? 1 : 0;
+    const needs_reorder = quantity_in_stock <= reorder_threshold ? 1 : 0;
 
     const [result] = await pool.query(
       `
       UPDATE STOCK 
-      SET current_stock = ?, 
+      SET quantity_in_stock = ?, 
           reorder_threshold = ?, 
           stock_fulfillment_time = ?, 
           needs_reorder = ?, 
-          updated_at = NOW() 
+          last_updated_at = NOW() 
       WHERE stock_id = ?
       `,
-      [current_stock, reorder_threshold, stock_fulfillment_time, needs_reorder, id]
+      [quantity_in_stock, reorder_threshold, stock_fulfillment_time, needs_reorder, id]
     );
 
     if (result.affectedRows === 0) {

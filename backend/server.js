@@ -116,6 +116,16 @@ function handleRequest(req, res) {
         return mealRoutes(req, res, pathname, method);
       }
 
+      // Meal category routes
+      if (pathname.startsWith('/api/meal-categories')) {
+        return mealCategoryRoutes(req, res, pathname, method);
+      }
+
+      // Stock routes
+      if (pathname.startsWith('/api/stocks')) {
+        return stockRoutes(req, res, pathname, method);
+      }
+
       // Health check
       if (pathname === '/api/health' && method === 'GET') {
         return handleHealthCheck(req, res);

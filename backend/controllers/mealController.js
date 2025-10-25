@@ -69,7 +69,7 @@ export const createMeal = async (req, res) => {
 		const mealId = mealResult.insertId;
 		
 		// Initialize stock for the new meal
-		const current_stock = 0;
+		const quantity_in_stock = 0;
 		const reorder_threshold = 10;
 		const needs_reorder = 1; 
 		const stock_fulfillment_time = 0;
@@ -77,11 +77,11 @@ export const createMeal = async (req, res) => {
 		await connection.query(
 		`
 		INSERT INTO STOCK (
-			meal_ref, current_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_at, updated_at
+			meal_ref, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_at, last_updated_at
 		)
 		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
 		`,
-		[mealId, current_stock, reorder_threshold, needs_reorder, stock_fulfillment_time]
+		[mealId, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time]
 		);
 
 
@@ -155,7 +155,7 @@ export const getAllMeals = async (req, res) => {
 				m.price,
 				m.cost_to_make,
 				m.created_at,
-				m.last_updated_at,
+				m.last_last_updated_at,
 				GROUP_CONCAT(mt.meal_type) as meal_types
 			FROM MEAL m
 			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
@@ -198,7 +198,7 @@ export const getMealById = async (req, res) => {
 				m.price,
 				m.cost_to_make,
 				m.created_at,
-				m.last_updated_at,
+				m.last_last_updated_at,
 				GROUP_CONCAT(mt.meal_type) as meal_types
 			FROM MEAL m
 			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
@@ -376,7 +376,7 @@ export const updateMeal = async (req, res) => {
 				m.price,
 				m.cost_to_make,
 				m.created_at,
-				m.last_updated_at,
+				m.last_last_updated_at,
 				GROUP_CONCAT(mt.meal_type) as meal_types
 			FROM MEAL m
 			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
