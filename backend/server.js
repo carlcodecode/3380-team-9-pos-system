@@ -4,6 +4,8 @@ import pool, { testConnection } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import mealRoutes from './routes/mealRoutes.js';
+import mealCategoryRoutes from './routes/mealCategoryRoutes.js';
+import stockRoutes from './routes/stockRoutes.js';
 
 const PORT = process.env.PORT || 3001;
 
