@@ -46,6 +46,7 @@ app.use((req, res, next) => {
 
 // ============ ROUTES ============
 app.use('/api/auth', authRoutes);
+app.use('/api/meal-categories', mealCategoryRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
