@@ -142,88 +142,83 @@ export const createMeal = async (req, res) => {
 
 // Get all meals
 export const getAllMeals = async (req, res) => {
-	try {
-		const [meals] = await pool.query(`
-			SELECT
-				m.meal_id,
-				m.meal_name,
-				m.meal_description,
-				m.meal_status,
-				m.nutrition_facts,
-				m.start_date,
-				m.end_date,
-				m.price,
-				m.cost_to_make,
-				m.created_at,
-				m.last_updated_at,
-				GROUP_CONCAT(mt.meal_type) as meal_types
-			FROM MEAL m
-			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
-			LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
-			GROUP BY m.meal_id
-			ORDER BY m.meal_id
-		`);
+  const connection = await pool.getConnection();
 
-		const formattedMeals = meals.map(meal => ({
-			...meal,
-			nutrition_facts: JSON.parse(meal.nutrition_facts || '{}'),
-			meal_types: meal.meal_types ? meal.meal_types.split(',') : []
-		}));
+  try {
+    const [rows] = await connection.query(`
+      SELECT 
+        m.meal_id,
+        m.meal_name,
+        m.meal_description,
+        m.meal_status,
+        m.start_date,
+        m.end_date,
+        m.price,
+        m.cost_to_make,
+        JSON_ARRAYAGG(mt.meal_type) AS meal_types
+      FROM MEAL m
+      LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
+      LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
+      GROUP BY m.meal_id
+      ORDER BY m.meal_name ASC
+    `);
 
-		res.json({
-			meals: formattedMeals,
-			count: formattedMeals.length
-		});
+    const meals = rows.map((meal) => ({
+      ...meal,
+      meal_types: Array.isArray(meal.meal_types)
+        ? meal.meal_types.filter(Boolean)
+        : meal.meal_types
+        ? [meal.meal_types].filter(Boolean)
+        : [],
+    }));
 
-	} catch (error) {
-		console.error('Get all meals error:', error);
-		res.json({ error: 'Failed to retrieve meals', details: error.message }, 500);
-	}
+    res.status(200).json(meals);
+  } catch (error) {
+    console.error('Error fetching meals:', error);
+    res.status(500).json({ error: 'Failed to fetch meals', details: error.message });
+  } finally {
+    connection.release();
+  }
 };
 
 // Get meal by ID
 export const getMealById = async (req, res) => {
-	try {
-		const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-		const [meals] = await pool.query(`
-			SELECT
-				m.meal_id,
-				m.meal_name,
-				m.meal_description,
-				m.meal_status,
-				m.nutrition_facts,
-				m.start_date,
-				m.end_date,
-				m.price,
-				m.cost_to_make,
-				m.created_at,
-				m.last_updated_at,
-				GROUP_CONCAT(mt.meal_type) as meal_types
-			FROM MEAL m
-			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
-			LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
-			WHERE m.meal_id = ?
-			GROUP BY m.meal_id
-		`, [id]);
+    const [meals] = await pool.query(`
+      SELECT
+        m.meal_id,
+        m.meal_name,
+        m.meal_description,
+        m.meal_status,
+        m.start_date,
+        m.end_date,
+        m.price,
+        m.cost_to_make,
+        GROUP_CONCAT(mt.meal_type) as meal_types
+      FROM MEAL m
+      LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
+      LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
+      WHERE m.meal_id = ?
+      GROUP BY m.meal_id
+    `, [id]);
 
-		if (meals.length === 0) {
-			return res.json({ error: 'Meal not found' }, 404);
-		}
+    if (meals.length === 0) {
+      return res.status(404).json({ error: 'Meal not found' });
+    }
 
-		const meal = meals[0];
-		res.json({
-			meal: {
-				...meal,
-				nutrition_facts: JSON.parse(meal.nutrition_facts || '{}'),
-				meal_types: meal.meal_types ? meal.meal_types.split(',') : []
-			}
-		});
-
-	} catch (error) {
-		console.error('Get meal by ID error:', error);
-		res.json({ error: 'Failed to retrieve meal', details: error.message }, 500);
-	}
+    const meal = meals[0];
+    res.json({
+      meal: {
+        ...meal,
+        meal_types: meal.meal_types ? meal.meal_types.split(',') : [],
+      },
+    });
+  } catch (error) {
+    console.error('Get meal by ID error:', error);
+    res.status(500).json({ error: 'Failed to retrieve meal', details: error.message });
+  }
 };
 
 // Update meal
@@ -406,40 +401,35 @@ export const updateMeal = async (req, res) => {
 
 // Delete meal
 export const deleteMeal = async (req, res) => {
-	console.log('Delete meal request received:', { id: req.params.id });
-	const connection = await pool.getConnection();
+  console.log('Delete meal request received:', { id: req.params.id });
+  const connection = await pool.getConnection();
 
-	try {
-		const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-		await connection.beginTransaction();
+    await connection.beginTransaction();
 
-		// Check if meal exists
-		const [existingMeals] = await connection.query(
-			'SELECT meal_id FROM MEAL WHERE meal_id = ?',
-			[id]
-		);
+    const [existingMeals] = await connection.query(
+      'SELECT meal_id FROM MEAL WHERE meal_id = ?',
+      [id]
+    );
 
-		if (existingMeals.length === 0) {
-			await connection.rollback();
-			return res.json({ error: 'Meal not found' }, 404);
-		}
+    if (existingMeals.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Meal not found' });
+    }
 
-		// Delete meal type links (cascade will handle this, but being explicit)
-		await connection.query('DELETE FROM MEAL_TYPE_LINK WHERE meal_ref = ?', [id]);
+    await connection.query('DELETE FROM MEAL_TYPE_LINK WHERE meal_ref = ?', [id]);
+    await connection.query('DELETE FROM MEAL WHERE meal_id = ?', [id]);
 
-		// Delete meal
-		await connection.query('DELETE FROM MEAL WHERE meal_id = ?', [id]);
+    await connection.commit();
 
-		await connection.commit();
-
-		res.json({ message: 'Meal deleted successfully' });
-
-	} catch (error) {
-		await connection.rollback();
-		console.error('Delete meal error:', error);
-		res.json({ error: 'Failed to delete meal', details: error.message }, 500);
-	} finally {
-		connection.release();
-	}
+    res.json({ message: 'Meal deleted successfully' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Delete meal error:', error);
+    res.status(500).json({ error: 'Failed to delete meal', details: error.message });
+  } finally {
+    connection.release();
+  }
 };
