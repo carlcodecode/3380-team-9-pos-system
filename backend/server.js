@@ -5,6 +5,8 @@ import pool, { testConnection } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import mealRoutes from './routes/mealRoutes.js';
+import mealCategoryRoutes from './routes/mealCategoryRoutes.js';
+import stockRoutes from './routes/stockRoutes.js';
 
 dotenv.config();
 
@@ -51,6 +53,8 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/meals', mealRoutes);
+app.use('/api/meal-categories', mealCategoryRoutes);
+app.use('/api/stocks', stockRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
