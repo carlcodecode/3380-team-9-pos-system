@@ -67,6 +67,23 @@ export const createMeal = async (req, res) => {
 		);
 
 		const mealId = mealResult.insertId;
+		
+		// Initialize stock for the new meal
+		const current_stock = 0;
+		const reorder_threshold = 10;
+		const needs_reorder = 1; 
+		const stock_fulfillment_time = 0;
+
+		await connection.query(
+		`
+		INSERT INTO STOCK (
+			meal_ref, current_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_at, updated_at
+		)
+		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+		`,
+		[mealId, current_stock, reorder_threshold, needs_reorder, stock_fulfillment_time]
+		);
+
 
 		// Insert meal types if provided
 		if (meal_types.length > 0) {
