@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { mockOrders, mockMeals } from '../../lib/mockData';
 import { Navbar } from '../shared/Navbar';
@@ -15,6 +15,7 @@ import {
   Percent,
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import * as api from '../../services/api';
 
 // Import the new component modules
 import { OrderManagement } from './OrderManagement';
@@ -33,7 +34,29 @@ export const StaffDashboard = () => {
     delivered: mockOrders.filter((o) => o.status === 'delivered').length,
   };
 
-  const lowStockMeals = mockMeals.filter((m) => m.stock < 10);
+  const [lowStockMeals, setLowStockMeals] = useState([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+
+  useEffect(() => {
+    const fetchLowStockMeals = async () => {
+      try {
+        const data = await api.getLowStockAlerts();
+        setLowStockMeals(data);
+      } catch (error) {
+        console.error('Error fetching low stock alerts:', error);
+      } finally {
+        setLoadingAlerts(false);
+      }
+    };
+
+    fetchLowStockMeals();
+
+    // Auto-refresh every 3 seconds so staff see real-time updates
+    const interval = setInterval(fetchLowStockMeals, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -92,8 +115,8 @@ export const StaffDashboard = () => {
           </div>
         </motion.div>
 
-        {/* Low Stock Alert */}
-        {lowStockMeals.length > 0 && (
+        {/* Low Stock Alert (Live from API) */}
+        {!loadingAlerts && lowStockMeals.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -108,30 +131,54 @@ export const StaffDashboard = () => {
                   {lowStockMeals.length}
                 </Badge>
               </div>
+
               <div className="grid md:grid-cols-2 gap-4">
                 {lowStockMeals.map((meal) => (
                   <div
-                    key={meal.id}
+                    key={meal.event_id}
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
                   >
                     <div>
-                      <div className="text-black mb-1">{meal.name}</div>
+                      <div className="text-black mb-1">
+                        {meal.meal_name || `Meal #${meal.meal_ref}`}
+                      </div>
                       <div className="text-sm text-gray-500">
-                        Only {meal.stock} units remaining
+                        Only {meal.quantity_in_stock} units remaining
+                        (threshold: {meal.reorder_threshold})
                       </div>
                     </div>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
                     >
                       Restock
                     </Button>
+                    <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-gray-600 hover:text-black border-gray-300 rounded-lg"
+                    onClick={async () => {
+                      try {
+                        await api.resolveLowStockAlert(meal.event_id);
+                        console.log(`Marked ${meal.meal_name} as resolved`);
+                        // Remove this alert immediately from UI
+                        setLowStockMeals((prev) =>
+                          prev.filter((m) => m.event_id !== meal.event_id)
+                        );
+                      } catch (err) {
+                        console.error('Failed to mark alert resolved:', err);
+                      }
+                    }}
+                  >
+                    Mark as Resolved
+                  </Button>
                   </div>
                 ))}
               </div>
             </div>
           </motion.div>
         )}
+
 
         {/* Main Content */}
         <motion.div

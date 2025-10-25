@@ -26,7 +26,7 @@ export const AdminDashboard = () => {
   const inactiveStaff = mockStaff.filter(s => s.status === 'inactive').length;
 
   const handleNavigate = (view) => {
-    setViewMode(view);
+    setViewMode(view);DES
     if (view === 'staff-add') {
       setSelectedStaff(null);
     }

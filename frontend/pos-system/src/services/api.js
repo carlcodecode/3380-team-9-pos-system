@@ -123,6 +123,45 @@ export const updateStock = async (id, data) => {
   return res.json();  
 };
 
+export const updateStockSettings = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/stocks/${id}/settings`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update stock settings');
+  return res.json();  
+};
+
+export const restockMeal = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/stocks/${id}/restock`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to restock meal');
+  return res.json();  
+};
+
+export const getLowStockAlerts = async () => {
+  const res = await fetch(`${API_BASE_URL}/stocks/alerts`, {
+    headers: {Authorization: `Bearer ${localStorage.getItem('token')}`},
+  });
+  if (!res.ok) throw new Error('Failed to load low stock alerts');
+  return await res.json();
+} 
+
+export const resolveLowStockAlert = async (alertId) => {
+  const res = await fetch(`${API_BASE_URL}/stocks/alerts/${alertId}/resolve`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+  if (!res.ok) throw new Error('Failed to resolve alert');
+  return res.json();
+};
+
 // ==============================
 // MEAL MANAGEMENT
 // ==============================
