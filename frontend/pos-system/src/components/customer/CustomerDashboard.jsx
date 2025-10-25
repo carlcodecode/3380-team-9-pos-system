@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { mockMeals, mockPromotions } from '../../lib/mockData';
+import { mockMeals } from '../../lib/mockData';
 import { Navbar } from '../shared/Navbar';
 import { MealCard } from '../shared/MealCard';
 import { Cart } from './Cart';
@@ -14,6 +14,7 @@ import { Badge } from '../ui/badge';
 import { Search, TrendingUp, Gift, ShoppingBag, User as UserIcon, History } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { motion } from 'motion/react';
+import * as api from '../../services/api';
 
 export const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -21,6 +22,30 @@ export const CustomerDashboard = () => {
   const [currentView, setCurrentView] = useState('browse');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [promotions, setPromotions] = useState([]);
+  const [loadingPromos, setLoadingPromos] = useState(true);
+
+  // Fetch promotions on component mount
+  useEffect(() => {
+    fetchPromotions();
+  }, []);
+
+  const fetchPromotions = async () => {
+    try {
+      setLoadingPromos(true);
+      const response = await api.getAllPromos();
+      // Filter only active promotions (not expired)
+      const activePromos = (response.promotions || []).filter(promo => 
+        new Date(promo.promo_exp_date) > new Date()
+      );
+      setPromotions(activePromos);
+    } catch (error) {
+      console.error('Failed to load promotions:', error);
+      setPromotions([]);
+    } finally {
+      setLoadingPromos(false);
+    }
+  };
 
   const handleAddToCart = (meal) => {
     addToCart(meal);
@@ -126,14 +151,19 @@ export const CustomerDashboard = () => {
       </div>
 
       {/* Promotions */}
-      {mockPromotions.length > 0 && (
-        <div className="bg-white border-b border-gray-200">
-          <div className="container mx-auto px-6 py-10">
-            <h2 className="text-black mb-6">Special Offers</h2>
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-6 py-10">
+          <h2 className="text-black mb-6">Special Offers</h2>
+          
+          {loadingPromos ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Loading offers...</p>
+            </div>
+          ) : promotions.length > 0 ? (
             <div className="grid md:grid-cols-3 gap-6">
-              {mockPromotions.slice(0, 3).map((promo) => (
+              {promotions.slice(0, 3).map((promo) => (
                 <motion.div
-                  key={promo.id}
+                  key={promo.promotion_id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   whileHover={{ scale: 1.02 }}
@@ -146,18 +176,18 @@ export const CustomerDashboard = () => {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-black">{promo.name}</h3>
+                        <h3 className="text-black">Special Deal</h3>
                         <Badge className="bg-black text-white border-0 text-xs">
-                          {promo.discount}% OFF
+                          {promo.promo_type}% OFF
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-500 mb-3">{promo.description}</p>
+                      <p className="text-sm text-gray-500 mb-3">{promo.promo_description}</p>
                       <div className="flex items-center justify-between">
                         <code className="text-xs bg-gray-100 text-black px-2 py-1 rounded">
-                          {promo.code}
+                          {promo.promo_code}
                         </code>
                         <span className="text-xs text-gray-400">
-                          {promo.usageCount}+ used
+                          Expires: {new Date(promo.promo_exp_date).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
@@ -165,9 +195,20 @@ export const CustomerDashboard = () => {
                 </motion.div>
               ))}
             </div>
-          </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
+            >
+              <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg">
+                Please check back for offers later. You ran out of luck.
+              </p>
+            </motion.div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Main content */}
       <div className="container mx-auto px-6 py-8">

@@ -8,9 +8,13 @@ import {
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 export default function promoRoutes(req, res, pathname, method) {
-  // Allow staff or ad in
+  // Allow staff or admin for CUD operations
   const withStaffAuth = (handler) =>
     authenticateToken(req, res, () => requireRole('staff')(req, res, handler));
+
+  // Allow any authenticated user to view promotions (customers need to see them)
+  const withAuth = (handler) =>
+    authenticateToken(req, res, handler);
 
   // Create + list
   if (pathname === '/api/promotions' && method === 'POST') {
@@ -18,7 +22,7 @@ export default function promoRoutes(req, res, pathname, method) {
   }
 
   if (pathname === '/api/promotions' && method === 'GET') {
-    return withStaffAuth(() => getAllPromos(req, res));
+    return withAuth(() => getAllPromos(req, res)); // Changed from withStaffAuth to withAuth
   }
 
   // Single promotion with ID
