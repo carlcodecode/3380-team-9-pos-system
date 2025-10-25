@@ -47,7 +47,8 @@ if (!staffLogin.data.token) {
 	process.exit(1);
 }
 
-const staffToken = staffLogin.data.user_id;
+const staffToken = staffLogin.data.token;
+const staffId = staffLogin.data.staffId;
 
 // Test 2: Get all meals (should be empty initially)
 console.log('2. Testing GET /api/meals (get all meals)...');
@@ -79,7 +80,7 @@ console.log(`   Status: ${createResult.status}`);
 console.log(`   Response:`, createResult.data);
 console.log('');
 
-if (createResult.status !== 200) {
+if (createResult.status !== 201) {
 	console.error('Failed to create meal. Cannot proceed with remaining tests.');
 	process.exit(1);
 }

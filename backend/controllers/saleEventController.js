@@ -50,7 +50,7 @@ event_description, event_start, event_end, sitewide_event_type, sitewide_discoun
 		await connection.commit();
 
 		res.status(201).json({
-			message: 'Promotion created successfully',
+			message: 'Sale event created successfully',
 			sale_event: {
 				sale_event_id: saleEventId,
 				event_description,

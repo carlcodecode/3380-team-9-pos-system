@@ -34,7 +34,7 @@ export const createMeal = async (req, res) => {
 		await connection.beginTransaction();
 
 		// Get staff_id for created_by
-		const staffUserId = req.user.userId;
+		const staffUserId = req.user.staffId;
 		const [staff] = await connection.query(
 			'SELECT staff_id FROM STAFF WHERE user_ref = ?',
 			[staffUserId]
@@ -77,11 +77,11 @@ export const createMeal = async (req, res) => {
 		await connection.query(
 		`
 		INSERT INTO STOCK (
-			meal_ref, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_at, last_updated_at
+			meal_ref, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_by, updated_by, created_at, last_updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 		`,
-		[mealId, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time]
+		[mealId, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, createdById, createdById]
 		);
 
 
@@ -259,7 +259,7 @@ export const updateMeal = async (req, res) => {
 		}
 
 		// Get staff_id for updated_by
-		const staffUserId = req.user.userId;
+		const staffUserId = req.user.staffId;
 		const [staff] = await connection.query(
 			'SELECT staff_id FROM STAFF WHERE user_ref = ?',
 			[staffUserId]
