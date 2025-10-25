@@ -1,7 +1,9 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { mockMeals } from '../../lib/mockData';
+import * as api from '../../services/api';
+import { motion } from 'framer-motion';
+import { MealForm } from './MealForm';
 
 // Mock seasonal discounts data (temporary - should be from API)
 const mockSeasonalDiscounts = [
@@ -31,7 +33,7 @@ const mockSeasonalDiscounts = [
 
 const calculateDiscountedPrice = (meal) => {
   const activeDiscount = mockSeasonalDiscounts.find(
-    d => d.status === 'active' && d.applicableMeals.includes(meal.id)
+    d => d.status === 'active' && d.applicableMeals.includes(meal.meal_id)
   );
   
   if (activeDiscount) {
@@ -42,28 +44,74 @@ const calculateDiscountedPrice = (meal) => {
   return null;
 };
 
+
 export const MealManagement = () => {
+  const [meals, setMeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  useEffect(() => {
+    const fetchMeals = async () => {
+      try {
+        setLoading(true);
+        const data = await api.getAllMeals();
+        setMeals(data.meals || []);
+      } catch (err) {
+        setError('Failed to load meals');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeals();
+  }, []);
+
+  const handleSaveMeal = async (mealData) => {
+    try {
+      const newMeal = await api.createMeal(mealData);
+      setMeals((prev) => [...prev, newMeal.meal || newMeal]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  
+  if (loading) return <div>Loading meals...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
+
   return (
-    <div className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
       <div className="flex items-center justify-between">
-        <h3 className="text-black">Meal Catalog</h3>
+        <h3 className="text-black text-lg font-medium">Meal Catalog</h3>
         <Button 
           size="sm" 
           className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+          onClick={() => setShowAddForm(true)}
         >
           Add New Meal
         </Button>
       </div>
+
+      <MealForm
+        open={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSave={handleSaveMeal}
+      />
+
       <div className="grid md:grid-cols-2 gap-4">
-        {mockMeals.map((meal) => {
+        {meals.map((meal) => {
           const discountedPrice = calculateDiscountedPrice(meal);
           return (
             <div
-              key={meal.id}
+              key={meal.meal_id}
               className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
             >
               <div className="flex-1">
-                <div className="text-black mb-1">{meal.name}</div>
+                <div className="text-black font-medium mb-1">{meal.meal_name}</div>
                 <div className="text-sm text-gray-500 mb-2">
                   {discountedPrice ? (
                     <>
@@ -76,19 +124,8 @@ export const MealManagement = () => {
                   ) : (
                     <span>${meal.price}</span>
                   )}
-                  {' • Stock: '}{meal.stock}
                 </div>
-                <div className="flex gap-1.5">
-                  {meal.type.slice(0, 2).map((type) => (
-                    <Badge
-                      key={type}
-                      variant="secondary"
-                      className="text-xs bg-gray-100 text-black border-0"
-                    >
-                      {type}
-                    </Badge>
-                  ))}
-                </div>
+                
               </div>
               <div className="flex flex-col gap-2">
                 <Button 
@@ -114,6 +151,9 @@ export const MealManagement = () => {
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
+
 };
+
+

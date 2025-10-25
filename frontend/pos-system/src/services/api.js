@@ -93,6 +93,93 @@ export const deleteStaff = async (id) => {
 };
 
 // ==============================
+// STOCK MANAGEMENT
+// ==============================
+export const getAllStocks = async () => {
+  const res = await fetch(`${API_BASE_URL}/stocks`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load stocks');
+  return res.json();
+};
+
+export const getStockById = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/stocks/${id}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get stock item');
+  return res.json();
+};
+
+export const updateStock = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/stocks/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update stock item');
+  return res.json();  
+};
+
+// ==============================
+// MEAL MANAGEMENT
+// ==============================
+export const getAllMeals = async () => {
+  const res = await fetch(`${API_BASE_URL}/meals`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load meals');
+  return res.json();
+};
+
+export const getMealById = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/meals/${id}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get meal');
+  return res.json();
+};
+
+export const createMeal = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/meals`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (![200,201].includes(res.status)) throw new Error('Failed to create meal');
+  try {
+      return await res.json();
+    } catch {
+      return { message: 'Meal created successfully' };
+    }
+};
+
+export const updateMeal = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/meals/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update meal');
+  return res.json();
+};
+
+export const deleteMeal = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/meals/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete meal');
+  return res.json();
+};
+
+// ==============================
+
+// ==============================
 // Token helper
 // ==============================
 export const getToken = () => localStorage.getItem('token');

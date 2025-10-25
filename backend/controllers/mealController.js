@@ -77,11 +77,11 @@ export const createMeal = async (req, res) => {
 		await connection.query(
 		`
 		INSERT INTO STOCK (
-			meal_ref, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_at, last_updated_at
+			meal_ref, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, created_at, last_updated_at, created_by
 		)
-		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+		VALUES (?, ?, ?, ?, ?, NOW(), NOW(), ?)
 		`,
-		[mealId, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time]
+		[mealId, quantity_in_stock, reorder_threshold, needs_reorder, stock_fulfillment_time, createdById]
 		);
 
 
@@ -142,43 +142,41 @@ export const createMeal = async (req, res) => {
 
 // Get all meals
 export const getAllMeals = async (req, res) => {
-	try {
-		const [meals] = await pool.query(`
-			SELECT
-				m.meal_id,
-				m.meal_name,
-				m.meal_description,
-				m.meal_status,
-				m.nutrition_facts,
-				m.start_date,
-				m.end_date,
-				m.price,
-				m.cost_to_make,
-				m.created_at,
-				m.last_updated_at,
-				GROUP_CONCAT(mt.meal_type) as meal_types
-			FROM MEAL m
-			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
-			LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
-			GROUP BY m.meal_id
-			ORDER BY m.meal_id
-		`);
+  const connection = await pool.getConnection();
 
-		const formattedMeals = meals.map(meal => ({
-			...meal,
-			nutrition_facts: JSON.parse(meal.nutrition_facts || '{}'),
-			meal_types: meal.meal_types ? meal.meal_types.split(',') : []
-		}));
+  try {
+    const [rows] = await connection.query(`
+      SELECT 
+        m.meal_id,
+        m.meal_name,
+        m.meal_description,
+        m.meal_status,
+        m.nutrition_facts,
+        m.start_date,
+        m.end_date,
+        m.price,
+        m.cost_to_make,
+        JSON_ARRAYAGG(mt.meal_type) AS meal_types
+      FROM MEAL m
+      LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
+      LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
+      GROUP BY m.meal_id
+      ORDER BY m.meal_name ASC
+    `);
 
-		res.json({
-			meals: formattedMeals,
-			count: formattedMeals.length
-		});
+    const meals = rows.map((meal) => ({
+      ...meal,
+      nutrition_facts: meal.nutrition_facts ? JSON.parse(meal.nutrition_facts) : {},
+      meal_types: meal.meal_types ? JSON.parse(meal.meal_types).filter(Boolean) : [],
+    }));
 
-	} catch (error) {
-		console.error('Get all meals error:', error);
-		res.json({ error: 'Failed to retrieve meals', details: error.message }, 500);
-	}
+    res.json(meals);
+  } catch (error) {
+    console.error('Error fetching meals:', error);
+    res.status(500).json({ error: 'Failed to fetch meals', details: error.message });
+  } finally {
+    connection.release();
+  }
 };
 
 // Get meal by ID
