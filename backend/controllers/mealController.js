@@ -79,7 +79,7 @@ export const createMeal = async (req, res) => {
     const quantity_in_stock = 0;
     const reorder_threshold = 10;
     const needs_reorder = 1;
-    const stock_fulfillment_time = 0;
+    const stock_fulfillment_time = 60;
 
     await connection.query(
       `
