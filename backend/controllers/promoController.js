@@ -34,11 +34,11 @@ export const createPromo = async (req, res) => {
 
     const createdById = staff[0].staff_id;
 
-    // Insert into PROMOTION tale
+    // Insert into PROMOTION table
     const [result] = await connection.query(
       `INSERT INTO PROMOTION (
-        promo_description, promo_type, promo_code, promo_exp_date, created_by
-      ) VALUES (?, ?, ?, ?, ?)`,
+        promo_description, promo_type, promo_code, promo_exp_date, created_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, NOW())`,
       [promo_description, promo_type, promo_code, promo_exp_date, createdById],
     );
 
@@ -55,6 +55,8 @@ export const createPromo = async (req, res) => {
         promo_code,
         promo_exp_date,
         created_by: createdById,
+        created_at: new Date(),
+        last_updated_at: null,
       },
     });
   } catch (error) {
