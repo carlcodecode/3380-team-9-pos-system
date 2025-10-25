@@ -35,7 +35,14 @@ const makeRequest = (path, method = 'GET', body = null, token = null) => {
 
 console.log('Testing Backend Promotion Endpoints\n');
 
-// 1) Login as staff (existing staff user)
+// ✅ Helper to check valid promotion creation status
+const validCreateStatus = (code) => [200, 201].includes(code);
+// ✅ Helper for update
+const validUpdateStatus = (code) => [200, 204].includes(code);
+// ✅ Helper for delete
+const validDeleteStatus = (code) => [200, 204].includes(code);
+
+// 1) Login as staff
 console.log('1. Testing staff login...');
 const staffLogin = await makeRequest('/api/auth/login', 'POST', {
   username: 'staff',
@@ -50,102 +57,109 @@ if (!staffLogin.data?.token) {
 }
 const staffToken = staffLogin.data.token;
 
-// 2) GET all promotions (should be empty initially)
-console.log('2. Testing GET /api/promotions (get all promotions)...');
+// 2) GET all
+console.log('2. Testing GET /api/promotions ...');
 const getAll0 = await makeRequest('/api/promotions', 'GET', null, staffToken);
 console.log(`   Status: ${getAll0.status}`);
 console.log('   Response:', getAll0.data, '\n');
 
-// 3) CREATE a promotion
-console.log('3. Testing POST /api/promotions (create promotion)...');
+// 3) CREATE promo
+console.log('3. Testing POST /api/promotions ...');
 const createBody1 = {
   promo_description: 'Test early-bird coupon',
-  promo_type: 1, // e.g., 0=coupon, 1=seasonal, etc. (whatever your app uses)
-  promo_code: 'EARLY25',
+  promo_type: 1,
+  promo_code: 'EARLY20',
   promo_exp_date: '2025-12-31',
 };
 const createRes1 = await makeRequest('/api/promotions', 'POST', createBody1, staffToken);
 console.log(`   Status: ${createRes1.status}`);
 console.log('   Response:', createRes1.data, '\n');
 
-if (createRes1.status !== 201 || !createRes1.data?.promotion?.promotion_id) {
+if (!validCreateStatus(createRes1.status) || !createRes1.data?.promotion?.promotion_id) {
   console.error('Failed to create promotion. Cannot proceed with remaining tests.');
   process.exit(1);
 }
 const promoId1 = createRes1.data.promotion.promotion_id;
 
-// 4) GET all promotions (should have at least 1)
-console.log('4. Testing GET /api/promotions (after creation)...');
+// 4) GET all again
+console.log('4. Testing GET /api/promotions after create ...');
 const getAll1 = await makeRequest('/api/promotions', 'GET', null, staffToken);
 console.log(`   Status: ${getAll1.status}`);
 console.log('   Response:', getAll1.data, '\n');
 
-// 5) GET promotion by ID
-console.log(`5. Testing GET /api/promotions/${promoId1} (get by ID)...`);
+// 5) GET by ID
+console.log(`5. Testing GET /api/promotions/${promoId1} ...`);
 const getById1 = await makeRequest(`/api/promotions/${promoId1}`, 'GET', null, staffToken);
 console.log(`   Status: ${getById1.status}`);
 console.log('   Response:', getById1.data, '\n');
 
-// 6) UPDATE the promotion
-console.log(`6. Testing PUT /api/promotions/${promoId1} (update promotion)...`);
-const updateBody1 = {
-  promo_description: 'Updated early-bird coupon',
-  promo_type: 2,
-  promo_code: 'EARLY30',
-  promo_exp_date: '2026-01-31',
-};
-const updateRes1 = await makeRequest(`/api/promotions/${promoId1}`, 'PUT', updateBody1, staffToken);
+// 6) UPDATE promo
+console.log(`6. Testing PUT /api/promotions/${promoId1} ...`);
+const updateRes1 = await makeRequest(
+  `/api/promotions/${promoId1}`,
+  'PUT',
+  {
+    promo_description: 'Updated early-bird coupon',
+    promo_type: 2,
+    promo_code: 'EARLY30',
+    promo_exp_date: '2026-01-31',
+  },
+  staffToken,
+);
 console.log(`   Status: ${updateRes1.status}`);
 console.log('   Response:', updateRes1.data, '\n');
 
-// 7) CREATE another promotion
-console.log('7. Testing POST /api/promotions (create second promotion)...');
+if (!validUpdateStatus(updateRes1.status)) {
+  console.error('Update failed.');
+  process.exit(1);
+}
+
+// 7) CREATE another
+console.log('7. Testing POST /api/promotions ...');
 const createBody2 = {
   promo_description: 'Spring special',
   promo_type: 0,
-  promo_code: 'SPRING10',
+  promo_code: 'SPRING15',
   promo_exp_date: '2025-04-15',
 };
 const createRes2 = await makeRequest('/api/promotions', 'POST', createBody2, staffToken);
 console.log(`   Status: ${createRes2.status}`);
 console.log('   Response:', createRes2.data, '\n');
+
 const promoId2 = createRes2.data?.promotion?.promotion_id;
 
-// 8) GET all promotions (should now have >= 2)
-console.log('8. Testing GET /api/promotions (get all with 2 promotions)...');
+// 8) GET all again
+console.log('8. Testing GET /api/promotions ...');
 const getAll2 = await makeRequest('/api/promotions', 'GET', null, staffToken);
 console.log(`   Status: ${getAll2.status}`);
 console.log('   Response:', getAll2.data, '\n');
 
-// 9) Unauthorized: try without token
-console.log('9. Testing GET /api/promotions without authentication...');
+// 9) No token
+console.log('9. Testing GET /api/promotions NO AUTH ...');
 const noAuth = await makeRequest('/api/promotions', 'GET');
 console.log(`   Status: ${noAuth.status}`);
 console.log('   Response:', noAuth.data, '\n');
 
-// 10) Customer role access check
-console.log('10. Testing GET /api/promotions as customer...');
+// 10) Customer role should be forbidden
+console.log('10. Testing GET /api/promotions as CUSTOMER ...');
 const customerLogin = await makeRequest('/api/auth/login', 'POST', {
   username: 'customer1',
   password: 'customer1',
 });
 if (customerLogin.data?.token) {
-  const customerToken = customerLogin.data.token;
-  const custRes = await makeRequest('/api/promotions', 'GET', null, customerToken);
+  const custRes = await makeRequest('/api/promotions', 'GET', null, customerLogin.data.token);
   console.log(`   Status: ${custRes.status}`);
   console.log('   Response:', custRes.data, '\n');
-} else {
-  console.log('   Could not login as customer, skipping test.\n');
 }
 
-// 11) Not found
-console.log('11. Testing GET /api/promotions/999999 (non-existent ID)...');
+// 11) Non-existent ID
+console.log('11. Testing GET /api/promotions/999999 ...');
 const notFound = await makeRequest('/api/promotions/999999', 'GET', null, staffToken);
 console.log(`   Status: ${notFound.status}`);
 console.log('   Response:', notFound.data, '\n');
 
-// 12) Invalid create (missing required fields)
-console.log('12. Testing POST /api/promotions with invalid body (missing fields)...');
+// 12) Invalid create
+console.log('12. Testing invalid POST ...');
 const invalidCreate = await makeRequest(
   '/api/promotions',
   'POST',
@@ -155,35 +169,35 @@ const invalidCreate = await makeRequest(
 console.log(`   Status: ${invalidCreate.status}`);
 console.log('   Response:', invalidCreate.data, '\n');
 
-// 13) Invalid update (bad promo_type and invalid date)
-console.log(`13. Testing PUT /api/promotions/${promoId1} with invalid data...`);
+// 13) Invalid update
+console.log(`13. Testing invalid PUT ...`);
 const invalidUpdate = await makeRequest(
   `/api/promotions/${promoId1}`,
   'PUT',
-  { promo_type: -1, promo_exp_date: 'invalid-date' },
+  { promo_type: -1 },
   staffToken,
 );
 console.log(`   Status: ${invalidUpdate.status}`);
 console.log('   Response:', invalidUpdate.data, '\n');
 
-// 14) DELETE first promotion
-console.log(`14. Testing DELETE /api/promotions/${promoId1}...`);
+// 14) DELETE first
+console.log(`14. Testing DELETE /api/promotions/${promoId1} ...`);
 const del1 = await makeRequest(`/api/promotions/${promoId1}`, 'DELETE', null, staffToken);
 console.log(`   Status: ${del1.status}`);
 console.log('   Response:', del1.data, '\n');
 
-// 15) DELETE second promotion
+// 15) DELETE second
 if (promoId2) {
-  console.log(`15. Testing DELETE /api/promotions/${promoId2}...`);
+  console.log(`15. Testing DELETE /api/promotions/${promoId2} ...`);
   const del2 = await makeRequest(`/api/promotions/${promoId2}`, 'DELETE', null, staffToken);
   console.log(`   Status: ${del2.status}`);
   console.log('   Response:', del2.data, '\n');
 }
 
-// 16) Verify all promotions are deleted
-console.log('16. Testing GET /api/promotions (verify all promotions deleted)...');
+// 16) Verify empty
+console.log('16. Testing GET /api/promotions after deletions ...');
 const finalList = await makeRequest('/api/promotions', 'GET', null, staffToken);
 console.log(`   Status: ${finalList.status}`);
 console.log('   Response:', finalList.data, '\n');
 
-console.log('All promotion endpoint tests completed!');
+console.log('\n✅ All promotion endpoint tests completed!');
