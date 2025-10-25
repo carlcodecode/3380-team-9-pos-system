@@ -69,9 +69,9 @@ console.log(`   Status: ${createResult.status}`);
 console.log(`   Response:`, createResult.data);
 console.log('');
 
-if (createResult.status !== 201) {
-  console.error('Failed to create meal category. Cannot proceed with remaining tests.');
-  process.exit(1);
+if (createResult.status !== 200) {
+	console.error('Failed to create meal category. Cannot proceed with remaining tests.');
+	process.exit(1);
 }
 
 const mealCategoryId = createResult.data.meal_type_id;

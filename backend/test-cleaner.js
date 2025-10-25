@@ -50,16 +50,25 @@ const attemptOperation = async (description, operation) => {
 
 console.log('🧹 Starting test data cleanup...\n');
 
-// Get authentication token
+// Get authentication tokens
 let staffToken = null;
+let adminToken = null;
 try {
-	console.log('Getting authentication token...');
+	console.log('Getting authentication tokens...');
 	const staffLogin = await makeRequest('/api/auth/login', 'POST', { username: 'staff', password: 'staff' });
 	if (staffLogin.data.token) {
 		staffToken = staffLogin.data.token;
-		console.log('✓ Authentication successful');
+		console.log('✓ Staff authentication successful');
 	} else {
-		console.log('✗ Authentication failed - cannot clean up API data');
+		console.log('✗ Staff authentication failed');
+	}
+
+	const adminLogin = await makeRequest('/api/auth/login', 'POST', { username: 'admin', password: 'admin' });
+	if (adminLogin.data.token) {
+		adminToken = adminLogin.data.token;
+		console.log('✓ Admin authentication successful');
+	} else {
+		console.log('✗ Admin authentication failed');
 	}
 } catch (error) {
 	console.log(`✗ Authentication error: ${error.message}`);
@@ -101,6 +110,23 @@ if (staffToken) {
 	});
 
 	// Note: Stock cleanup is handled automatically when meals are deleted due to foreign key constraints
+}
+
+// Clean up staff users via API (requires admin token)
+if (adminToken) {
+	await attemptOperation('Delete test staff users', async () => {
+		// Get all staff and filter test ones
+		const getAllStaff = await makeRequest('/api/admin/staff', 'GET', null, adminToken);
+		if (getAllStaff.data && getAllStaff.data.staff && Array.isArray(getAllStaff.data.staff)) {
+			const testStaff = getAllStaff.data.staff.filter(staff =>
+				staff.username && staff.username.startsWith('test')
+			);
+
+			for (const staff of testStaff) {
+				await makeRequest(`/api/admin/staff/${staff.user_id}`, 'DELETE', null, adminToken);
+			}
+		}
+	});
 }
 
 // Clean up via direct database access (for any remaining data)
@@ -149,8 +175,8 @@ const cleanupUsers = async () => {
 	try {
 		// Only clean up test users, not real users
 		const [result] = await pool.query(
-			'DELETE FROM USER WHERE username LIKE ? AND role = ?',
-			['test%', 'customer']
+			'DELETE FROM USER_ACCOUNT WHERE username LIKE ?',
+			['test%']
 		);
 		console.log(`✓ Deleted ${result.affectedRows} test users from database`);
 	} catch (error) {

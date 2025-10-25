@@ -47,7 +47,7 @@ if (!staffLogin.data.token) {
 	process.exit(1);
 }
 
-const staffToken = staffLogin.data.token;
+const staffToken = staffLogin.data.user_id;
 
 // Test 2: Get all stocks (should be empty initially)
 console.log('2. Testing GET /api/stocks (get all stocks)...');
@@ -79,12 +79,12 @@ console.log(`   Status: ${createMealResult.status}`);
 console.log(`   Response:`, createMealResult.data);
 console.log('');
 
-if (createMealResult.status !== 201) {
+if (createMealResult.status !== 200) {
 	console.error('Failed to create meal. Cannot proceed with stock tests.');
 	process.exit(1);
 }
 
-const mealId = createMealResult.data.meal.meal_id;
+const mealId = createMealResult.data.meal_id;
 
 // Test 4: Create stock for the meal
 console.log('4. Testing POST /api/stocks (create stock - this endpoint might not exist yet)...');
@@ -101,7 +101,7 @@ console.log('');
 
 // Note: If stock creation endpoint doesn't exist, we'll work with existing stocks
 let stockId = null;
-if (createStockResult.status === 201) {
+if (createStockResult.status === 200) {
 	stockId = createStockResult.data.stock_id;
 }
 

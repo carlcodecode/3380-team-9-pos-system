@@ -155,7 +155,7 @@ export const getAllMeals = async (req, res) => {
 				m.price,
 				m.cost_to_make,
 				m.created_at,
-				m.last_last_updated_at,
+				m.last_updated_at,
 				GROUP_CONCAT(mt.meal_type) as meal_types
 			FROM MEAL m
 			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
@@ -198,7 +198,7 @@ export const getMealById = async (req, res) => {
 				m.price,
 				m.cost_to_make,
 				m.created_at,
-				m.last_last_updated_at,
+				m.last_updated_at,
 				GROUP_CONCAT(mt.meal_type) as meal_types
 			FROM MEAL m
 			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
@@ -376,7 +376,7 @@ export const updateMeal = async (req, res) => {
 				m.price,
 				m.cost_to_make,
 				m.created_at,
-				m.last_last_updated_at,
+				m.last_updated_at,
 				GROUP_CONCAT(mt.meal_type) as meal_types
 			FROM MEAL m
 			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref

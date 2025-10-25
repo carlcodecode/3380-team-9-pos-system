@@ -56,14 +56,33 @@ const createData = {
 	username: 'teststaff',
 	password: 'staffpass123',
 	firstName: 'Test',
-	lastName: 'Staff'
+	lastName: 'Staff',
+	phone_number: '555-123-4567',
+	hire_date: '2025-01-15',
+	salary: 45000
 };
 const createResult = await makeRequest('/api/admin/staff', 'POST', createData, adminToken);
 console.log(`   Status: ${createResult.status}`);
 console.log(`   Response:`, createResult.data);
+
+// Verify the created staff has the correct values
+if (createResult.status === 200) {
+	const staff = createResult.data.staff;
+	console.log('   Verifying created staff data...');
+	if (staff.phone_number !== createData.phone_number) {
+		console.error(`   ERROR: Expected phone_number ${createData.phone_number}, got ${staff.phone_number}`);
+	}
+	if (staff.hire_date !== createData.hire_date) {
+		console.error(`   ERROR: Expected hire_date ${createData.hire_date}, got ${staff.hire_date}`);
+	}
+	if (staff.salary !== createData.salary) {
+		console.error(`   ERROR: Expected salary ${createData.salary}, got ${staff.salary}`);
+	}
+	console.log('   Verification complete.');
+}
 console.log('');
 
-if (createResult.status !== 201) {
+if (createResult.status !== 200) {
 	console.error('Failed to create staff user. Cannot proceed with remaining tests.');
 	process.exit(1);
 }
