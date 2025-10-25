@@ -163,16 +163,16 @@ export const MealManagement = () => {
                   Edit
                 </Button>
                 <Button
-                  variant={meal.status === 'available' ? 'default' : 'secondary'}
-                  size="sm"
-                  className={
-                    meal.status === 'available'
-                      ? 'bg-black text-white rounded-lg hover:bg-black'
-                      : 'bg-gray-200 text-black rounded-lg hover:bg-gray-200'
-                  }
-                >
-                  {meal.status === 'available' ? 'Active' : 'Inactive'}
-                </Button>
+                variant={meal.meal_status === 1 ? 'default' : 'secondary'}
+                size="sm"
+                className={
+                  meal.meal_status === 1
+                    ? 'bg-black text-white rounded-lg hover:bg-black'
+                    : 'bg-gray-200 text-black rounded-lg hover:bg-gray-200'
+                }
+              >
+                {meal.meal_status === 1 ? 'Active' : 'Inactive'}
+              </Button>
               </div>
             </div>
           );

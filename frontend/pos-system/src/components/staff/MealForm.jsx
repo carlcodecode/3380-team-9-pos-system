@@ -37,9 +37,9 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
       setFormData({
         meal_name: meal.meal_name || '',
         meal_description: meal.meal_description || '',
-        meal_status: meal.meal_status || 'active',
-        start_date: meal.start_date || '',
-        end_date: meal.end_date || '',
+        meal_status: meal.meal_status === 1 ? 'active' : 'inactive',
+        start_date: formatDate(meal.start_date) || '',
+        end_date: formatDate(meal.end_date) || '',
         price: meal.price || '',
         cost_to_make: meal.cost_to_make || '',
         meal_types: meal.meal_types || [],

@@ -17,6 +17,9 @@ export const createMeal = async (req, res) => {
       meal_types = [],
     } = req.body;
 
+	const normalizedStatus =
+  		meal_status === 'active' || meal_status === 1 || meal_status === true ? 1 : 0;
+
     // Validation
     if (
       !meal_name ||
@@ -61,7 +64,7 @@ export const createMeal = async (req, res) => {
       [
         meal_name,
         meal_description,
-        meal_status,
+        normalizedStatus,
         start_date,
         end_date,
         price,
@@ -277,7 +280,7 @@ export const updateMeal = async (req, res) => {
     }
     if (meal_status !== undefined) {
       updateFields.push('meal_status = ?');
-      updateParams.push(meal_status);
+      updateParams.push(meal_status === 'active' || meal_status === 1 || meal_status === true ? 1 : 0);
     }
     if (start_date !== undefined) {
       updateFields.push('start_date = ?');
