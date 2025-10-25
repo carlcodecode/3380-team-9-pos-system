@@ -1,15 +1,25 @@
-import express from 'express';
 import { register, login, getCurrentUser, logout } from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
-const router = express.Router();
+export default function authRoutes(req, res, pathname, method) {
+  // Public routes
+  if (pathname === '/api/auth/register' && method === 'POST') {
+    return register(req, res);
+  }
 
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
+  if (pathname === '/api/auth/login' && method === 'POST') {
+    return login(req, res);
+  }
 
-// Protected routes
-router.get('/me', authenticateToken, getCurrentUser);
-router.post('/logout', authenticateToken, logout);
+  // Protected routes
+  if (pathname === '/api/auth/me' && method === 'GET') {
+    return authenticateToken(req, res, () => getCurrentUser(req, res));
+  }
 
-export default router;
+  if (pathname === '/api/auth/logout' && method === 'POST') {
+    return authenticateToken(req, res, () => logout(req, res));
+  }
+
+  // Method not allowed
+  res.json({ error: 'Method not allowed' }, 405);
+}
