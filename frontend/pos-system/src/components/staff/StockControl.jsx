@@ -68,6 +68,7 @@ export const StockControl = () => {
     >
       <div className="flex items-center justify-between">
         <h3 className="text-black text-lg font-medium">Inventory Management</h3>
+        {/*
         <Button
           size="sm"
           className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
@@ -75,6 +76,7 @@ export const StockControl = () => {
         >
           Restock All Low Items
         </Button>
+        */}
       </div>
 
       <div className="space-y-3">
