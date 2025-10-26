@@ -50,6 +50,13 @@ export const Checkout = ({ onBack, onComplete }) => {
     setIsProcessing(true);
 
     try {
+      // Validate payment method selected
+      if (!selectedPayment) {
+        toast.error('Please select a payment method');
+        setIsProcessing(false);
+        return;
+      }
+
       // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -74,7 +81,8 @@ export const Checkout = ({ onBack, onComplete }) => {
         shippingState: user?.state || null,
         shippingZipcode: user?.zipcode ? String(user.zipcode) : null,
         trackingNumber: null,
-        cartItems: cartItems // Add cart items to order data
+        cartItems: cartItems, // Add cart items to order data
+        paymentMethodId: parseInt(selectedPayment) // Add selected payment method ID
       };
 
       console.log('📦 Placing order with data:', orderData);

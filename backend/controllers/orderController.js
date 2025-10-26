@@ -331,7 +331,8 @@ export const createOrder = async (req, res) => {
       shippingState,
       shippingZipcode,
       trackingNumber,
-      cartItems // Array of { mealId, quantity, price, cost }
+      cartItems, // Array of { mealId, quantity, price, cost }
+      paymentMethodId // Payment method used for this order
     } = req.body;
 
     // Validation
@@ -347,6 +348,14 @@ export const createOrder = async (req, res) => {
       console.error('❌ Cart items are required');
       return res.status(400).json({ 
         error: 'Cart items are required to create an order' 
+      });
+    }
+
+    // Validate payment method
+    if (!paymentMethodId) {
+      console.error('❌ Payment method is required');
+      return res.status(400).json({ 
+        error: 'Payment method is required to create an order' 
       });
     }
 
@@ -472,6 +481,39 @@ export const createOrder = async (req, res) => {
 
       console.log(`📦 Updated stock for meal ${item.mealId}: decreased by ${item.quantity}`);
     }
+
+    // Verify payment method exists and belongs to customer
+    const [paymentMethods] = await connection.query(
+      'SELECT payment_method_id FROM PAYMENT_METHOD WHERE payment_method_id = ? AND customer_ref = ?',
+      [paymentMethodId, customerId]
+    );
+
+    if (paymentMethods.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Invalid payment method or payment method does not belong to customer' 
+      });
+    }
+
+    // Calculate total payment amount (unit_price + tax - discount)
+    const totalAmount = unitPrice + tax - (discount || 0);
+
+    // Insert payment record
+    await connection.query(
+      `INSERT INTO PAYMENT 
+       (order_ref, payment_method_ref, payment_amount, payment_datetime, 
+        transaction_status, created_by)
+       VALUES (?, ?, ?, NOW(), ?, ?)`,
+      [
+        orderId,
+        paymentMethodId,
+        totalAmount, // Amount in cents
+        1, // transaction_status: 1 = successful (assuming payment succeeded)
+        SYSTEM_STAFF_ID // created_by references STAFF table - use system staff ID
+      ]
+    );
+
+    console.log(`💳 Payment record created for order ${orderId} using payment method ${paymentMethodId}`);
     
     await connection.commit();
 
