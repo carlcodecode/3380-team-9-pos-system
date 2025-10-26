@@ -53,6 +53,13 @@ export const Checkout = ({ onBack, onComplete }) => {
       // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
+      // Prepare cart items for ORDER_LINE table
+      const cartItems = cart.map(item => ({
+        mealId: item.meal.meal_id || item.meal.id,
+        quantity: item.quantity,
+        price: Math.round(item.meal.price) // Price in cents
+      }));
+
       // Prepare order data for the database
       const orderData = {
         orderDate: new Date().toISOString().split('T')[0],
@@ -66,7 +73,8 @@ export const Checkout = ({ onBack, onComplete }) => {
         shippingCity: user?.city || null,
         shippingState: user?.state || null,
         shippingZipcode: user?.zipcode ? String(user.zipcode) : null,
-        trackingNumber: null
+        trackingNumber: null,
+        cartItems: cartItems // Add cart items to order data
       };
 
       console.log('📦 Placing order with data:', orderData);

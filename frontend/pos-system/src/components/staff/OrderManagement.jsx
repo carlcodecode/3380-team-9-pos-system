@@ -221,6 +221,34 @@ export const OrderManagement = () => {
                 </div>
               </div>
 
+              {/* Order Items */}
+              {selectedOrder.items && selectedOrder.items.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-black">Order Items</Label>
+                  <div className="space-y-2">
+                    {selectedOrder.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        {item.imageUrl && (
+                          <img 
+                            src={item.imageUrl} 
+                            alt={item.mealName}
+                            className="w-12 h-12 object-cover rounded-lg"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-black">{item.mealName}</p>
+                          <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-black">${item.totalPrice.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500">${item.priceAtSale.toFixed(2)} each</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Order Breakdown */}
               <div className="space-y-2">
                 <Label className="text-black">Order Breakdown</Label>

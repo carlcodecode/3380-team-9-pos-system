@@ -169,7 +169,9 @@ export const OrderHistory = ({ onBack, onReorder }) => {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-right md:mr-4">
-                            <p className="text-sm text-gray-500 mb-1">2 items</p>
+                            <p className="text-sm text-gray-500 mb-1">
+                              {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''}
+                            </p>
                             <p className="text-xl text-black">${order.total.toFixed(2)}</p>
                           </div>
                           <div className="flex gap-2">
@@ -218,6 +220,26 @@ export const OrderHistory = ({ onBack, onReorder }) => {
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
+            {/* Order Items */}
+            {selectedOrder?.items && selectedOrder.items.length > 0 && (
+              <div>
+                <h3 className="text-black mb-4">Order Items</h3>
+                <div className="space-y-2">
+                  {selectedOrder.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-black font-medium">{item.mealName}</p>
+                        <p className="text-sm text-gray-500">Quantity: {item.quantity} × ${item.priceAtSale.toFixed(2)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-black font-semibold">${item.totalPrice.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Order Summary */}
             <div>
               <h3 className="text-black mb-4">Order Summary</h3>

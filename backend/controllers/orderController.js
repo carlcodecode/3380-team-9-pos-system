@@ -38,6 +38,29 @@ export const getAllOrders = async (req, res) => {
        ORDER BY o.created_at DESC`
     );
 
+    // Fetch order line items for all orders
+    const orderIds = orders.map(o => o.order_id);
+    let orderLines = [];
+    
+    if (orderIds.length > 0) {
+      const [lines] = await pool.query(
+        `SELECT 
+          ol.order_ref,
+          ol.meal_ref,
+          ol.num_units_ordered,
+          ol.price_at_sale,
+          ol.cost_per_unit,
+          m.meal_name,
+          m.meal_description,
+          m.img_url
+         FROM ORDER_LINE ol
+         JOIN MEAL m ON ol.meal_ref = m.meal_id
+         WHERE ol.order_ref IN (?)`,
+        [orderIds]
+      );
+      orderLines = lines;
+    }
+
     res.json({
       orders: orders.map(order => ({
         id: order.order_id,
@@ -61,7 +84,19 @@ export const getAllOrders = async (req, res) => {
         },
         trackingNumber: order.tracking_number,
         createdAt: order.created_at,
-        lastUpdatedAt: order.last_updated_at
+        lastUpdatedAt: order.last_updated_at,
+        items: orderLines
+          .filter(line => line.order_ref === order.order_id)
+          .map(line => ({
+            mealId: line.meal_ref,
+            mealName: line.meal_name,
+            mealDescription: line.meal_description,
+            imageUrl: line.img_url,
+            quantity: line.num_units_ordered,
+            priceAtSale: line.price_at_sale / 100,
+            costPerUnit: line.cost_per_unit / 100,
+            totalPrice: (line.price_at_sale * line.num_units_ordered) / 100
+          }))
       }))
     });
   } catch (error) {
@@ -103,6 +138,29 @@ export const getCustomerOrders = async (req, res) => {
       [customerId]
     );
 
+    // Fetch order line items for all orders
+    const orderIds = orders.map(o => o.order_id);
+    let orderLines = [];
+    
+    if (orderIds.length > 0) {
+      const [lines] = await pool.query(
+        `SELECT 
+          ol.order_ref,
+          ol.meal_ref,
+          ol.num_units_ordered,
+          ol.price_at_sale,
+          ol.cost_per_unit,
+          m.meal_name,
+          m.meal_description,
+          m.img_url
+         FROM ORDER_LINE ol
+         JOIN MEAL m ON ol.meal_ref = m.meal_id
+         WHERE ol.order_ref IN (?)`,
+        [orderIds]
+      );
+      orderLines = lines;
+    }
+
     res.json({
       orders: orders.map(order => ({
         id: order.order_id,
@@ -124,7 +182,19 @@ export const getCustomerOrders = async (req, res) => {
         },
         trackingNumber: order.tracking_number,
         createdAt: order.created_at,
-        lastUpdatedAt: order.last_updated_at
+        lastUpdatedAt: order.last_updated_at,
+        items: orderLines
+          .filter(line => line.order_ref === order.order_id)
+          .map(line => ({
+            mealId: line.meal_ref,
+            mealName: line.meal_name,
+            mealDescription: line.meal_description,
+            imageUrl: line.img_url,
+            quantity: line.num_units_ordered,
+            priceAtSale: line.price_at_sale / 100,
+            costPerUnit: line.cost_per_unit / 100,
+            totalPrice: (line.price_at_sale * line.num_units_ordered) / 100
+          }))
       }))
     });
   } catch (error) {
@@ -172,6 +242,23 @@ export const getOrderById = async (req, res) => {
 
     const order = orders[0];
 
+    // Fetch order line items
+    const [orderLines] = await pool.query(
+      `SELECT 
+        ol.order_ref,
+        ol.meal_ref,
+        ol.num_units_ordered,
+        ol.price_at_sale,
+        ol.cost_per_unit,
+        m.meal_name,
+        m.meal_description,
+        m.img_url
+       FROM ORDER_LINE ol
+       JOIN MEAL m ON ol.meal_ref = m.meal_id
+       WHERE ol.order_ref = ?`,
+      [orderId]
+    );
+
     res.json({
       order: {
         id: order.order_id,
@@ -193,7 +280,17 @@ export const getOrderById = async (req, res) => {
         },
         trackingNumber: order.tracking_number,
         createdAt: order.created_at,
-        lastUpdatedAt: order.last_updated_at
+        lastUpdatedAt: order.last_updated_at,
+        items: orderLines.map(line => ({
+          mealId: line.meal_ref,
+          mealName: line.meal_name,
+          mealDescription: line.meal_description,
+          imageUrl: line.img_url,
+          quantity: line.num_units_ordered,
+          priceAtSale: line.price_at_sale / 100,
+          costPerUnit: line.cost_per_unit / 100,
+          totalPrice: (line.price_at_sale * line.num_units_ordered) / 100
+        }))
       }
     });
   } catch (error) {
@@ -233,7 +330,8 @@ export const createOrder = async (req, res) => {
       shippingCity,
       shippingState,
       shippingZipcode,
-      trackingNumber
+      trackingNumber,
+      cartItems // Array of { mealId, quantity, price, cost }
     } = req.body;
 
     // Validation
@@ -242,6 +340,24 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ 
         error: 'Order date, unit price, and tax are required' 
       });
+    }
+
+    // Validate cart items
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      console.error('❌ Cart items are required');
+      return res.status(400).json({ 
+        error: 'Cart items are required to create an order' 
+      });
+    }
+
+    // Validate each cart item
+    for (const item of cartItems) {
+      if (!item.mealId || !item.quantity || item.price === undefined) {
+        console.error('❌ Invalid cart item:', item);
+        return res.status(400).json({ 
+          error: 'Each cart item must have mealId, quantity, and price' 
+        });
+      }
     }
 
     // Validate state code if provided (must be 2 characters)
@@ -262,6 +378,7 @@ export const createOrder = async (req, res) => {
     
     await connection.beginTransaction();
 
+    // Insert the order
     const [result] = await connection.query(
       `INSERT INTO ORDERS 
        (customer_ref, order_date, order_status, delivery_date, unit_price, tax, 
@@ -286,11 +403,46 @@ export const createOrder = async (req, res) => {
       ]
     );
 
-    console.log('✅ Order inserted with ID:', result.insertId);
+    const orderId = result.insertId;
+    console.log('✅ Order inserted with ID:', orderId);
+
+    // Insert order line items
+    console.log('🛒 Inserting order line items...');
+    for (const item of cartItems) {
+      // Fetch meal cost from database
+      const [meals] = await connection.query(
+        'SELECT cost_to_make FROM MEAL WHERE meal_id = ?',
+        [item.mealId]
+      );
+
+      if (meals.length === 0) {
+        await connection.rollback();
+        return res.status(400).json({ 
+          error: `Meal with ID ${item.mealId} not found` 
+        });
+      }
+
+      const costPerUnit = meals[0].cost_to_make;
+
+      await connection.query(
+        `INSERT INTO ORDER_LINE 
+         (order_ref, meal_ref, num_units_ordered, price_at_sale, cost_per_unit)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          orderId,
+          item.mealId,
+          item.quantity,
+          item.price, // Price should already be in cents
+          costPerUnit
+        ]
+      );
+
+      console.log(`✅ Inserted order line: meal ${item.mealId}, qty ${item.quantity}`);
+    }
     
     await connection.commit();
 
-    // Fetch the created order
+    // Fetch the created order with line items
     const [orders] = await pool.query(
       `SELECT 
         order_id,
@@ -312,10 +464,27 @@ export const createOrder = async (req, res) => {
         tracking_number
        FROM ORDERS
        WHERE order_id = ?`,
-      [result.insertId]
+      [orderId]
     );
 
     const order = orders[0];
+
+    // Fetch order line items
+    const [orderLines] = await pool.query(
+      `SELECT 
+        ol.order_ref,
+        ol.meal_ref,
+        ol.num_units_ordered,
+        ol.price_at_sale,
+        ol.cost_per_unit,
+        m.meal_name,
+        m.meal_description,
+        m.img_url
+       FROM ORDER_LINE ol
+       JOIN MEAL m ON ol.meal_ref = m.meal_id
+       WHERE ol.order_ref = ?`,
+      [orderId]
+    );
     
     console.log('✅ Order created successfully:', order.order_id);
 
@@ -340,7 +509,17 @@ export const createOrder = async (req, res) => {
           zipcode: order.shipping_zipcode
         },
         trackingNumber: order.tracking_number,
-        createdAt: order.created_at
+        createdAt: order.created_at,
+        items: orderLines.map(line => ({
+          mealId: line.meal_ref,
+          mealName: line.meal_name,
+          mealDescription: line.meal_description,
+          imageUrl: line.img_url,
+          quantity: line.num_units_ordered,
+          priceAtSale: line.price_at_sale / 100,
+          costPerUnit: line.cost_per_unit / 100,
+          totalPrice: (line.price_at_sale * line.num_units_ordered) / 100
+        }))
       }
     });
 
