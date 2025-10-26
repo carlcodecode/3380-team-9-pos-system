@@ -43,7 +43,7 @@ export const Checkout = ({ onBack, onComplete }) => {
 
   const subtotal = cart.reduce((total, item) => total + item.meal.price * item.quantity, 0);
   const discount = getDiscount();
-  const tax = (subtotal - discount) * 0.08;
+  const tax = subtotal * 0.08; // Tax calculated on subtotal only, NOT on discounted amount
   const total = subtotal - discount + tax;
 
   const handlePlaceOrder = async () => {
@@ -82,7 +82,8 @@ export const Checkout = ({ onBack, onComplete }) => {
         shippingZipcode: user?.zipcode ? String(user.zipcode) : null,
         trackingNumber: null,
         cartItems: cartItems, // Add cart items to order data
-        paymentMethodId: parseInt(selectedPayment) // Add selected payment method ID
+        paymentMethodId: parseInt(selectedPayment), // Add selected payment method ID
+        promoCode: appliedPromoCode || null // Add applied promo code if any
       };
 
       console.log('📦 Placing order with data:', orderData);

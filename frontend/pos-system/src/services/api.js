@@ -285,6 +285,18 @@ export const deletePromo = async (id) => {
   return res.json();
 };
 
+export const validatePromoCode = async (code) => {
+  const res = await fetch(`${API_BASE_URL}/promotions/validate/${code}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Invalid promo code');
+  }
+  return res.json();
+};
+
 // ==============================
 // SEASONAL DISCOUNT / SALE EVENT MANAGEMENT
 // ==============================

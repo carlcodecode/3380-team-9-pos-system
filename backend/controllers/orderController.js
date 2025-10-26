@@ -332,7 +332,8 @@ export const createOrder = async (req, res) => {
       shippingZipcode,
       trackingNumber,
       cartItems, // Array of { mealId, quantity, price, cost }
-      paymentMethodId // Payment method used for this order
+      paymentMethodId, // Payment method used for this order
+      promoCode // Optional promo code applied
     } = req.body;
 
     // Validation
@@ -519,7 +520,33 @@ export const createOrder = async (req, res) => {
       ]
     );
 
-    console.log(`Payment record created for order ${orderId} using payment method ${paymentMethodId}`);
+    console.log(`💳 Payment record created for order ${orderId} using payment method ${paymentMethodId}`);
+
+    // Insert ORDER_PROMOTION record if promo code was applied
+    if (promoCode && discount > 0) {
+      // Fetch promotion details by code
+      const [promos] = await connection.query(
+        'SELECT promotion_id FROM PROMOTION WHERE promo_code = ?',
+        [promoCode.toUpperCase()]
+      );
+
+      if (promos.length > 0) {
+        const promotionId = promos[0].promotion_id;
+
+        await connection.query(
+          `INSERT INTO ORDER_PROMOTION 
+           (order_ref, promotion_ref, discount_amount)
+           VALUES (?, ?, ?)`,
+          [
+            orderId,
+            promotionId,
+            discount // Discount amount in cents
+          ]
+        );
+
+        console.log(`🎫 Order promotion record created for order ${orderId} with promo ${promoCode}`);
+      }
+    }
     
     await connection.commit();
 

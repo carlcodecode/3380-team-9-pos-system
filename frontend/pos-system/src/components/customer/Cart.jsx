@@ -22,18 +22,27 @@ export const Cart = ({ onBack, onCheckout }) => {
   } = useCart();
 
   const [promoInput, setPromoInput] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
 
   const subtotal = cart.reduce((total, item) => total + item.meal.price * item.quantity, 0);
   const discount = getDiscount();
-  const tax = (subtotal - discount) * 0.08;
+  const tax = subtotal * 0.08; // Tax calculated on subtotal only, NOT on discounted amount
   const total = subtotal - discount + tax;
 
-  const handleApplyPromo = () => {
-    if (applyPromoCode(promoInput)) {
-      toast.success('Promo code applied!');
-      setPromoInput('');
-    } else {
-      toast.error('Invalid promo code');
+  const handleApplyPromo = async () => {
+    setIsValidating(true);
+    try {
+      const success = await applyPromoCode(promoInput);
+      if (success) {
+        toast.success('Promo code applied!');
+        setPromoInput('');
+      } else {
+        toast.error('Invalid promo code');
+      }
+    } catch (error) {
+      toast.error(error.message || 'Invalid promo code');
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -219,10 +228,10 @@ export const Cart = ({ onBack, onCheckout }) => {
                   <Button
                     onClick={handleApplyPromo}
                     variant="outline"
-                    disabled={!promoInput}
+                    disabled={!promoInput || isValidating}
                     className="border-gray-200 hover:bg-gray-100 rounded-lg"
                   >
-                    Apply
+                    {isValidating ? 'Validating...' : 'Apply'}
                   </Button>
                 </div>
 
