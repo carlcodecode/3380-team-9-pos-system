@@ -15,6 +15,7 @@ import {
   Percent,
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { StockRestockForm } from './StockRestockForm';
 import * as api from '../../services/api';
 
 // Import the new component modules
@@ -26,6 +27,68 @@ import { SeasonalDiscountManagement } from './SeasonalDiscountManagement';
 
 export const StaffDashboard = () => {
   const { user } = useAuth();
+  
+  const [selectedStock, setSelectedStock] = useState(null);
+  const [showRestockForm, setShowRestockForm] = useState(false);
+  const [stocks, setStocks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+      let isMounted = true;
+  
+      const fetchStocks = async () => {
+        try {
+          const data = await api.getAllStocks();
+          if (isMounted) {
+            setStocks((prev) => {
+              if (JSON.stringify(prev) !== JSON.stringify(data)) {
+                return data;
+              }
+              return prev;
+            });
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+          if (isMounted) setError('Failed to load stock data');
+        }
+      };
+  
+      fetchStocks();
+      const interval = setInterval(fetchStocks, 3000);
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }, []);
+
+    // ==============================
+    // RESTOCK HANDLER
+    // ==============================
+    const handleRestock = async (stockId, quantity) => {
+      try {
+        await api.restockMeal(stockId, { quantity_to_add: quantity });
+        // Optimistic UI update
+        setStocks((prev) =>
+          prev.map((s) =>
+            s.stock_id === stockId
+              ? {
+                  ...s,
+                  quantity_in_stock: Math.min(
+                    s.quantity_in_stock + quantity,
+                    s.max_stock
+                  ),
+                }
+              : s
+          )
+        );
+        setShowRestockForm(false);
+        setSelectedStock(null);
+      } catch (err) {
+        console.error('Restock error:', err);
+        alert('Restock failed.');
+      }
+    };
 
   const todayOrders = {
     pending: mockOrders.filter((o) => o.status === 'pending').length,
@@ -36,6 +99,7 @@ export const StaffDashboard = () => {
 
   const [lowStockMeals, setLowStockMeals] = useState([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchLowStockMeals = async () => {
@@ -150,6 +214,10 @@ export const StaffDashboard = () => {
                     <Button
                       size="sm"
                       className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+                      onClick={() => {
+                      setSelectedStock(meal);
+                      setShowRestockForm(true);
+                  }}
                     >
                       Restock
                     </Button>
@@ -177,6 +245,16 @@ export const StaffDashboard = () => {
               </div>
             </div>
           </motion.div>
+        )}
+
+        {/* RESTOCK FORM */}
+        {showRestockForm && (
+          <StockRestockForm
+            open={showRestockForm}
+            onClose={() => setShowRestockForm(false)}
+            stock={selectedStock}
+            onSave={handleRestock}
+          />
         )}
 
 
