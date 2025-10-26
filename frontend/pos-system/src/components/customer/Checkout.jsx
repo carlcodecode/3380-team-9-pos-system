@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { mockPaymentMethods, mockOrders } from '../../lib/mockData';
+import { createOrder } from '../../services/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -26,26 +27,43 @@ export const Checkout = ({ onBack, onComplete }) => {
   const handlePlaceOrder = async () => {
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // Simulate payment processing
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // Create order
-    const newOrder = {
-      id: String(mockOrders.length + 1000),
-      customerId: user?.id || '',
-      items: cart,
-      total: total,
-      status: 'processing',
-      date: new Date().toISOString().split('T')[0],
-      paymentMethod: mockPaymentMethods.find((p) => p.id === selectedPayment)?.type || 'Unknown',
-      address: user?.address || '',
-    };
+      // Prepare order data for the database
+      const orderData = {
+        orderDate: new Date().toISOString().split('T')[0],
+        orderStatus: 0, // 0 = processing
+        deliveryDate: null,
+        unitPrice: Math.round(subtotal), // Store in cents
+        tax: Math.round(tax), // Store in cents
+        discount: Math.round(discount), // Store in cents
+        notes: deliveryNotes || null,
+        shippingStreet: user?.address || null,
+        shippingCity: user?.city || null,
+        shippingState: user?.state || null,
+        shippingZipcode: user?.zipcode ? String(user.zipcode) : null,
+        trackingNumber: null
+      };
 
-    mockOrders.push(newOrder);
-    clearCart();
-    toast.success('Order placed successfully!');
-    setIsProcessing(false);
-    onComplete();
+      console.log('📦 Placing order with data:', orderData);
+
+      // Create order in database
+      const response = await createOrder(orderData);
+      
+      console.log('✅ Order created:', response);
+
+      // Clear cart and show success
+      clearCart();
+      toast.success('Order placed successfully! Check your order history.');
+      onComplete();
+    } catch (error) {
+      console.error('❌ Failed to place order:', error);
+      toast.error(error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
