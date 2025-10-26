@@ -15,6 +15,8 @@ export const Register = ({ onSwitchToLogin }) => {
     username: '',
     password: '',
     confirmPassword: '',
+    address: '',
+    phoneNumber: '',
   });
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -33,6 +35,12 @@ export const Register = ({ onSwitchToLogin }) => {
       return;
     }
 
+    // Phone number validation (optional but recommended format)
+    if (formData.phoneNumber && !/^\d{3}-\d{3}-\d{4}$/.test(formData.phoneNumber)) {
+      toast.error('Phone number must be in format: 111-111-1111');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -42,6 +50,8 @@ export const Register = ({ onSwitchToLogin }) => {
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
+        address: formData.address,
+        phoneNumber: formData.phoneNumber,
       });
       toast.success('Account created successfully!');
     } catch (error) {
@@ -108,6 +118,36 @@ export const Register = ({ onSwitchToLogin }) => {
                   className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address" className="text-black">
+                Address
+              </Label>
+              <Input
+                id="address"
+                type="text"
+                value={formData.address}
+                onChange={(e) => handleChange('address', e.target.value)}
+                placeholder="123 Main St, City, State, ZIP"
+                className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber" className="text-black">
+                Phone Number
+              </Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleChange('phoneNumber', e.target.value)}
+                placeholder="111-111-1111"
+                pattern="\d{3}-\d{3}-\d{4}"
+                className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
+              />
+              <p className="text-xs text-gray-500">Format: 111-111-1111</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">

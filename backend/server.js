@@ -3,6 +3,7 @@ import url from 'url';
 import pool, { testConnection } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import customerRoutes from './routes/customerRoutes.js';
 import mealRoutes from './routes/mealRoutes.js';
 import mealCategoryRoutes from './routes/mealCategoryRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
@@ -110,6 +111,11 @@ function handleRequest(req, res) {
       // Admin routes
       if (pathname.startsWith('/api/admin')) {
         return adminRoutes(req, res, pathname, method);
+      }
+
+      // Customer routes
+      if (pathname.startsWith('/api/customers')) {
+        return customerRoutes(req, res, pathname, method);
       }
 
       // Meal routes
