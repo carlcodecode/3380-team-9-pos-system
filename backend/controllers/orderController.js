@@ -406,10 +406,10 @@ export const createOrder = async (req, res) => {
     const orderId = result.insertId;
     console.log('✅ Order inserted with ID:', orderId);
 
-    // Insert order line items
-    console.log('🛒 Inserting order line items...');
+    // Insert order line items and update stock
+    console.log('🛒 Inserting order line items and updating stock...');
     for (const item of cartItems) {
-      // Fetch meal cost from database
+      // Fetch meal cost and current stock from database
       const [meals] = await connection.query(
         'SELECT cost_to_make FROM MEAL WHERE meal_id = ?',
         [item.mealId]
@@ -424,6 +424,31 @@ export const createOrder = async (req, res) => {
 
       const costPerUnit = meals[0].cost_to_make;
 
+      // Check if stock exists for this meal
+      const [stockCheck] = await connection.query(
+        'SELECT stock_id, quantity_in_stock FROM STOCK WHERE meal_ref = ?',
+        [item.mealId]
+      );
+
+      if (stockCheck.length === 0) {
+        await connection.rollback();
+        return res.status(400).json({ 
+          error: `Stock not found for meal ID ${item.mealId}` 
+        });
+      }
+
+      const currentStock = stockCheck[0].quantity_in_stock;
+      const stockId = stockCheck[0].stock_id;
+
+      // Check if we have enough stock
+      if (currentStock < item.quantity) {
+        await connection.rollback();
+        return res.status(400).json({ 
+          error: `Insufficient stock for meal ID ${item.mealId}. Available: ${currentStock}, Requested: ${item.quantity}` 
+        });
+      }
+
+      // Insert order line item
       await connection.query(
         `INSERT INTO ORDER_LINE 
          (order_ref, meal_ref, num_units_ordered, price_at_sale, cost_per_unit)
@@ -438,6 +463,14 @@ export const createOrder = async (req, res) => {
       );
 
       console.log(`✅ Inserted order line: meal ${item.mealId}, qty ${item.quantity}`);
+
+      // Update stock - subtract the ordered quantity
+      await connection.query(
+        'UPDATE STOCK SET quantity_in_stock = quantity_in_stock - ? WHERE stock_id = ?',
+        [item.quantity, stockId]
+      );
+
+      console.log(`📦 Updated stock for meal ${item.mealId}: decreased by ${item.quantity}`);
     }
     
     await connection.commit();
