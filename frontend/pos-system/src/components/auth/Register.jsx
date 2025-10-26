@@ -15,7 +15,10 @@ export const Register = ({ onSwitchToLogin }) => {
     username: '',
     password: '',
     confirmPassword: '',
-    address: '',
+    street: '',
+    city: '',
+    stateCode: '',
+    zipcode: '',
     phoneNumber: '',
   });
   const [loading, setLoading] = useState(false);
@@ -41,6 +44,18 @@ export const Register = ({ onSwitchToLogin }) => {
       return;
     }
 
+    // State code validation (if provided, must be 2 characters)
+    if (formData.stateCode && formData.stateCode.length !== 2) {
+      toast.error('State code must be 2 characters (e.g., TX, CA)');
+      return;
+    }
+
+    // Zipcode validation (if provided, must be 5 digits)
+    if (formData.zipcode && !/^\d{5}$/.test(formData.zipcode)) {
+      toast.error('Zipcode must be 5 digits');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -50,7 +65,10 @@ export const Register = ({ onSwitchToLogin }) => {
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        address: formData.address,
+        street: formData.street,
+        city: formData.city,
+        stateCode: formData.stateCode,
+        zipcode: formData.zipcode,
         phoneNumber: formData.phoneNumber,
       });
       toast.success('Account created successfully!');
@@ -121,17 +139,67 @@ export const Register = ({ onSwitchToLogin }) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address" className="text-black">
-                Address
+              <Label htmlFor="street" className="text-black">
+                Street Address
               </Label>
               <Input
-                id="address"
+                id="street"
                 type="text"
-                value={formData.address}
-                onChange={(e) => handleChange('address', e.target.value)}
-                placeholder="123 Main St, City, State, ZIP"
+                value={formData.street}
+                onChange={(e) => handleChange('street', e.target.value.slice(0, 50))}
+                placeholder="123 Main St"
+                maxLength={50}
                 className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
               />
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city" className="text-black">
+                  City
+                </Label>
+                <Input
+                  id="city"
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => handleChange('city', e.target.value.slice(0, 50))}
+                  placeholder="Houston"
+                  maxLength={50}
+                  className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stateCode" className="text-black">
+                  State
+                </Label>
+                <Input
+                  id="stateCode"
+                  type="text"
+                  value={formData.stateCode}
+                  onChange={(e) => handleChange('stateCode', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2))}
+                  placeholder="TX"
+                  maxLength={2}
+                  className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
+                />
+                <p className="text-xs text-gray-500">2 letters</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="zipcode" className="text-black">
+                  Zipcode
+                </Label>
+                <Input
+                  id="zipcode"
+                  type="text"
+                  value={formData.zipcode}
+                  onChange={(e) => handleChange('zipcode', e.target.value.replace(/\D/g, '').slice(0, 5))}
+                  placeholder="77001"
+                  maxLength={5}
+                  className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
+                />
+                <p className="text-xs text-gray-500">5 digits</p>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -142,9 +210,18 @@ export const Register = ({ onSwitchToLogin }) => {
                 id="phoneNumber"
                 type="tel"
                 value={formData.phoneNumber}
-                onChange={(e) => handleChange('phoneNumber', e.target.value)}
+                onChange={(e) => {
+                  // Auto-format phone number as user types
+                  let value = e.target.value.replace(/\D/g, '');
+                  if (value.length >= 6) {
+                    value = `${value.slice(0, 3)}-${value.slice(3, 6)}-${value.slice(6, 10)}`;
+                  } else if (value.length >= 3) {
+                    value = `${value.slice(0, 3)}-${value.slice(3)}`;
+                  }
+                  handleChange('phoneNumber', value);
+                }}
                 placeholder="111-111-1111"
-                pattern="\d{3}-\d{3}-\d{4}"
+                maxLength={12}
                 className="bg-white border border-gray-200 focus:border-black focus:ring-black/20 rounded-lg h-12"
               />
               <p className="text-xs text-gray-500">Format: 111-111-1111</p>
