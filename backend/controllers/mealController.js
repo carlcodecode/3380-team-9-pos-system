@@ -142,7 +142,7 @@ export const createMeal = async (req, res) => {
   }
 };
 
-// Get all meals
+// Get all meals (with stock quantity)
 export const getAllMeals = async (req, res) => {
   const connection = await pool.getConnection();
 
@@ -159,10 +159,12 @@ export const getAllMeals = async (req, res) => {
         m.price,
         m.cost_to_make,
         m.nutrition_facts,
+        COALESCE(s.quantity_in_stock, 0) AS quantity_in_stock,  
         JSON_ARRAYAGG(mt.meal_type) AS meal_types
       FROM MEAL m
       LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_ref
       LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
+      LEFT JOIN STOCK s ON m.meal_id = s.meal_ref
       GROUP BY m.meal_id
       ORDER BY m.meal_name ASC
     `);
@@ -193,6 +195,7 @@ export const getAllMeals = async (req, res) => {
     connection.release();
   }
 };
+
 
 // Get meal by ID
 export const getMealById = async (req, res) => {

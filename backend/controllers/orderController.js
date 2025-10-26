@@ -304,7 +304,7 @@ export const createOrder = async (req, res) => {
   const connection = await pool.getConnection();
   
   try {
-    console.log('🛒 Create order request received');
+    console.log('Create order request received');
     console.log('User from token:', req.user);
     console.log('Request body:', req.body);
     
@@ -312,7 +312,7 @@ export const createOrder = async (req, res) => {
     const userId = req.user.userId;
     
     if (!customerId) {
-      console.error('❌ No customerId found in token');
+      console.error('No customerId found in token');
       return res.status(400).json({ 
         error: 'Customer ID not found. Please log in again.' 
       });
@@ -337,7 +337,7 @@ export const createOrder = async (req, res) => {
 
     // Validation
     if (!orderDate || unitPrice === undefined || tax === undefined) {
-      console.error('❌ Missing required fields');
+      console.error('Missing required fields');
       return res.status(400).json({ 
         error: 'Order date, unit price, and tax are required' 
       });
@@ -345,7 +345,7 @@ export const createOrder = async (req, res) => {
 
     // Validate cart items
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-      console.error('❌ Cart items are required');
+      console.error('Cart items are required');
       return res.status(400).json({ 
         error: 'Cart items are required to create an order' 
       });
@@ -353,7 +353,7 @@ export const createOrder = async (req, res) => {
 
     // Validate payment method
     if (!paymentMethodId) {
-      console.error('❌ Payment method is required');
+      console.error('Payment method is required');
       return res.status(400).json({ 
         error: 'Payment method is required to create an order' 
       });
@@ -362,7 +362,7 @@ export const createOrder = async (req, res) => {
     // Validate each cart item
     for (const item of cartItems) {
       if (!item.mealId || !item.quantity || item.price === undefined) {
-        console.error('❌ Invalid cart item:', item);
+        console.error('Invalid cart item:', item);
         return res.status(400).json({ 
           error: 'Each cart item must have mealId, quantity, and price' 
         });
@@ -383,7 +383,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    console.log('✅ Validation passed, inserting order...');
+    console.log('Validation passed, inserting order...');
     
     await connection.beginTransaction();
 
@@ -413,10 +413,10 @@ export const createOrder = async (req, res) => {
     );
 
     const orderId = result.insertId;
-    console.log('✅ Order inserted with ID:', orderId);
+    console.log('Order inserted with ID:', orderId);
 
     // Insert order line items and update stock
-    console.log('🛒 Inserting order line items and updating stock...');
+    console.log('Inserting order line items and updating stock...');
     for (const item of cartItems) {
       // Fetch meal cost and current stock from database
       const [meals] = await connection.query(
@@ -435,7 +435,13 @@ export const createOrder = async (req, res) => {
 
       // Check if stock exists for this meal
       const [stockCheck] = await connection.query(
-        'SELECT stock_id, quantity_in_stock FROM STOCK WHERE meal_ref = ?',
+        `SELECT 
+          s.stock_id, 
+          s.quantity_in_stock, 
+          m.meal_name
+        FROM STOCK s
+        JOIN MEAL m ON s.meal_ref = m.meal_id
+        WHERE s.meal_ref = ? FOR UPDATE`,
         [item.mealId]
       );
 
@@ -453,7 +459,7 @@ export const createOrder = async (req, res) => {
       if (currentStock < item.quantity) {
         await connection.rollback();
         return res.status(400).json({ 
-          error: `Insufficient stock for meal ID ${item.mealId}. Available: ${currentStock}, Requested: ${item.quantity}` 
+          error: `Insufficient stock for meal ID ${stockCheck[0].meal_name}. Available: ${currentStock}, Requested: ${item.quantity}` 
         });
       }
 
@@ -471,7 +477,7 @@ export const createOrder = async (req, res) => {
         ]
       );
 
-      console.log(`✅ Inserted order line: meal ${item.mealId}, qty ${item.quantity}`);
+      console.log(`Inserted order line: meal ${item.mealId}, qty ${item.quantity}`);
 
       // Update stock - subtract the ordered quantity
       await connection.query(
@@ -513,7 +519,7 @@ export const createOrder = async (req, res) => {
       ]
     );
 
-    console.log(`💳 Payment record created for order ${orderId} using payment method ${paymentMethodId}`);
+    console.log(`Payment record created for order ${orderId} using payment method ${paymentMethodId}`);
     
     await connection.commit();
 
@@ -561,7 +567,7 @@ export const createOrder = async (req, res) => {
       [orderId]
     );
     
-    console.log('✅ Order created successfully:', order.order_id);
+    console.log('Order created successfully:', order.order_id);
 
     res.status(201).json({
       message: 'Order created successfully',
@@ -600,7 +606,7 @@ export const createOrder = async (req, res) => {
 
   } catch (error) {
     await connection.rollback();
-    console.error('❌ Create order error:', error);
+    console.error('Create order error:', error);
     res.status(500).json({ error: 'Failed to create order', details: error.message });
   } finally {
     connection.release();
