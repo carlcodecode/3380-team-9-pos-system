@@ -25,10 +25,12 @@ export const CustomerDashboard = () => {
   const [promotions, setPromotions] = useState([]);
   const [loadingPromos, setLoadingPromos] = useState(true);
 
-  // Fetch promotions on component mount
+  // Fetch promotions on component mount and when user changes
   useEffect(() => {
-    fetchPromotions();
-  }, []);
+    if (user) {
+      fetchPromotions();
+    }
+  }, [user]);
 
   const fetchPromotions = async () => {
     try {
