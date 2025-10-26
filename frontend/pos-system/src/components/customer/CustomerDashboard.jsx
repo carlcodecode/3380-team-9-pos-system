@@ -160,8 +160,8 @@ export const CustomerDashboard = () => {
               <p className="text-gray-500">Loading offers...</p>
             </div>
           ) : promotions.length > 0 ? (
-            <div className="grid md:grid-cols-3 gap-6">
-              {promotions.slice(0, 3).map((promo) => (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {promotions.map((promo) => (
                 <motion.div
                   key={promo.promotion_id}
                   initial={{ opacity: 0, scale: 0.95 }}
