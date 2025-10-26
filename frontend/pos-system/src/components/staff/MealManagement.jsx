@@ -4,6 +4,8 @@ import { Badge } from '../ui/badge';
 import * as api from '../../services/api';
 import { motion } from 'framer-motion';
 import { MealForm } from './MealForm';
+import { Gift, Tag, Plus, Edit, Trash2 } from 'lucide-react';
+
 
 export const MealManagement = () => {
   const [meals, setMeals] = useState([]);
@@ -173,6 +175,7 @@ export const MealManagement = () => {
                     setEditingMeal(meal);
                   }}
                 >
+                  <Edit className="w-4 h-4" />
                   Edit
                 </Button>
                 <Button

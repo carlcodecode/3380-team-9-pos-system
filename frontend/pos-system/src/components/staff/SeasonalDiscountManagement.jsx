@@ -4,6 +4,8 @@ import { Badge } from '../ui/badge';
 import * as api from '../../services/api';
 import { motion } from 'framer-motion';
 import { SeasonalDiscountForm } from './SeasonalDiscountForm';
+import { Gift, Tag, Plus, Edit, Trash2 } from 'lucide-react';
+
 
 export const SeasonalDiscountManagement = () => {
   const [discounts, setDiscounts] = useState([]);
@@ -118,6 +120,7 @@ export const SeasonalDiscountManagement = () => {
                   setEditingDiscount(discount);
                 }}
               >
+                <Edit className="w-4 h-4" />
                 Edit
               </Button>
               <Button
@@ -138,6 +141,7 @@ export const SeasonalDiscountManagement = () => {
                 }
               }}
             >
+              <Trash2 className="w-4 h-4" />
               Delete
             </Button>
             </div>
