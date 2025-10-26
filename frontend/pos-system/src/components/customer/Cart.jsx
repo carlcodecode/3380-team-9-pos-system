@@ -95,7 +95,7 @@ export const Cart = ({ onBack, onCheckout }) => {
             <div className="space-y-4">
               {cart.map((item) => (
                 <motion.div
-                  key={item.meal.id}
+                  key={item.meal.meal_id || item.meal.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -100 }}
@@ -134,7 +134,7 @@ export const Cart = ({ onBack, onCheckout }) => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeFromCart(item.meal.meal_id)}
+                          onClick={() => removeFromCart(item.meal.meal_id || item.meal.id)}
                           className="hover:bg-gray-100 rounded-lg"
                         >
                           <Trash2 className="w-4 h-4 text-gray-400" />
@@ -147,7 +147,7 @@ export const Cart = ({ onBack, onCheckout }) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => updateQuantity(item.meal.meal_id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.meal.meal_id || item.meal.id, item.quantity - 1)}
                             disabled={item.quantity <= 1}
                             className="h-8 w-8 hover:bg-white rounded-md"
                           >
@@ -157,7 +157,7 @@ export const Cart = ({ onBack, onCheckout }) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => updateQuantity(item.meal.meal_id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.meal.meal_id || item.meal.id, item.quantity + 1)}
                             className="h-8 w-8 hover:bg-white rounded-md"
                           >
                             <Plus className="w-4 h-4" />

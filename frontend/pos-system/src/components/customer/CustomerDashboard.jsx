@@ -91,7 +91,7 @@ export const CustomerDashboard = () => {
 
   const handleAddToCart = meal => {
     addToCart(meal);
-    toast.success(`${meal.meal_name} added to cart!`);
+    toast.success(`${meal.meal_name || meal.name} added to cart!`);
   };
 
   const handleLogoClick = () => setCurrentView('browse');
