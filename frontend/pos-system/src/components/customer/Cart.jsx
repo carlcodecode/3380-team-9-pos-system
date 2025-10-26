@@ -105,8 +105,8 @@ export const Cart = ({ onBack, onCheckout }) => {
                     {/* Image */}
                     <div className="w-28 h-28 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                       <ImageWithFallback
-                        src={item.meal.image}
-                        alt={item.meal.name}
+                        src={item.meal.img_url}
+                        alt={item.meal.meal_name}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -115,9 +115,9 @@ export const Cart = ({ onBack, onCheckout }) => {
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h3 className="text-black mb-1">{item.meal.name}</h3>
+                          <h3 className="text-black mb-1">{item.meal.meal_name}</h3>
                           <div className="flex flex-wrap gap-1.5 mb-2">
-                            {item.meal.type.map((type) => (
+                            {item.meal.meal_types.map((type) => (
                               <Badge
                                 key={type}
                                 variant="secondary"
@@ -128,13 +128,13 @@ export const Cart = ({ onBack, onCheckout }) => {
                             ))}
                           </div>
                           <p className="text-sm text-gray-500">
-                            {item.meal.calories} cal • {item.meal.protein}g protein
+                            {item.meal.nutrition_facts.calories} cal • {item.meal.nutrition_facts.protein}g protein • {item.meal.nutrition_facts.carbs}g carbs
                           </p>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeFromCart(item.meal.id)}
+                          onClick={() => removeFromCart(item.meal.meal_id)}
                           className="hover:bg-gray-100 rounded-lg"
                         >
                           <Trash2 className="w-4 h-4 text-gray-400" />
@@ -147,7 +147,7 @@ export const Cart = ({ onBack, onCheckout }) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => updateQuantity(item.meal.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.meal.meal_id, item.quantity - 1)}
                             disabled={item.quantity <= 1}
                             className="h-8 w-8 hover:bg-white rounded-md"
                           >
@@ -157,7 +157,7 @@ export const Cart = ({ onBack, onCheckout }) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => updateQuantity(item.meal.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.meal.meal_id, item.quantity + 1)}
                             className="h-8 w-8 hover:bg-white rounded-md"
                           >
                             <Plus className="w-4 h-4" />
@@ -165,10 +165,10 @@ export const Cart = ({ onBack, onCheckout }) => {
                         </div>
                         <div className="text-right">
                           <p className="text-xl text-black">
-                            ${(item.meal.price * item.quantity).toFixed(2)}
+                            ${(item.meal.price * item.quantity / 100).toFixed(2)}
                           </p>
                           {item.quantity > 1 && (
-                            <p className="text-sm text-gray-500">${item.meal.price} each</p>
+                            <p className="text-sm text-gray-500">${(item.meal.price / 100).toFixed(2)} each</p>
                           )}
                         </div>
                       </div>
@@ -228,23 +228,23 @@ export const Cart = ({ onBack, onCheckout }) => {
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex justify-between text-gray-500">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>${(subtotal / 100).toFixed(2)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-black">
                     <span>Discount</span>
-                    <span>-${discount.toFixed(2)}</span>
+                    <span>-${(discount / 100).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-gray-500">
                   <span>Tax (8%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>${(tax / 100).toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="flex justify-between mb-6">
                 <span className="text-black">Total</span>
-                <span className="text-2xl text-black">${total.toFixed(2)}</span>
+                <span className="text-2xl text-black">${(total / 100).toFixed(2)}</span>
               </div>
 
               <Button
