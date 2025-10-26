@@ -27,7 +27,10 @@ export const Profile = ({ onBack }) => {
     lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    address: user?.address || '',
+    street: user?.address || '',
+    city: user?.city || '',
+    stateCode: user?.state || '',
+    zipcode: user?.zipcode || '',
   });
 
   // State for add payment method form
@@ -68,7 +71,10 @@ export const Profile = ({ onBack }) => {
       lastName: user?.lastName || '',
       email: user?.email || '',
       phone: user?.phone || '',
-      address: user?.address || '',
+      street: user?.address || '',
+      city: user?.city || '',
+      stateCode: user?.state || '',
+      zipcode: user?.zipcode || '',
     });
     setEditProfileDialogOpen(true);
   };
@@ -90,6 +96,18 @@ export const Profile = ({ onBack }) => {
     // Phone validation (if provided)
     if (profileForm.phone && !/^\d{3}-\d{3}-\d{4}$/.test(profileForm.phone)) {
       toast.error('Phone number must be in format: 111-111-1111');
+      return;
+    }
+
+    // State code validation (if provided)
+    if (profileForm.stateCode && profileForm.stateCode.length !== 2) {
+      toast.error('State code must be 2 characters (e.g., TX, CA)');
+      return;
+    }
+
+    // Zipcode validation (if provided)
+    if (profileForm.zipcode && !/^\d{5}$/.test(profileForm.zipcode)) {
+      toast.error('Zipcode must be 5 digits');
       return;
     }
 
@@ -453,22 +471,76 @@ export const Profile = ({ onBack }) => {
                 type="tel"
                 placeholder="111-111-1111"
                 value={profileForm.phone}
-                onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                onChange={(e) => {
+                  // Auto-format phone number as user types
+                  let value = e.target.value.replace(/\D/g, '');
+                  if (value.length >= 6) {
+                    value = `${value.slice(0, 3)}-${value.slice(3, 6)}-${value.slice(6, 10)}`;
+                  } else if (value.length >= 3) {
+                    value = `${value.slice(0, 3)}-${value.slice(3)}`;
+                  }
+                  setProfileForm({ ...profileForm, phone: value });
+                }}
+                maxLength={12}
                 className="rounded-lg border-gray-200"
-                pattern="\d{3}-\d{3}-\d{4}"
               />
               <p className="text-xs text-gray-500">Format: 111-111-1111</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="street">Street Address</Label>
               <Input
-                id="address"
-                placeholder="123 Main St, City, State, ZIP"
-                value={profileForm.address}
-                onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                id="street"
+                placeholder="123 Main St"
+                value={profileForm.street}
+                onChange={(e) => setProfileForm({ ...profileForm, street: e.target.value.slice(0, 50) })}
+                maxLength={50}
                 className="rounded-lg border-gray-200"
               />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  placeholder="Houston"
+                  value={profileForm.city}
+                  onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value.slice(0, 50) })}
+                  maxLength={50}
+                  className="rounded-lg border-gray-200"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stateCode">State</Label>
+                <Input
+                  id="stateCode"
+                  placeholder="TX"
+                  value={profileForm.stateCode}
+                  onChange={(e) => setProfileForm({ 
+                    ...profileForm, 
+                    stateCode: e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2) 
+                  })}
+                  maxLength={2}
+                  className="rounded-lg border-gray-200"
+                />
+                <p className="text-xs text-gray-500">2 letters</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zipcode">Zipcode</Label>
+                <Input
+                  id="zipcode"
+                  placeholder="77001"
+                  value={profileForm.zipcode}
+                  onChange={(e) => setProfileForm({ 
+                    ...profileForm, 
+                    zipcode: e.target.value.replace(/\D/g, '').slice(0, 5) 
+                  })}
+                  maxLength={5}
+                  className="rounded-lg border-gray-200"
+                />
+                <p className="text-xs text-gray-500">5 digits</p>
+              </div>
             </div>
           </div>
 

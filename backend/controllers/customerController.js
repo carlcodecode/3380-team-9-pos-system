@@ -48,16 +48,16 @@ export const updateCustomerProfile = async (req, res) => {
   
   try {
     const customerId = req.user.customerId;
-    const { firstName, lastName, email, phone, address } = req.body;
+    const { firstName, lastName, email, phone, street, city, stateCode, zipcode } = req.body;
 
     await connection.beginTransaction();
 
-    // Update CUSTOMER table
+    // Update CUSTOMER table with separate address fields
     await connection.query(
       `UPDATE CUSTOMER 
-       SET first_name = ?, last_name = ?, street = ?, phone_number = ?
+       SET first_name = ?, last_name = ?, street = ?, city = ?, state_code = ?, zipcode = ?, phone_number = ?
        WHERE customer_id = ?`,
-      [firstName, lastName, address || null, phone || null, customerId]
+      [firstName, lastName, street || null, city || null, stateCode || null, zipcode || null, phone || null, customerId]
     );
 
     // Update USER_ACCOUNT table (email)
@@ -72,7 +72,7 @@ export const updateCustomerProfile = async (req, res) => {
 
     // Fetch updated customer data
     const [customers] = await pool.query(
-      `SELECT c.customer_id, c.first_name, c.last_name, c.street, c.phone_number,
+      `SELECT c.customer_id, c.first_name, c.last_name, c.street, c.city, c.state_code, c.zipcode, c.phone_number,
               c.loyalty_points, c.total_amount_spent, u.email, u.username
        FROM CUSTOMER c
        JOIN USER_ACCOUNT u ON c.user_ref = u.user_id
@@ -91,6 +91,9 @@ export const updateCustomerProfile = async (req, res) => {
       firstName: customer.first_name,
       lastName: customer.last_name,
       address: customer.street,
+      city: customer.city,
+      state: customer.state_code,
+      zipcode: customer.zipcode,
       phone: customer.phone_number,
       role: 'customer',
       loyaltyPoints: customer.loyalty_points,
