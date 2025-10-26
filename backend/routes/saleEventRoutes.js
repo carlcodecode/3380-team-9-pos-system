@@ -18,7 +18,7 @@ export default function saleEventRoutes(req, res, pathname, method) {
   }
 
   if (pathname === '/api/sale-events' && method === 'GET') {
-    return withStaffAuth(() => getAllSaleEvents(req, res));
+    return getAllSaleEvents(req, res);
   }
 
   // Single sale event with ID

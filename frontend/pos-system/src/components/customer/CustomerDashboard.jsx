@@ -27,10 +27,11 @@ export const CustomerDashboard = () => {
   const [loadingMeals, setLoadingMeals] = useState(true);
   const [mealCategories, setMealCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [saleEvents, setSaleEvents] = useState([]);
 
   useEffect(() => {
     fetchPromotions();
-    fetchMeals();
+    fetchMealsAndSales();
     fetchMealCategories();
   }, []);
 
@@ -50,30 +51,44 @@ export const CustomerDashboard = () => {
     }
   };
 
-  const fetchMeals = async () => {
-    try {
-      setLoadingMeals(true);
-      const data = await api.getAllMeals();
+    const fetchMealsAndSales = async () => {
+      try {
+        setLoadingMeals(true);
+        const [mealsData, saleEventData] = await Promise.all([
+          api.getAllMeals(),
+          api.getAllSaleEvents(),
+        ]);
 
-      // Normalize meal_types (JSON string → array)
-      const normalizedMeals = (data || []).filter(meal => meal.meal_status === 1).map(meal => ({
-        ...meal,
-        meal_types: Array.isArray(meal.meal_types)
-          ? meal.meal_types
-          : typeof meal.meal_types === 'string'
-          ? JSON.parse(meal.meal_types)
-          : [],
-      }));
+        const activeSales = (saleEventData.sale_events || saleEventData || []).filter(event => {
+          const now = new Date();
+          const start = new Date(event.event_start);
+          const end = new Date(event.event_end);
+          return now >= start && now <= end;
+        });
 
-      setMeals(normalizedMeals);
-    } catch (error) {
-      console.error('Failed to load meals:', error);
-      toast.error('Failed to load meals');
-      setMeals([]);
-    } finally {
-      setLoadingMeals(false);
-    }
-  };
+        setSaleEvents(activeSales);
+
+        // Normalize meal_types
+        const normalizedMeals = (mealsData || [])
+          .filter(meal => meal.meal_status === 1)
+          .map(meal => ({
+            ...meal,
+            meal_types: Array.isArray(meal.meal_types)
+              ? meal.meal_types
+              : typeof meal.meal_types === 'string'
+              ? JSON.parse(meal.meal_types)
+              : [],
+          }));
+
+        setMeals(normalizedMeals);
+      } catch (error) {
+        console.error('Failed to load meals or sales:', error);
+        toast.error('Failed to load meals or sale events');
+        setMeals([]);
+      } finally {
+        setLoadingMeals(false);
+      }
+    };
 
   const fetchMealCategories = async () => {
     try {
@@ -95,6 +110,35 @@ export const CustomerDashboard = () => {
   };
 
   const handleLogoClick = () => setCurrentView('browse');
+
+  const calculateDiscountedPrice = (meal) => {
+  let bestEvent = null;
+  let highestDiscount = 0;
+
+  for (const event of saleEvents) {
+    if (!Array.isArray(event.meals)) continue;
+
+    const mealSale = event.meals.find(m => m.meal_ref === meal.meal_id);
+    if (mealSale) {
+      const rate = mealSale.discount_rate;
+      if (rate > highestDiscount) {
+        highestDiscount = rate;
+        bestEvent = {
+          name: event.event_name,
+          discountRate: rate,
+        };
+      }
+    }
+  }
+
+  if (bestEvent) {
+    const discountedPrice = meal.price * (1 - highestDiscount / 100);
+    return { discountedPrice, event: bestEvent };
+  }
+
+  return null;
+};
+
 
   const filteredMeals = meals.filter(meal => {
     const search = searchQuery.toLowerCase();
@@ -342,13 +386,16 @@ export const CustomerDashboard = () => {
 
         {/* Meals grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMeals.map(meal => (
-            <MealCard
-              key={meal.meal_id}
-              meal={meal}
-              onAddToCart={handleAddToCart}
-            />
-          ))}
+          {filteredMeals.map(meal => {
+            const discountInfo = calculateDiscountedPrice(meal);
+            return (
+              <MealCard
+                key={meal.meal_id}
+                meal={{ ...meal, discountInfo }}
+                onAddToCart={handleAddToCart}
+              />
+            );
+          })}
         </div>
 
         {filteredMeals.length === 0 && (
