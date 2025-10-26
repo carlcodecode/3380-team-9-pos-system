@@ -217,6 +217,16 @@ export const deleteMeal = async (id) => {
 };
 
 // ==============================
+// MEAL TYPE MANAGEMENT
+// ==============================
+
+export const getAllMealCategories = async () => {
+  const res = await fetch(`${API_BASE_URL}/meal-categories`);
+  if (!res.ok) throw new Error('Failed to load meal categories');
+  return res.json();
+};
+
+// ==============================
 // PROMOTION MANAGEMENT
 // ==============================
 export const getAllPromos = async () => {
