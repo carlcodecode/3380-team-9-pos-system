@@ -20,7 +20,7 @@ export const MealManagement = () => {
         setLoading(true);
         const [mealsData, salesData] = await Promise.all([
           api.getAllMeals(),
-          api.getAllSaleEvents(), // Fetch from your SALE_EVENT controller
+          api.getAllSaleEvents(),
         ]);
 
         console.log('getAllMeals() result:', mealsData);
@@ -39,9 +39,11 @@ export const MealManagement = () => {
     fetchMealsAndSales();
   }, []);
 
-  // Compute discount from active sale events
+  // Compute only the highest active discount
   const calculateDiscountedPrice = (meal) => {
     const now = new Date();
+    let highestDiscount = 0;
+    let bestEvent = null;
 
     for (const event of saleEvents) {
       const start = new Date(event.event_start);
@@ -50,13 +52,16 @@ export const MealManagement = () => {
 
       if (isActive && Array.isArray(event.meals)) {
         const mealSale = event.meals.find((m) => m.meal_ref === meal.meal_id);
-
-        if (mealSale) {
-          const discountRate = mealSale.discount_rate;
-          const discountedPrice = meal.price * (1 - discountRate / 100);
-          return discountedPrice;
+        if (mealSale && mealSale.discount_rate > highestDiscount) {
+          highestDiscount = mealSale.discount_rate;
+          bestEvent = event;
         }
       }
+    }
+
+    if (highestDiscount > 0 && bestEvent) {
+      const discountedPrice = meal.price * (1 - highestDiscount / 100);
+      return { discountedPrice, event: bestEvent };
     }
 
     return null;
@@ -118,7 +123,7 @@ export const MealManagement = () => {
 
       <div className="grid md:grid-cols-2 gap-4">
         {meals.map((meal) => {
-          const discountedPrice = calculateDiscountedPrice(meal);
+          const discountInfo = calculateDiscountedPrice(meal);
 
           return (
             <div
@@ -136,14 +141,21 @@ export const MealManagement = () => {
                 </div>
 
                 <div className="text-sm text-gray-500 mb-2">
-                  {discountedPrice ? (
+                  {discountInfo ? (
                     <>
                       <span className="line-through text-gray-400">
                         ${(meal.price / 100).toFixed(2)}
                       </span>
                       <span className="price-spacing text-black font-semibold">
-                          ${(discountedPrice / 100).toFixed(2)}
+                        ${(discountInfo.discountedPrice / 100).toFixed(2)}
                       </span>
+                      <Badge className="price-spacing bg-black text-white border-0 text-xs">
+                        {discountInfo.event.event_name} –{' '}
+                        {discountInfo.event.meals.find(
+                          (m) => m.meal_ref === meal.meal_id
+                        )?.discount_rate ?? 0}
+                        % OFF
+                      </Badge>
                     </>
                   ) : (
                     <span>${(meal.price / 100).toFixed(2)}</span>
