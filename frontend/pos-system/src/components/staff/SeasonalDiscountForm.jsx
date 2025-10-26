@@ -231,19 +231,24 @@ export const SeasonalDiscountForm = ({ open, onClose, onSave, discount }) => {
               {formData.applicableMeals.map((mealId) => {
                 const meal = meals.find((m) => m.meal_id.toString() === mealId);
                 return (
-                  <Badge
+                    <Badge
                     key={mealId}
                     className="bg-black text-white flex items-center gap-1 pr-2 pl-3 rounded-lg"
-                  >
+                    >
                     {meal ? meal.meal_name : `Meal ${mealId}`}
-                    <X
-                      size={14}
-                      className="cursor-pointer hover:text-gray-300 ml-1"
-                      onClick={() => handleRemoveMeal(mealId)}
-                    />
-                  </Badge>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                        e.stopPropagation(); // Prevent interference
+                        handleRemoveMeal(mealId);
+                        }}
+                        className="ml-1 hover:text-gray-300 cursor-pointer flex items-center"
+                    >
+                        <X size={14} />
+                    </button>
+                    </Badge>
                 );
-              })}
+                })}
             </div>
           </div>
 
