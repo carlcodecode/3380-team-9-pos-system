@@ -286,6 +286,65 @@ export const deletePromo = async (id) => {
 };
 
 // ==============================
+// SEASONAL DISCOUNT / SALE EVENT MANAGEMENT
+// ==============================
+export const getAllSaleEvents = async () => {
+  const res = await fetch(`${API_BASE_URL}/sale-events`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load sale events');
+  return res.json();
+};
+
+export const getSaleEventById = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/sale-events/${id}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get sale event');
+  return res.json();
+};
+
+export const createSaleEvent = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/sale-events`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (![200, 201].includes(res.status)) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to create sale event');
+  }
+  return res.json();
+};
+
+export const updateSaleEvent = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/sale-events/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to update sale event');
+  }
+  return res.json();
+};
+
+export const deleteSaleEvent = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/sale-events/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to delete sale event');
+  }
+  return res.json();
+};
+
+// ==============================
 // CUSTOMER PROFILE & PAYMENT METHODS
 // ==============================
 export const getCustomerProfile = async () => {
