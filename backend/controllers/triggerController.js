@@ -84,42 +84,6 @@ export const getLowStockAlerts = async (req, res) => {
   }
 };
 
-
-    // Parse JSON payload for frontend with error handling
-    const alerts = rows.map((row) => {
-      try {
-        // payload_json is already an object, no need to parse
-        const payload =
-          typeof row.payload_json === 'string'
-            ? JSON.parse(row.payload_json)
-            : row.payload_json || {};
-
-        return {
-          event_id: row.event_id,
-          event_type: row.event_type,
-          created_at: row.created_at,
-          meal_name: row.meal_name,
-          ...payload,
-        };
-      } catch (parseError) {
-        console.error('Error parsing payload for row:', row.event_id, parseError);
-        // Return a basic alert object if parsing fails
-        return {
-          event_id: row.event_id,
-          event_type: row.event_type,
-          created_at: row.created_at,
-          meal_name: row.meal_name,
-        };
-      }
-    });
-
-    return res.json(alerts);
-  } catch (error) {
-    console.error('Error fetching low stock alerts:', error);
-    return res.status(500).json({ error: 'Failed to fetch low stock alerts' });
-  }
-};
-
 export const markAlertResolved = async (req, res) => {
   try {
     const { eventId } = req.params;
