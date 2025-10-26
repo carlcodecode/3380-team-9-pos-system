@@ -4,7 +4,7 @@ import pool from '../config/database.js';
 const formatAlerts = (rows) => {
   return rows.map((row) => {
     try {
-      const_payload =
+      const payload =
         typeof row.payload_json === 'string'
           ? JSON.parse(row.payload_json)
           : row.payload_json || {};
@@ -16,7 +16,7 @@ const formatAlerts = (rows) => {
         meal_name: row.meal_name,
         ref_order_id: row.ref_order_id,
         resolved: !!row.resolved,
-        ..._payload,
+        ...payload,
       };
     } catch (e) {
       console.error('Error parsing payload for row:', row.event_id, e);
