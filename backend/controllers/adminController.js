@@ -406,11 +406,11 @@ export const deleteStaff = async (req, res) => {
 
 		// Check if staff user exists
 		const [existingStaff] = await connection.query(`
-SELECT ua.user_id
-FROM USER_ACCOUNT ua
-JOIN STAFF s ON ua.user_id = s.user_ref
-WHERE ua.user_id = ? AND ua.user_role = 1
-`, [id]);
+ SELECT ua.user_id
+ FROM USER_ACCOUNT ua
+ JOIN STAFF s ON ua.user_id = s.user_ref
+ WHERE ua.user_id = ? AND ua.user_role = 1
+ `, [id]);
 
 		if (existingStaff.length === 0) {
 			await connection.rollback();
@@ -433,5 +433,123 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 		res.json({ error: 'Failed to delete staff user', details: error.message }, 500);
 	} finally {
 		connection.release();
+	}
+};
+
+// Get Staff/Meal Created report
+export const getStaffMealCreatedReport = async (req, res) => {
+	try {
+		const { start_date, end_date, staff_id } = req.query || {};
+
+		let query = `
+			SELECT
+				staff_id,
+				first_name,
+				last_name,
+				activity_type,
+				meal_id,
+				meal_name,
+				meal_description,
+				meal_status,
+				price_cents,
+				cost_cents,
+				activity_timestamp
+			FROM v_staff_activity
+			WHERE activity_type = 'CREATED'
+		`;
+
+		const params = [];
+
+		if (start_date) {
+			query += ' AND activity_timestamp >= ?';
+			params.push(start_date);
+		}
+
+		if (end_date) {
+			query += ' AND activity_timestamp <= ?';
+			params.push(end_date);
+		}
+
+		if (staff_id) {
+			query += ' AND staff_id = ?';
+			params.push(parseInt(staff_id));
+		}
+
+		query += ' ORDER BY activity_timestamp DESC';
+
+		const [results] = await pool.query(query, params);
+
+		res.json({
+			report: 'Staff Meal Created',
+			filters: { start_date, end_date, staff_id },
+			data: results,
+			count: results.length
+		});
+
+	} catch (error) {
+		console.error('Get staff meal created report error:', error);
+		res.status(500).json({
+			error: 'Failed to retrieve staff meal created report',
+			details: error.message
+		});
+	}
+};
+
+// Get Staff/Meal Updated report
+export const getStaffMealUpdatedReport = async (req, res) => {
+	try {
+		const { start_date, end_date, staff_id } = req.query || {};
+
+		let query = `
+			SELECT
+				staff_id,
+				first_name,
+				last_name,
+				activity_type,
+				meal_id,
+				meal_name,
+				meal_description,
+				meal_status,
+				price_cents,
+				cost_cents,
+				activity_timestamp
+			FROM v_staff_activity
+			WHERE activity_type = 'UPDATED'
+		`;
+
+		const params = [];
+
+		if (start_date) {
+			query += ' AND activity_timestamp >= ?';
+			params.push(start_date);
+		}
+
+		if (end_date) {
+			query += ' AND activity_timestamp <= ?';
+			params.push(end_date);
+		}
+
+		if (staff_id) {
+			query += ' AND staff_id = ?';
+			params.push(parseInt(staff_id));
+		}
+
+		query += ' ORDER BY activity_timestamp DESC';
+
+		const [results] = await pool.query(query, params);
+
+		res.json({
+			report: 'Staff Meal Updated',
+			filters: { start_date, end_date, staff_id },
+			data: results,
+			count: results.length
+		});
+
+	} catch (error) {
+		console.error('Get staff meal updated report error:', error);
+		res.status(500).json({
+			error: 'Failed to retrieve staff meal updated report',
+			details: error.message
+		});
 	}
 };

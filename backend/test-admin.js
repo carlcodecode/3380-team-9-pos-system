@@ -142,5 +142,40 @@ const invalidCreateData = { firstName: 'Invalid' }; // Missing email, username, 
 const invalidCreateResult = await makeRequest('/api/admin/staff', 'POST', invalidCreateData, adminToken);
 console.log(`   Status: ${invalidCreateResult.status}`);
 console.log(`   Response:`, invalidCreateResult.data);
+console.log('');
+
+// Test 10: Get Staff/Meal Created report
+console.log('10. Testing GET /api/admin/reports/staff-meal-created (get staff meal created report)...');
+const createdReportResult = await makeRequest('/api/admin/reports/staff-meal-created', 'GET', null, adminToken);
+console.log(`   Status: ${createdReportResult.status}`);
+console.log(`   Response:`, createdReportResult.data);
+console.log('');
+
+// Test 11: Get Staff/Meal Updated report
+console.log('11. Testing GET /api/admin/reports/staff-meal-updated (get staff meal updated report)...');
+const updatedReportResult = await makeRequest('/api/admin/reports/staff-meal-updated', 'GET', null, adminToken);
+console.log(`   Status: ${updatedReportResult.status}`);
+console.log(`   Response:`, updatedReportResult.data);
+console.log('');
+
+// Test 12: Get Staff/Meal Created report with date filters
+console.log('12. Testing GET /api/admin/reports/staff-meal-created with date filters...');
+const createdReportWithFiltersResult = await makeRequest('/api/admin/reports/staff-meal-created?start_date=2025-01-01&end_date=2025-12-31', 'GET', null, adminToken);
+console.log(`   Status: ${createdReportWithFiltersResult.status}`);
+console.log(`   Response:`, createdReportWithFiltersResult.data);
+console.log('');
+
+// Test 13: Get Staff/Meal Updated report with staff_id filter
+console.log('13. Testing GET /api/admin/reports/staff-meal-updated with staff_id filter...');
+const updatedReportWithStaffFilterResult = await makeRequest('/api/admin/reports/staff-meal-updated?staff_id=1', 'GET', null, adminToken);
+console.log(`   Status: ${updatedReportWithStaffFilterResult.status}`);
+console.log(`   Response:`, updatedReportWithStaffFilterResult.data);
+console.log('');
+
+// Test 14: Error cases - Try to access reports without authentication
+console.log('14. Testing GET /api/admin/reports/staff-meal-created without authentication...');
+const noAuthReportResult = await makeRequest('/api/admin/reports/staff-meal-created', 'GET');
+console.log(`   Status: ${noAuthReportResult.status}`);
+console.log(`   Response:`, noAuthReportResult.data);
 
 console.log('\nAll admin endpoint tests completed!');
