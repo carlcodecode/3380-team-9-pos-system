@@ -1165,6 +1165,10 @@
     background-color: var(--destructive);
   }
 
+  .bg-red-50 {
+    background-color: var(--color-red-50);
+  }
+
   .bg-gray-50 {
     background-color: var(--color-gray-50);
   }
@@ -1704,6 +1708,21 @@
       background-color: var(--accent);
     }
   }
+
+  @media (hover: hover) {
+    .hover\:bg-red-50:hover {
+      background-color: var(--color-red-50, #fef2f2);
+    }
+
+    .hover\:border-red-300:hover {
+      border-color: var(--color-red-300, #fca5a5);
+    }
+
+    .hover\:text-red-600:hover {
+      color: var(--color-red-600, #dc2626);
+    }
+  }
+
 
   @media (hover: hover) {
     .hover\:bg-black:hover {
