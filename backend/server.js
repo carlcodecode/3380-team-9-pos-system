@@ -3,6 +3,7 @@ import url from 'url';
 import pool, { testConnection } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import customerRoutes from './routes/customerRoutes.js';
 import mealRoutes from './routes/mealRoutes.js';
 import mealCategoryRoutes from './routes/mealCategoryRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
@@ -71,6 +72,85 @@ function loggingMiddleware(req) {
 // ============ ROUTING SYSTEM ============
 
 function handleRequest(req, res) {
+  // Parse URL
+  const parsedUrl = url.parse(req.url, true);
+  const pathname = parsedUrl.pathname;
+  const method = req.method;
+
+  // Enhanced response methods
+  res.json = (data, statusCode = 200) => {
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(data));
+  };
+
+  res.status = (code) => {
+    res.statusCode = code;
+    return res;
+  };
+
+  // CORS handling
+  if (corsMiddleware(req, res)) {
+    return; // Preflight request handled
+  }
+
+  // Request logging
+  loggingMiddleware(req);
+
+  // Parse JSON body
+  jsonParserMiddleware(req, (error) => {
+    if (error) {
+      return res.json({ error: 'Invalid JSON' }, 400);
+    }
+
+    // Route handling
+    try {
+      // Auth routes
+      if (pathname.startsWith('/api/auth')) {
+        return authRoutes(req, res, pathname, method);
+      }
+
+      // Admin routes
+      if (pathname.startsWith('/api/admin')) {
+        return adminRoutes(req, res, pathname, method);
+      }
+
+      // Customer routes
+      if (pathname.startsWith('/api/customers')) {
+        return customerRoutes(req, res, pathname, method);
+      }
+
+      // Meal routes
+      if (pathname.startsWith('/api/meals')) {
+        return mealRoutes(req, res, pathname, method);
+      }
+
+      // Meal category routes
+      if (pathname.startsWith('/api/meal-categories')) {
+        return mealCategoryRoutes(req, res, pathname, method);
+      }
+
+      // Stock routes
+      if (pathname.startsWith('/api/stocks')) {
+        return stockRoutes(req, res, pathname, method);
+      }
+
+      // Promo routes
+      if (pathname.startsWith('/api/promotions')) {
+        return promoRoutes(req, res, pathname, method);
+      }
+
+      // Health check
+      if (pathname === '/api/health' && method === 'GET') {
+        return handleHealthCheck(req, res);
+      }
+
+      // 404 handler
+      res.json({ error: 'Route not found' }, 404);
+    } catch (error) {
+      console.error('Server error:', error);
+      res.json({ error: 'Internal server error' }, 500);
+    }
+  });
 	// Parse URL
 	const parsedUrl = url.parse(req.url, true);
 	const pathname = parsedUrl.pathname;

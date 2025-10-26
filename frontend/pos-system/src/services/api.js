@@ -276,6 +276,56 @@ export const deletePromo = async (id) => {
 };
 
 // ==============================
+// CUSTOMER PROFILE & PAYMENT METHODS
+// ==============================
+export const getCustomerProfile = async () => {
+  const res = await fetch(`${API_BASE_URL}/customers/profile`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get customer profile');
+  return res.json();
+};
+
+export const updateCustomerProfile = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/customers/profile`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update customer profile');
+  return res.json();
+};
+
+export const getPaymentMethods = async () => {
+  const res = await fetch(`${API_BASE_URL}/customers/payment-methods`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get payment methods');
+  return res.json();
+};
+
+export const addPaymentMethod = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/customers/payment-methods`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to add payment method');
+  return res.json();
+};
+
+export const deletePaymentMethod = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/customers/payment-methods/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete payment method');
+  return res.json();
+};
+
+// ==============================
 // Token helper
 // ==============================
 export const getToken = () => localStorage.getItem('token');

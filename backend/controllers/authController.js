@@ -9,7 +9,7 @@ export const register = async (req, res) => {
   const connection = await pool.getConnection();
 
   try {
-    const { email, password, firstName, lastName, username } = req.body;
+    const { email, password, firstName, lastName, username, address, phoneNumber } = req.body;
 
     // Validation
     if (!email || !password || !username) {
@@ -50,10 +50,10 @@ export const register = async (req, res) => {
 
     const userId = userResult.insertId;
 
-    // Insert into CUSTOMER table
+    // Insert into CUSTOMER table with street (using address as street) and phone
     const [customerResult] = await connection.query(
-      'INSERT INTO CUSTOMER (user_ref, first_name, last_name, loyalty_points, total_amount_spent, refunds_per_month) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, firstName || '', lastName || '', 0, 0, 0]
+      'INSERT INTO CUSTOMER (user_ref, first_name, last_name, street, phone_number, loyalty_points, total_amount_spent, refunds_per_month) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, firstName || '', lastName || '', address || null, phoneNumber || null, 0, 0, 0]
     );
 
     await connection.commit();
@@ -135,7 +135,7 @@ export const login = async (req, res) => {
     // Get customer or staff data based on role
     if (role === 'customer') {
       const [customers] = await pool.query(
-        'SELECT customer_id, first_name, last_name FROM CUSTOMER WHERE user_ref = ?',
+        'SELECT customer_id, first_name, last_name, street, city, state_code, zipcode, phone_number FROM CUSTOMER WHERE user_ref = ?',
         [user.user_id]
       );
 
@@ -143,7 +143,9 @@ export const login = async (req, res) => {
         additionalData = {
           customerId: customers[0].customer_id,
           firstName: customers[0].first_name,
-          lastName: customers[0].last_name
+          lastName: customers[0].last_name,
+          address: customers[0].street || '', // Use street as address
+          phone: customers[0].phone_number
         };
       }
     } else if (role === 'staff' || role === 'admin') {
