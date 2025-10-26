@@ -38,7 +38,7 @@ const calculateDiscountedPrice = (meal) => {
   
   if (activeDiscount) {
     const discountedPrice = meal.price * (1 - activeDiscount.discountPercent / 100);
-    return discountedPrice.toFixed(2);
+    return (discountedPrice / 100).toFixed(2);
   }
   
   return null;
@@ -138,14 +138,14 @@ export const MealManagement = () => {
                 <div className="text-sm text-gray-500 mb-2">
                   {discountedPrice ? (
                     <>
-                      <span className="line-through text-gray-400">${meal.price / 100}</span>
-                      <span className="ml-2 text-black">${discountedPrice / 100}</span>
+                      <span className="line-through text-gray-400">${(meal.price / 100).toFixed(2)}</span>
+                      <span className="ml-2 text-black">${(discountedPrice / 100).toFixed(2)}</span>
                       <Badge className="ml-2 bg-black text-white border-0 text-xs">
                         Discounted
                       </Badge>
                     </>
                   ) : (
-                    <span>${meal.price / 100}</span>
+                    <span>${(meal.price / 100).toFixed(2)}</span>
                   )}
                 </div>
                 
