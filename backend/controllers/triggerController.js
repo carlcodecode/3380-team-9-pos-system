@@ -32,7 +32,7 @@ const formatAlerts = (rows) => {
   });
 };
 
-// Delivery alerts trigger
+// Delivery alerts
 export const getDeliveryAlerts = async (req, res) => {
   try {
     const [rows] = await pool.query(`
