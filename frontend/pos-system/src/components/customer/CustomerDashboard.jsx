@@ -17,7 +17,7 @@ import * as api from '../../services/api';
 
 export const CustomerDashboard = () => {
   const { user } = useAuth();
-  const { addToCart } = useCart();
+  const { cart, addToCart } = useCart();
   const [currentView, setCurrentView] = useState('browse');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -104,10 +104,24 @@ export const CustomerDashboard = () => {
     }
   };
 
-  const handleAddToCart = meal => {
-    addToCart(meal);
-    toast.success(`${meal.meal_name || meal.name} added to cart!`);
-  };
+const handleAddToCart = (meal) => {
+  const stock = meal.quantity_in_stock ?? meal.stock ?? 0;
+
+  // Find current quantity of this meal in cart
+  const existingItem = cart.find(
+    (item) => item.meal.meal_id === meal.meal_id
+  );
+  const currentQty = existingItem ? existingItem.quantity : 0;
+
+  if (currentQty + 1 > stock) {
+    toast.error(`Only ${stock} '${meal.meal_name}' left in stock!`);
+    return;
+  }
+
+  addToCart(meal);
+  toast.success(`${meal.meal_name || meal.name} added to cart!`);
+};
+
 
   const handleLogoClick = () => setCurrentView('browse');
 
@@ -202,7 +216,7 @@ export const CustomerDashboard = () => {
           onBack={() => setCurrentView('browse')}
           onReorder={items => {
             items.forEach(item => addToCart(item.meal));
-            toast.success('Items added to cart!');
+            //toast.success('Items added to cart!');
             setCurrentView('cart');
           }}
         />

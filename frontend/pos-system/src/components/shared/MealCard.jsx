@@ -4,12 +4,26 @@ import { Badge } from '../ui/badge';
 import { Plus, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { toast } from 'sonner';
 
 export const MealCard = ({ meal, onAddToCart }) => {
   const hasDiscount =
     meal.discountInfo &&
     meal.discountInfo.discountedPrice < meal.price &&
     meal.discountInfo.event;
+
+  // Safely get stock count (fallback to 0)
+  const stock = meal.quantity_in_stock ?? meal.stock ?? 0;
+
+  const handleAddToCart = () => {
+    if (stock <= 0) {
+      toast.error(`'${meal.meal_name || meal.name}' is out of stock!`);
+      return;
+    }
+
+    onAddToCart(meal);
+    //toast.success(`Added '${meal.meal_name || meal.name}' to cart!`);
+  };
 
   return (
     <motion.div
@@ -27,18 +41,24 @@ export const MealCard = ({ meal, onAddToCart }) => {
           />
 
           {/* Stock badge */}
-          {(meal.quantity_in_stock || meal.stock) < 10 && (
+          {stock <= 0 ? (
             <div className="absolute top-3 right-3">
-              <Badge className="bg-black text-white border-0">
-                Only {meal.quantity_in_stock || meal.stock} left
+              <Badge className="bg-red-600 text-white border-0">
+                Out of Stock
               </Badge>
             </div>
-          )}
+          ) : stock < 10 ? (
+            <div className="absolute top-3 right-3">
+              <Badge className="bg-black text-white border-0">
+                Only {stock} left
+              </Badge>
+            </div>
+          ) : null}
 
           {/* Rating */}
           <div className="absolute top-3 left-3 bg-white rounded-full px-2 py-1 flex items-center gap-1 shadow-sm">
             <Star className="w-3 h-3 fill-black text-black" />
-            <span className="text-xs">{meal.rating}</span>
+            <span className="text-xs">{meal.rating ?? ''}</span>
           </div>
         </div>
 
@@ -57,10 +77,7 @@ export const MealCard = ({ meal, onAddToCart }) => {
                 </Badge>
               ))
             ) : (
-              <Badge
-                variant="secondary"
-                className="text-xs bg-gray-100 text-black border-0"
-              >
+              <Badge variant="secondary" className="text-xs bg-gray-100 text-black border-0">
                 No types
               </Badge>
             )}
@@ -68,7 +85,9 @@ export const MealCard = ({ meal, onAddToCart }) => {
 
           {/* Name & Description */}
           <div>
-            <h3 className="text-black mb-1">{meal.meal_name || meal.name}</h3>
+            <h3 className="text-black mb-1 font-semibold">
+              {meal.meal_name || meal.name}
+            </h3>
             <p className="text-sm text-gray-500 line-clamp-2">
               {meal.meal_description || meal.description}
             </p>
@@ -77,11 +96,21 @@ export const MealCard = ({ meal, onAddToCart }) => {
           {/* Nutrition */}
           {meal.nutrition_facts && (
             <div className="flex items-center gap-3 text-xs text-gray-500 pb-3 border-b border-gray-200">
-              <span>{meal.nutrition_facts.calories} cal</span>
-              <span>•</span>
-              <span>{meal.nutrition_facts.protein}g protein</span>
-              <span>•</span>
-              <span>{meal.nutrition_facts.carbs}g carbs</span>
+              {meal.nutrition_facts.calories && (
+                <>
+                  <span>{meal.nutrition_facts.calories} cal</span>
+                  <span>•</span>
+                </>
+              )}
+              {meal.nutrition_facts.protein && (
+                <>
+                  <span>{meal.nutrition_facts.protein}g protein</span>
+                  <span>•</span>
+                </>
+              )}
+              {meal.nutrition_facts.carbs && (
+                <span>{meal.nutrition_facts.carbs}g carbs</span>
+              )}
             </div>
           )}
 
@@ -110,12 +139,20 @@ export const MealCard = ({ meal, onAddToCart }) => {
             </div>
 
             <Button
-              onClick={() => onAddToCart(meal)}
-              disabled={meal.meal_status === 'unavailable' || meal.status === 'unavailable'}
-              className="bg-black hover:bg-black text-white gap-2 rounded-lg btn-glossy"
+              onClick={handleAddToCart}
+              disabled={
+                meal.meal_status === 'unavailable' ||
+                meal.status === 'unavailable' ||
+                stock <= 0
+              }
+              className={`gap-2 rounded-lg btn-glossy transition-colors ${
+                stock <= 0
+                  ? 'bg-red-600 hover:bg-red-700 text-white cursor-not-allowed'
+                  : 'bg-black hover:bg-black text-white'
+              }`}
             >
               <Plus className="w-4 h-4" />
-              Add
+              {stock <= 0 ? 'No Stock' : 'Add'}
             </Button>
           </div>
         </div>
@@ -123,3 +160,4 @@ export const MealCard = ({ meal, onAddToCart }) => {
     </motion.div>
   );
 };
+

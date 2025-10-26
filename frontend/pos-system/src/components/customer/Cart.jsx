@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ArrowLeft, Minus, Plus, Trash2, Tag } from 'lucide-react';
 import { motion } from 'motion/react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 export const Cart = ({ onBack, onCheckout }) => {
@@ -44,6 +44,14 @@ export const Cart = ({ onBack, onCheckout }) => {
     } finally {
       setIsValidating(false);
     }
+  };
+
+  const handleIncrease = (mealId, currentQty, stock) => {
+    if (currentQty + 1 > stock) {
+      toast.warning(`Only ${stock} left in stock`);
+      return;
+    }
+    updateQuantity(mealId, currentQty + 1);
   };
 
   if (cart.length === 0) {
@@ -102,89 +110,101 @@ export const Cart = ({ onBack, onCheckout }) => {
 
             {/* Cart items list */}
             <div className="space-y-4">
-              {cart.map((item) => (
-                <motion.div
-                  key={item.meal.meal_id || item.meal.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  className="bg-white rounded-lg border border-gray-200 p-5 card-glow"
-                >
-                  <div className="flex gap-5">
-                    {/* Image */}
-                    <div className="w-28 h-28 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                      <ImageWithFallback
-                        src={item.meal.img_url}
-                        alt={item.meal.meal_name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+              {cart.map((item) => {
+                const stock = item.meal.quantity_in_stock ?? 0;
+                return (
+                  <motion.div
+                    key={item.meal.meal_id || item.meal.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -100 }}
+                    className="bg-white rounded-lg border border-gray-200 p-5 card-glow"
+                  >
+                    <div className="flex gap-5">
+                      {/* Image */}
+                      <div className="w-28 h-28 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        <ImageWithFallback
+                          src={item.meal.img_url}
+                          alt={item.meal.meal_name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
 
-                    {/* Details */}
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="text-black mb-1">{item.meal.meal_name}</h3>
-                          <div className="flex flex-wrap gap-1.5 mb-2">
-                            {item.meal.meal_types.map((type) => (
-                              <Badge
-                                key={type}
-                                variant="secondary"
-                                className="text-xs bg-gray-100 text-black border-0"
-                              >
-                                {type}
-                              </Badge>
-                            ))}
+                      {/* Details */}
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="text-black mb-1">{item.meal.meal_name}</h3>
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {item.meal.meal_types.map((type) => (
+                                <Badge
+                                  key={type}
+                                  variant="secondary"
+                                  className="text-xs bg-gray-100 text-black border-0"
+                                >
+                                  {type}
+                                </Badge>
+                              ))}
+                            </div>
+                            <p className="text-sm text-gray-500">
+                              {item.meal.nutrition_facts.calories} cal •{' '}
+                              {item.meal.nutrition_facts.protein}g protein •{' '}
+                              {item.meal.nutrition_facts.carbs}g carbs
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              In stock: {stock}
+                            </p>
                           </div>
-                          <p className="text-sm text-gray-500">
-                            {item.meal.nutrition_facts.calories} cal • {item.meal.nutrition_facts.protein}g protein • {item.meal.nutrition_facts.carbs}g carbs
-                          </p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeFromCart(item.meal.meal_id || item.meal.id)}
+                            className="hover:bg-gray-100 rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4 text-gray-400" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFromCart(item.meal.meal_id || item.meal.id)}
-                          className="hover:bg-gray-100 rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4 text-gray-400" />
-                        </Button>
-                      </div>
 
-                      {/* Price and quantity controls */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => updateQuantity(item.meal.meal_id || item.meal.id, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                            className="h-8 w-8 hover:bg-white rounded-md"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <span className="w-8 text-center text-black">{item.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => updateQuantity(item.meal.meal_id || item.meal.id, item.quantity + 1)}
-                            className="h-8 w-8 hover:bg-white rounded-md"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl text-black">
-                            ${(item.meal.price * item.quantity / 100).toFixed(2)}
-                          </p>
-                          {item.quantity > 1 && (
-                            <p className="text-sm text-gray-500">${(item.meal.price / 100).toFixed(2)} each</p>
-                          )}
+                        {/* Price and quantity controls */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => updateQuantity(item.meal.meal_id || item.meal.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                              className="h-8 w-8 hover:bg-white rounded-md"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </Button>
+                            <span className="w-8 text-center text-black">{item.quantity}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                handleIncrease(item.meal.meal_id || item.meal.id, item.quantity, stock)
+                              }
+                              className="h-8 w-8 hover:bg-white rounded-md"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl text-black">
+                              ${(item.meal.price * item.quantity / 100).toFixed(2)}
+                            </p>
+                            {item.quantity > 1 && (
+                              <p className="text-sm text-gray-500">
+                                ${(item.meal.price / 100).toFixed(2)} each
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 

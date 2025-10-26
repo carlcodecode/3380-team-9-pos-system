@@ -19,20 +19,25 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('bentoCart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (meal) => {
-    setCart(prevCart => {
-      const mealId = meal.meal_id || meal.id;
-      const existingItem = prevCart.find(item => (item.meal.meal_id || item.meal.id) === mealId);
-      if (existingItem) {
-        return prevCart.map(item =>
-          (item.meal.meal_id || item.meal.id) === mealId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prevCart, { meal, quantity: 1 }];
-    });
-  };
+const addToCart = (meal) => {
+  setCart(prevCart => {
+    const mealId = meal.meal_id || meal.id;
+    const existingItem = prevCart.find(
+      item => (item.meal.meal_id || item.meal.id) === mealId
+    );
+
+    if (existingItem) {
+      return prevCart.map(item =>
+        (item.meal.meal_id || item.meal.id) === mealId
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      );
+    }
+
+    return [...prevCart, { meal, quantity: 1 }];
+  });
+};
+
 
   const removeFromCart = (mealId) => {
     setCart(prevCart => prevCart.filter(item => (item.meal.meal_id || item.meal.id) !== mealId));
