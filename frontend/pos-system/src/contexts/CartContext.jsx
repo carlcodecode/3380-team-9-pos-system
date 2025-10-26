@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { validatePromoCode } from '../services/api';
 
 const CartContext = createContext(undefined);
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [appliedPromoCode, setAppliedPromoCode] = useState(null);
+  const [promoDetails, setPromoDetails] = useState(null);
 
   useEffect(() => {
     const savedCart = localStorage.getItem('bentoCart');
@@ -51,6 +53,7 @@ export const CartProvider = ({ children }) => {
   const clearCart = () => {
     setCart([]);
     setAppliedPromoCode(null);
+    setPromoDetails(null);
   };
 
   const getCartTotal = () => {
@@ -63,33 +66,34 @@ export const CartProvider = ({ children }) => {
     return cart.reduce((count, item) => count + item.quantity, 0);
   };
 
-  const applyPromoCode = (code) => {
-    // Mock promo codes
-    const validCodes = ['SPRING20', 'BOGO50', 'WELCOME10'];
-    if (validCodes.includes(code.toUpperCase())) {
-      setAppliedPromoCode(code.toUpperCase());
-      return true;
+  const applyPromoCode = async (code) => {
+    try {
+      const response = await validatePromoCode(code);
+      if (response.valid && response.promotion) {
+        setAppliedPromoCode(response.promotion.code);
+        setPromoDetails(response.promotion);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Promo code validation error:', error);
+      return false;
     }
-    return false;
   };
 
   const removePromoCode = () => {
     setAppliedPromoCode(null);
+    setPromoDetails(null);
   };
 
   const getDiscount = () => {
-    if (!appliedPromoCode) return 0;
+    if (!appliedPromoCode || !promoDetails) return 0;
     const subtotal = cart.reduce((total, item) => total + item.meal.price * item.quantity, 0);
     
-    if (appliedPromoCode === 'SPRING20') {
-      return subtotal * 0.2;
-    } else if (appliedPromoCode === 'WELCOME10') {
-      return subtotal * 0.1;
-    } else if (appliedPromoCode === 'BOGO50') {
-      // Simple BOGO 50% off calculation
-      return subtotal * 0.25;
-    }
-    return 0;
+    // promo_type is stored as integer in database (e.g., 20 for 20%)
+    // Need to divide by 100 to get the decimal percentage (20 / 100 = 0.20)
+    const discountRate = promoDetails.type / 100;
+    return Math.round(subtotal * discountRate);
   };
 
   return (
