@@ -189,59 +189,55 @@ export const OrderManagement = () => {
 
       {/* Order View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-black">Order Details - #{selectedOrder?.id}</DialogTitle>
-            <DialogDescription>
-              View and update order status
+            <DialogTitle className="text-black text-xl">Order #{selectedOrder?.id}</DialogTitle>
+            <DialogDescription className="flex items-center gap-2">
+              <Badge className={getStatusBadgeClass(selectedOrder?.orderStatus || 0)}>
+                {getStatusText(selectedOrder?.orderStatus || 0)}
+              </Badge>
+              <span className="text-gray-500">•</span>
+              <span>{selectedOrder?.orderDate ? new Date(selectedOrder.orderDate).toLocaleDateString() : ''}</span>
             </DialogDescription>
           </DialogHeader>
 
           {selectedOrder && (
-            <div className="space-y-6 py-4">
-              {/* Order Status */}
-              <div className="space-y-2">
-                <Label className="text-black">Current Status</Label>
-                <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-gray-500" />
-                  <Badge className={getStatusBadgeClass(selectedOrder.orderStatus)}>
-                    {getStatusText(selectedOrder.orderStatus)}
-                  </Badge>
+            <div className="space-y-4 py-2">
+              {/* Customer & Address Section */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Customer</div>
+                    <div className="text-black font-medium">{selectedOrder.customerName}</div>
+                    <div className="text-sm text-gray-500">{selectedOrder.customerEmail}</div>
+                  </div>
+                  {selectedOrder.shippingAddress && (selectedOrder.shippingAddress.street || selectedOrder.shippingAddress.city) && (
+                    <div className="flex-1">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Delivery Address</div>
+                      <div className="text-sm text-gray-700">
+                        {selectedOrder.shippingAddress.street && `${selectedOrder.shippingAddress.street}`}
+                        {selectedOrder.shippingAddress.city && `, ${selectedOrder.shippingAddress.city}`}
+                        {selectedOrder.shippingAddress.state && `, ${selectedOrder.shippingAddress.state}`}
+                        {selectedOrder.shippingAddress.zipcode && ` ${selectedOrder.shippingAddress.zipcode}`}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Order Date */}
-              <div className="space-y-2">
-                <Label className="text-black">Order Date</Label>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-700">
-                    {new Date(selectedOrder.orderDate).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Order Items */}
+              {/* Order Items Section */}
               {selectedOrder.items && selectedOrder.items.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-black">Order Items</Label>
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Order Items ({selectedOrder.items.length})</div>
                   <div className="space-y-2">
                     {selectedOrder.items.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        {item.imageUrl && (
-                          <img 
-                            src={item.imageUrl} 
-                            alt={item.mealName}
-                            className="w-12 h-12 object-cover rounded-lg"
-                          />
-                        )}
+                      <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-black">{item.mealName}</p>
-                          <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                          <div className="text-sm font-medium text-black">{item.mealName}</div>
+                          <div className="text-xs text-gray-500">Quantity: {item.quantity} × ${item.priceAtSale.toFixed(2)}</div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-black">${item.totalPrice.toFixed(2)}</p>
-                          <p className="text-xs text-gray-500">${item.priceAtSale.toFixed(2)} each</p>
+                          <div className="text-sm font-semibold text-black">${item.totalPrice.toFixed(2)}</div>
                         </div>
                       </div>
                     ))}
@@ -249,153 +245,108 @@ export const OrderManagement = () => {
                 </div>
               )}
 
-              {/* Order Breakdown */}
-              <div className="space-y-2">
-                <Label className="text-black">Order Breakdown</Label>
+              {/* Order Summary Section */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="text-xs text-gray-500 uppercase tracking-wide mb-3">Order Summary</div>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-sm text-gray-500">Subtotal:</span>
-                    <span className="text-sm font-medium text-black">${selectedOrder.unitPrice.toFixed(2)}</span>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-black">${selectedOrder.unitPrice.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-sm text-gray-500">Tax:</span>
-                    <span className="text-sm font-medium text-black">${selectedOrder.tax.toFixed(2)}</span>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Tax (8%)</span>
+                    <span className="text-black">${selectedOrder.tax.toFixed(2)}</span>
                   </div>
                   {selectedOrder.discount > 0 && (
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <span className="text-sm text-gray-500">Discount:</span>
-                      <span className="text-sm font-medium text-black">-${selectedOrder.discount.toFixed(2)}</span>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Discount</span>
+                      <span className="text-green-600">-${selectedOrder.discount.toFixed(2)}</span>
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Total */}
-              <div className="space-y-2">
-                <Label className="text-black">Total Amount</Label>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-gray-500" />
-                  <span className="text-lg font-semibold text-black">${selectedOrder.total.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Customer Info */}
-              <div className="space-y-2">
-                <Label className="text-black">Customer</Label>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">{selectedOrder.customerName}</span>
-                  </div>
-                  <div className="text-sm text-gray-500 ml-6">{selectedOrder.customerEmail}</div>
-                </div>
-              </div>
-
-              {/* Delivery Address */}
-              {selectedOrder.shippingAddress && (selectedOrder.shippingAddress.street || selectedOrder.shippingAddress.city) && (
-                <div className="space-y-2">
-                  <Label className="text-black">Delivery Address</Label>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
-                    <span className="text-sm text-gray-700">
-                      {selectedOrder.shippingAddress.street && `${selectedOrder.shippingAddress.street}, `}
-                      {selectedOrder.shippingAddress.city && `${selectedOrder.shippingAddress.city}, `}
-                      {selectedOrder.shippingAddress.state && `${selectedOrder.shippingAddress.state} `}
-                      {selectedOrder.shippingAddress.zipcode}
-                    </span>
+                  <div className="pt-2 border-t border-gray-200 flex justify-between">
+                    <span className="text-black font-semibold">Total</span>
+                    <span className="text-xl font-bold text-black">${selectedOrder.total.toFixed(2)}</span>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Notes */}
+              {/* Notes Section */}
               {selectedOrder.notes && (
-                <div className="space-y-2">
-                  <Label className="text-black">Customer Notes</Label>
-                  <div className="text-sm text-gray-700 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    {selectedOrder.notes}
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Customer Notes</div>
+                  <div className="text-sm text-gray-700 p-3 bg-gray-50 rounded-lg border border-gray-200 italic">
+                    "{selectedOrder.notes}"
                   </div>
                 </div>
               )}
 
-              {/* Update Status */}
-              <div className="space-y-3 pt-4 border-t border-gray-200">
-                <Label className="text-black">Update Order Status</Label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="orderStatus"
-                      value="0"
-                      checked={selectedStatus === 0}
-                      onChange={(e) => setSelectedStatus(parseInt(e.target.value))}
-                      className="w-4 h-4 text-black"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-black">Processing</div>
-                      <div className="text-xs text-gray-500">Order is being prepared</div>
-                    </div>
-                  </label>
+              {/* Update Status Section */}
+              <div className="pt-2">
+                <div className="text-xs text-gray-500 uppercase tracking-wide mb-3">Update Status</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setSelectedStatus(0)}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedStatus === 0
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-black">Processing</div>
+                    <div className="text-xs text-gray-500">Being prepared</div>
+                  </button>
 
-                  <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="orderStatus"
-                      value="2"
-                      checked={selectedStatus === 2}
-                      onChange={(e) => setSelectedStatus(parseInt(e.target.value))}
-                      className="w-4 h-4 text-black"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-black">Shipped</div>
-                      <div className="text-xs text-gray-500">Order has been shipped</div>
-                    </div>
-                  </label>
+                  <button
+                    onClick={() => setSelectedStatus(2)}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedStatus === 2
+                        ? 'border-gray-800 bg-gray-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-black">Shipped</div>
+                    <div className="text-xs text-gray-500">On the way</div>
+                  </button>
 
-                  <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="orderStatus"
-                      value="1"
-                      checked={selectedStatus === 1}
-                      onChange={(e) => setSelectedStatus(parseInt(e.target.value))}
-                      className="w-4 h-4 text-black"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-black">Delivered</div>
-                      <div className="text-xs text-gray-500">Order has been delivered to customer</div>
-                    </div>
-                  </label>
+                  <button
+                    onClick={() => setSelectedStatus(1)}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedStatus === 1
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-black">Delivered</div>
+                    <div className="text-xs text-gray-500">Completed</div>
+                  </button>
 
-                  <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="orderStatus"
-                      value="3"
-                      checked={selectedStatus === 3}
-                      onChange={(e) => setSelectedStatus(parseInt(e.target.value))}
-                      className="w-4 h-4 text-black"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-black">Refunded</div>
-                      <div className="text-xs text-gray-500">Order has been refunded</div>
-                    </div>
-                  </label>
+                  <button
+                    onClick={() => setSelectedStatus(3)}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedStatus === 3
+                        ? 'border-red-500 bg-red-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-black">Refunded</div>
+                    <div className="text-xs text-gray-500">Cancelled</div>
+                  </button>
                 </div>
               </div>
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               variant="outline"
               onClick={() => setIsViewDialogOpen(false)}
-              className="border-gray-300 text-gray-700 hover:bg-gray-100"
+              className="border-gray-200 hover:bg-gray-100 rounded-lg"
             >
               Cancel
             </Button>
             <Button
               onClick={handleUpdateStatus}
-              className="bg-black hover:bg-gray-800 text-white"
+              className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
               disabled={updating || selectedStatus === undefined || selectedStatus === selectedOrder?.orderStatus}
             >
               {updating ? 'Updating...' : 'Update Status'}

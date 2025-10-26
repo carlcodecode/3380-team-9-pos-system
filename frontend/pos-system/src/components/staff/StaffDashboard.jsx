@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { mockOrders, mockMeals } from '../../lib/mockData';
 import { Navbar } from '../shared/Navbar';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -32,6 +31,7 @@ export const StaffDashboard = () => {
   const [showRestockForm, setShowRestockForm] = useState(false);
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
       let isMounted = true;
@@ -62,6 +62,23 @@ export const StaffDashboard = () => {
       };
     }, []);
 
+  // Fetch orders for stats
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await api.getAllOrders();
+        setOrders(response.orders || []);
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+      }
+    };
+
+    fetchOrders();
+    // Auto-refresh every 5 seconds for real-time updates
+    const interval = setInterval(fetchOrders, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
     // ==============================
     // RESTOCK HANDLER
     // ==============================
@@ -90,11 +107,12 @@ export const StaffDashboard = () => {
       }
     };
 
+  // Calculate order stats from real data
   const todayOrders = {
-    pending: mockOrders.filter((o) => o.status === 'pending').length,
-    processing: mockOrders.filter((o) => o.status === 'processing').length,
-    shipped: mockOrders.filter((o) => o.status === 'shipped').length,
-    delivered: mockOrders.filter((o) => o.status === 'delivered').length,
+    processing: orders.filter((o) => o.orderStatus === 0).length,
+    delivered: orders.filter((o) => o.orderStatus === 1).length,
+    shipped: orders.filter((o) => o.orderStatus === 2).length,
+    refunded: orders.filter((o) => o.orderStatus === 3).length,
   };
 
   const [lowStockMeals, setLowStockMeals] = useState([]);
@@ -148,15 +166,7 @@ export const StaffDashboard = () => {
         >
           <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
             <div className="flex items-center gap-3 mb-3">
-              <Clock className="w-6 h-6 text-black" />
-              <span className="text-sm text-gray-500">Pending</span>
-            </div>
-            <div className="text-3xl text-black">{todayOrders.pending}</div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
-            <div className="flex items-center gap-3 mb-3">
-              <RefreshCw className="w-6 h-6 text-black" />
+              <RefreshCw className="w-6 h-6 text-blue-600" />
               <span className="text-sm text-gray-500">Processing</span>
             </div>
             <div className="text-3xl text-black">{todayOrders.processing}</div>
@@ -164,7 +174,7 @@ export const StaffDashboard = () => {
 
           <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
             <div className="flex items-center gap-3 mb-3">
-              <Truck className="w-6 h-6 text-black" />
+              <Truck className="w-6 h-6 text-gray-800" />
               <span className="text-sm text-gray-500">Shipped</span>
             </div>
             <div className="text-3xl text-black">{todayOrders.shipped}</div>
@@ -172,10 +182,18 @@ export const StaffDashboard = () => {
 
           <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
             <div className="flex items-center gap-3 mb-3">
-              <CheckCircle className="w-6 h-6 text-black" />
+              <CheckCircle className="w-6 h-6 text-green-600" />
               <span className="text-sm text-gray-500">Delivered</span>
             </div>
             <div className="text-3xl text-black">{todayOrders.delivered}</div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
+            <div className="flex items-center gap-3 mb-3">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+              <span className="text-sm text-gray-500">Refunded</span>
+            </div>
+            <div className="text-3xl text-black">{todayOrders.refunded}</div>
           </div>
         </motion.div>
 
