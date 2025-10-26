@@ -56,7 +56,7 @@ export const CustomerDashboard = () => {
       const data = await api.getAllMeals();
 
       // Normalize meal_types (JSON string → array)
-      const normalizedMeals = (data || []).map(meal => ({
+      const normalizedMeals = (data || []).filter(meal => meal.meal_status === 1).map(meal => ({
         ...meal,
         meal_types: Array.isArray(meal.meal_types)
           ? meal.meal_types
