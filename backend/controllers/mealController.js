@@ -244,6 +244,7 @@ export const updateMeal = async (req, res) => {
 
     await connection.beginTransaction();
 
+
     const [existingMeals] = await connection.query(
       'SELECT meal_id FROM MEAL WHERE meal_id = ?',
       [id]
