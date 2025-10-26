@@ -471,3 +471,34 @@ export const updateOrderStatus = async (id, status) => {
 // ==============================
 export const getToken = () => localStorage.getItem('token');
 export const removeToken = () => localStorage.removeItem('token');
+
+// ==============================
+// ADMIN REPORTS
+// ==============================
+export const getStaffMealCreatedReport = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.start_date) queryParams.append('start_date', params.start_date);
+  if (params.end_date) queryParams.append('end_date', params.end_date);
+  if (params.staff_id) queryParams.append('staff_id', params.staff_id);
+
+  const res = await fetch(`${API_BASE_URL}/admin/reports/staff-meal-created?${queryParams}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get staff meal created report');
+  return res.json();
+};
+
+export const getStaffMealUpdatedReport = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.start_date) queryParams.append('start_date', params.start_date);
+  if (params.end_date) queryParams.append('end_date', params.end_date);
+  if (params.staff_id) queryParams.append('staff_id', params.staff_id);
+
+  const res = await fetch(`${API_BASE_URL}/admin/reports/staff-meal-updated?${queryParams}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get staff meal updated report');
+  return res.json();
+};
