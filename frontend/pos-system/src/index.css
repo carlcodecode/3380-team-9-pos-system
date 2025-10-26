@@ -1723,6 +1723,53 @@
     }
   }
 
+  /* Green borders (active meals) */
+  .border-green-300 {
+    border-color: var(--color-green-300, #86efac);
+  }
+
+  @media (hover: hover) {
+    .hover\:border-green-400:hover {
+      border-color: var(--color-green-400, #4ade80);
+    }
+  }
+
+  /* Red borders (inactive meals) */
+  .border-red-300 {
+    border-color: var(--color-red-300, #fca5a5);
+  }
+
+  @media (hover: hover) {
+    .hover\:border-red-400:hover {
+      border-color: var(--color-red-400, #f87171);
+    }
+  }
+
+  .bg-green-50 {
+    background-color: var(--color-green-50, #f0fdf4);
+  }
+
+  .bg-red-50 {
+    background-color: var(--color-red-50, #fef2f2);
+  }
+
+  .text-green-800 {
+    color: var(--color-green-800, #166534);
+  }
+
+  .text-red-800 {
+    color: var(--color-red-800, #991b1b);
+  }
+
+  .line-through {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: #9ca3af; /* Tailwind gray-400 */
+}
+
+.price-spacing {
+  margin-left: 0.5rem; /* adjust as needed: 0.5rem, 0.75rem, 1rem, etc. */
+}
 
   @media (hover: hover) {
     .hover\:bg-black:hover {
