@@ -336,6 +336,62 @@ export const deletePaymentMethod = async (id) => {
 };
 
 // ==============================
+// ORDERS
+// ==============================
+export const createOrder = async (orderData) => {
+  const res = await fetch(`${API_BASE_URL}/orders`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(orderData),
+  });
+  
+  const data = await res.json();
+  
+  if (!res.ok) {
+    throw new Error(data.error || data.message || 'Failed to create order');
+  }
+  
+  return data;
+};
+
+export const getMyOrders = async () => {
+  const res = await fetch(`${API_BASE_URL}/orders/my-orders`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get orders');
+  return res.json();
+};
+
+export const getAllOrders = async () => {
+  const res = await fetch(`${API_BASE_URL}/orders`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get all orders');
+  return res.json();
+};
+
+export const getOrderById = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/orders/${id}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get order');
+  return res.json();
+};
+
+export const updateOrderStatus = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update order status');
+  return res.json();
+};
+
+// ==============================
 // Token helper
 // ==============================
 export const getToken = () => localStorage.getItem('token');

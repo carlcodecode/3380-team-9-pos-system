@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { mockOrders } from '../../lib/mockData';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { ArrowLeft, Package, RefreshCw, Eye, MapPin, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
+import { toast } from 'sonner@2.0.3';
+import * as api from '../../services/api';
 import {
   Dialog,
   DialogContent,
@@ -16,8 +17,38 @@ import {
 export const OrderHistory = ({ onBack, onReorder }) => {
   const { user } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const userOrders = mockOrders.filter((order) => order.customerId === user?.id);
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getMyOrders();
+      setOrders(data.orders || []);
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      toast.error('Failed to load order history');
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusText = (statusCode) => {
+    switch(statusCode) {
+      case 0: return 'pending';
+      case 1: return 'processing';
+      case 2: return 'shipped';
+      case 3: return 'delivered';
+      case 4: return 'cancelled';
+      case 5: return 'refunded';
+      default: return 'unknown';
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -62,7 +93,11 @@ export const OrderHistory = ({ onBack, onReorder }) => {
           >
             <h1 className="text-black mb-8">Order History</h1>
 
-            {userOrders.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-16">
+                <p className="text-gray-500">Loading orders...</p>
+              </div>
+            ) : orders.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
                   <Package className="w-10 h-10 text-gray-400" />
@@ -78,11 +113,11 @@ export const OrderHistory = ({ onBack, onReorder }) => {
               </div>
             ) : (
               <div className="space-y-4">
-                {userOrders
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .map((order) => (
+                {orders.map((order) => {
+                  const status = getStatusText(order.order_status);
+                  return (
                     <motion.div
-                      key={order.id}
+                      key={order.order_id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-white rounded-lg border border-gray-200 p-6 card-glow"
@@ -90,57 +125,65 @@ export const OrderHistory = ({ onBack, onReorder }) => {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div>
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-black">Order #{order.id}</h3>
-                            <Badge className={`${getStatusColor(order.status)} border-0 flex items-center gap-1.5`}>
-                              {getStatusIcon(order.status)}
-                              {order.status}
+                            <h3 className="text-black">Order #{order.order_id}</h3>
+                            <Badge className={`${getStatusColor(status)} border-0 flex items-center gap-1.5`}>
+                              {getStatusIcon(status)}
+                              {status}
                             </Badge>
                           </div>
                           <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1.5">
                               <Clock className="w-4 h-4" />
-                              {new Date(order.date).toLocaleDateString()}
+                              {new Date(order.order_date).toLocaleDateString()}
                             </span>
-                            {order.deliveryDate && (
+                            {order.shipping_street && (
                               <span className="flex items-center gap-1.5">
-                                <Package className="w-4 h-4" />
-                                Delivered {new Date(order.deliveryDate).toLocaleDateString()}
+                                <MapPin className="w-4 h-4" />
+                                {order.shipping_city}, {order.shipping_state_code}
                               </span>
                             )}
-                            <span className="flex items-center gap-1.5">
-                              <MapPin className="w-4 h-4" />
-                              {order.address}
-                            </span>
+                            <span className="text-black">${(order.total / 100).toFixed(2)}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right md:mr-4">
-                            <p className="text-sm text-gray-500 mb-1">{order.items.length} items</p>
-                            <p className="text-xl text-black">${order.total.toFixed(2)}</p>
-                          </div>
-                          <div className="flex gap-2">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedOrder(order)}
+                            className="border-gray-200 hover:bg-gray-100 rounded-lg"
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </Button>
+                          {(status === 'delivered' || status === 'cancelled') && (
                             <Button
-                              onClick={() => setSelectedOrder(order)}
-                              variant="outline"
                               size="sm"
-                              className="border-gray-200 hover:bg-gray-100 rounded-lg"
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              View
-                            </Button>
-                            <Button
                               onClick={() => onReorder(order.items)}
-                              size="sm"
                               className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
                             >
                               <RefreshCw className="w-4 h-4 mr-2" />
                               Reorder
                             </Button>
-                          </div>
+                          )}
                         </div>
                       </div>
+
+                      {/* Order Items Preview */}
+                      <div className="flex gap-3 overflow-x-auto pb-2">
+                        {order.items.slice(0, 3).map((item, idx) => (
+                          <div key={idx} className="flex-shrink-0 text-sm text-gray-600">
+                            {item.meal.meal_name} x {item.quantity}
+                          </div>
+                        ))}
+                        {order.items.length > 3 && (
+                          <div className="flex-shrink-0 text-sm text-gray-400">
+                            +{order.items.length - 3} more
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
-                  ))}
+                  );
+                })}
               </div>
             )}
           </motion.div>
@@ -151,13 +194,13 @@ export const OrderHistory = ({ onBack, onReorder }) => {
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="max-w-2xl bg-white border-gray-200">
           <DialogHeader>
-            <DialogTitle className="text-black">Order #{selectedOrder?.id}</DialogTitle>
+            <DialogTitle className="text-black">Order #{selectedOrder?.order_id}</DialogTitle>
             <DialogDescription>
               <div className="flex items-center gap-2 mt-2">
-                <Badge className={`${getStatusColor(selectedOrder?.status || '')} border-0`}>
-                  {selectedOrder?.status}
+                <Badge className={`${getStatusColor(getStatusText(selectedOrder?.order_status || 0))} border-0`}>
+                  {getStatusText(selectedOrder?.order_status || 0)}
                 </Badge>
-                <span className="text-gray-500">• {selectedOrder?.date}</span>
+                <span className="text-gray-500">• {selectedOrder?.order_date}</span>
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -173,10 +216,10 @@ export const OrderHistory = ({ onBack, onReorder }) => {
                     className="flex justify-between items-center p-4 bg-gray-50 rounded-lg"
                   >
                     <div>
-                      <p className="text-black">{item.meal.name}</p>
+                      <p className="text-black">{item.meal.meal_name}</p>
                       <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
                     </div>
-                    <p className="text-black">${(item.meal.price * item.quantity).toFixed(2)}</p>
+                    <p className="text-black">${((item.meal.price * item.quantity) / 100).toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -186,28 +229,55 @@ export const OrderHistory = ({ onBack, onReorder }) => {
             <div>
               <h3 className="text-black mb-4">Delivery Information</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Address:</span>
-                  <span className="text-black">{selectedOrder?.address}</span>
-                </div>
-                {selectedOrder?.trackingNumber && (
+                {selectedOrder?.shipping_street && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Tracking:</span>
-                    <span className="text-black">{selectedOrder.trackingNumber}</span>
+                    <span className="text-gray-500">Address:</span>
+                    <span className="text-black">
+                      {selectedOrder.shipping_street}, {selectedOrder.shipping_city}, {selectedOrder.shipping_state_code} {selectedOrder.shipping_zipcode}
+                    </span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Payment:</span>
-                  <span className="text-black">{selectedOrder?.paymentMethod}</span>
-                </div>
+                {selectedOrder?.tracking_number && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Tracking:</span>
+                    <span className="text-black">{selectedOrder.tracking_number}</span>
+                  </div>
+                )}
+                {selectedOrder?.payment_type !== undefined && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Payment:</span>
+                    <span className="text-black">
+                      {selectedOrder.payment_type === 0 ? 'Credit Card' : 
+                       selectedOrder.payment_type === 1 ? 'Debit Card' :
+                       selectedOrder.payment_type === 2 ? 'Apple Pay' : 'Google Pay'}
+                      {selectedOrder.last_four && ` •••• ${selectedOrder.last_four}`}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Total */}
             <div className="pt-4 border-t border-gray-200">
-              <div className="flex justify-between items-center">
-                <span className="text-black">Total</span>
-                <span className="text-2xl text-black">${selectedOrder?.total.toFixed(2)}</span>
+              <div className="space-y-2">
+                <div className="flex justify-between text-gray-500">
+                  <span>Subtotal</span>
+                  <span>${((selectedOrder?.unit_price || 0) / 100).toFixed(2)}</span>
+                </div>
+                {selectedOrder?.discount > 0 && (
+                  <div className="flex justify-between text-black">
+                    <span>Discount</span>
+                    <span>-${((selectedOrder.discount) / 100).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-gray-500">
+                  <span>Tax</span>
+                  <span>${((selectedOrder?.tax || 0) / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                  <span className="text-black font-medium">Total</span>
+                  <span className="text-2xl text-black">${((selectedOrder?.total || 0) / 100).toFixed(2)}</span>
+                </div>
               </div>
             </div>
 

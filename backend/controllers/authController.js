@@ -167,13 +167,18 @@ export const login = async (req, res) => {
           customerId: customers[0].customer_id,
           firstName: customers[0].first_name,
           lastName: customers[0].last_name,
-          address: customers[0].street || '',
+          street: customers[0].street || '',
           city: customers[0].city,
-          state: customers[0].state_code,
+          stateCode: customers[0].state_code,
+          state_code: customers[0].state_code,
           zipcode: customers[0].zipcode,
           phone: customers[0].phone_number,
+          phoneNumber: customers[0].phone_number,
+          phone_number: customers[0].phone_number,
           loyaltyPoints: customers[0].loyalty_points,
-          totalSpent: customers[0].total_amount_spent
+          loyalty_points: customers[0].loyalty_points,
+          totalSpent: customers[0].total_amount_spent,
+          total_amount_spent: customers[0].total_amount_spent
         };
       }
     } else if (role === 'staff' || role === 'admin') {

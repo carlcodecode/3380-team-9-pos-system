@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { mockPaymentMethods, mockOrders } from '../../lib/mockData';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -10,13 +9,37 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ArrowLeft, CreditCard, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner@2.0.3';
+import * as api from '../../services/api';
 
 export const Checkout = ({ onBack, onComplete }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { cart, getCartTotal, getDiscount, appliedPromoCode, clearCart } = useCart();
-  const [selectedPayment, setSelectedPayment] = useState(mockPaymentMethods[0]?.id || '');
+  const [selectedPayment, setSelectedPayment] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(true);
+
+  useEffect(() => {
+    fetchPaymentMethods();
+  }, []);
+
+  const fetchPaymentMethods = async () => {
+    try {
+      setLoadingPayments(true);
+      const data = await api.getPaymentMethods();
+      setPaymentMethods(data.paymentMethods || []);
+      if (data.paymentMethods && data.paymentMethods.length > 0) {
+        setSelectedPayment(String(data.paymentMethods[0].id));
+      }
+    } catch (error) {
+      console.error('Failed to load payment methods:', error);
+      toast.error('Failed to load payment methods');
+      setPaymentMethods([]);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
 
   const subtotal = cart.reduce((total, item) => total + item.meal.price * item.quantity, 0);
   const discount = getDiscount();
@@ -24,28 +47,62 @@ export const Checkout = ({ onBack, onComplete }) => {
   const total = subtotal - discount + tax;
 
   const handlePlaceOrder = async () => {
+    if (!selectedPayment && paymentMethods.length > 0) {
+      toast.error('Please select a payment method');
+      return;
+    }
+
+    // For demo purposes, if no payment methods exist, create a dummy one
+    const paymentMethodId = selectedPayment ? parseInt(selectedPayment) : null;
+    
+    if (!paymentMethodId && paymentMethods.length === 0) {
+      toast.info('Demo mode: Creating order without payment method');
+    }
+
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const orderData = {
+        cart: cart,
+        payment_method_id: paymentMethodId || 1, // Use 1 as fallback for demo
+        delivery_notes: deliveryNotes || null,
+        shipping_address: {
+          street: user?.street || null,
+          city: user?.city || null,
+          state_code: user?.stateCode || user?.state_code || null,
+          zipcode: user?.zipcode || null
+        },
+        promo_code: appliedPromoCode || null,
+        subtotal: subtotal,
+        discount: discount,
+        tax: tax,
+        total: total
+      };
 
-    // Create order
-    const newOrder = {
-      id: String(mockOrders.length + 1000),
-      customerId: user?.id || '',
-      items: cart,
-      total: total,
-      status: 'processing',
-      date: new Date().toISOString().split('T')[0],
-      paymentMethod: mockPaymentMethods.find((p) => p.id === selectedPayment)?.type || 'Unknown',
-      address: user?.address || '',
-    };
-
-    mockOrders.push(newOrder);
-    clearCart();
-    toast.success('Order placed successfully!');
-    setIsProcessing(false);
-    onComplete();
+      const response = await api.createOrder(orderData);
+      
+      // Update user's loyalty points in context
+      if (response?.order?.loyalty_points_earned) {
+        const currentPoints = user?.loyaltyPoints || user?.loyalty_points || 0;
+        updateUser({ 
+          loyaltyPoints: currentPoints + response.order.loyalty_points_earned,
+          loyalty_points: currentPoints + response.order.loyalty_points_earned
+        });
+      }
+      
+      clearCart();
+      const orderId = response?.order?.order_id || 'N/A';
+      const pointsEarned = response?.order?.loyalty_points_earned || 0;
+      toast.success(`Order #${orderId} placed successfully! 🎉 You earned ${pointsEarned} loyalty points!`, {
+        duration: 5000
+      });
+      onComplete();
+    } catch (error) {
+      console.error('Order creation failed:', error);
+      toast.error(error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -76,7 +133,7 @@ export const Checkout = ({ onBack, onComplete }) => {
                 <div className="space-y-2">
                   <Label className="text-black">Address</Label>
                   <Input
-                    value={user?.address || ''}
+                    value={user?.street && user?.city ? `${user.street}, ${user.city}, ${user.stateCode || user.state_code} ${user.zipcode}` : ''}
                     disabled
                     className="bg-gray-50 border-gray-200 rounded-lg h-11"
                   />
@@ -93,7 +150,7 @@ export const Checkout = ({ onBack, onComplete }) => {
                   <div className="space-y-2">
                     <Label className="text-black">Phone</Label>
                     <Input
-                      value={user?.phone || ''}
+                      value={user?.phoneNumber || user?.phone_number || user?.phone || ''}
                       disabled
                       className="bg-gray-50 border-gray-200 rounded-lg h-11"
                     />
@@ -114,46 +171,60 @@ export const Checkout = ({ onBack, onComplete }) => {
             {/* Payment Method */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-black mb-5">Payment Method</h2>
-              <RadioGroup value={selectedPayment} onValueChange={setSelectedPayment}>
-                <div className="space-y-3">
-                  {mockPaymentMethods.map((method) => (
-                    <label
-                      key={method.id}
-                      className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedPayment === method.id
-                          ? 'border-black bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <RadioGroupItem value={method.id} />
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="p-2 rounded-lg bg-black">
-                          <CreditCard className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-black">
-                            {method.type === 'credit'
-                              ? 'Credit Card'
-                              : method.type === 'debit'
-                              ? 'Debit Card'
-                              : method.type === 'applepay'
-                              ? 'Apple Pay'
-                              : 'Google Pay'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {method.type === 'applepay' || method.type === 'googlepay'
-                              ? method.name
-                              : `•••• ${method.last4}`}
-                          </p>
-                        </div>
-                      </div>
-                      {selectedPayment === method.id && (
-                        <Check className="w-5 h-5 text-black" />
-                      )}
-                    </label>
-                  ))}
+
+              {loadingPayments ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading payment methods...</p>
                 </div>
-              </RadioGroup>
+              ) : paymentMethods.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                  <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-2">No payment methods found</p>
+                  <p className="text-sm text-gray-500 mb-4">Add a payment method in your profile to continue</p>
+                  <p className="text-xs text-gray-400">Demo mode: You can still place orders for testing</p>
+                </div>
+              ) : (
+                <RadioGroup value={selectedPayment} onValueChange={setSelectedPayment}>
+                  <div className="space-y-3">
+                    {paymentMethods.map((method) => (
+                      <label
+                        key={method.id}
+                        className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedPayment === String(method.id)
+                            ? 'border-black bg-gray-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <RadioGroupItem value={String(method.id)} />
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="p-2 rounded-lg bg-black">
+                            <CreditCard className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-black">
+                              {method.type === 0
+                                ? 'Credit Card'
+                                : method.type === 1
+                                ? 'Debit Card'
+                                : method.type === 2
+                                ? 'Apple Pay'
+                                : 'Google Pay'}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {method.type === 2 || method.type === 3
+                                ? method.nameOnCard
+                                : `•••• ${method.last4}`}
+                            </p>
+                          </div>
+                        </div>
+                        {selectedPayment === String(method.id) && (
+                          <Check className="w-5 h-5 text-black" />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </RadioGroup>
+              )}
             </div>
           </div>
 
@@ -201,18 +272,24 @@ export const Checkout = ({ onBack, onComplete }) => {
 
               <Button
                 onClick={handlePlaceOrder}
-                disabled={isProcessing || !selectedPayment}
+                disabled={isProcessing}
                 className="w-full bg-black hover:bg-black text-white h-12 rounded-lg btn-glossy"
               >
                 {isProcessing ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Processing...
+                    Processing Order...
                   </div>
                 ) : (
-                  'Place Order'
+                  <>Place Order {paymentMethods.length === 0 && '(Demo Mode)'}</>
                 )}
               </Button>
+              
+              {paymentMethods.length === 0 && (
+                <p className="text-xs text-center text-gray-500 mt-2">
+                  Demo system: Orders can be placed without payment methods for testing
+                </p>
+              )}
             </div>
           </div>
         </div>

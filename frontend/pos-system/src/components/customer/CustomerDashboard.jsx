@@ -155,6 +155,7 @@ export const CustomerDashboard = () => {
           onLogoClick={handleLogoClick}
         />
         <OrderHistory
+          key={Date.now()}
           onBack={() => setCurrentView('browse')}
           onReorder={items => {
             items.forEach(item => addToCart(item.meal));

@@ -384,7 +384,9 @@ export const Profile = ({ onBack }) => {
                     <TrendingUp className="w-6 h-6 text-black" />
                     <h3 className="text-black">Total Spent</h3>
                   </div>
-                  <p className="text-4xl text-black mb-2">${user?.totalSpent?.toFixed(2) || '0.00'}</p>
+                  <p className="text-4xl text-black mb-2">
+                    ${((user?.totalSpent || user?.total_amount_spent || 0) / 100).toFixed(2)}
+                  </p>
                   <p className="text-sm text-gray-500">All time</p>
                 </div>
               </div>
