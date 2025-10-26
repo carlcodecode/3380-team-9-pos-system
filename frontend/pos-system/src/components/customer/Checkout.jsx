@@ -165,12 +165,12 @@ export const Checkout = ({ onBack, onComplete }) => {
               {/* Items */}
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 {cart.map((item) => (
-                  <div key={item.meal.id} className="flex justify-between text-sm">
+                  <div key={item.meal.meal_id || item.meal.id} className="flex justify-between text-sm">
                     <span className="text-gray-600">
-                      {item.meal.name} × {item.quantity}
+                      {item.meal.meal_name || item.meal.name} × {item.quantity}
                     </span>
                     <span className="text-black">
-                      ${(item.meal.price * item.quantity).toFixed(2)}
+                      ${((item.meal.price * item.quantity) / 100).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -180,23 +180,23 @@ export const Checkout = ({ onBack, onComplete }) => {
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex justify-between text-gray-500">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>${(subtotal / 100).toFixed(2)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-black">
                     <span>Discount ({appliedPromoCode})</span>
-                    <span>-${discount.toFixed(2)}</span>
+                    <span>-${(discount / 100).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-gray-500">
                   <span>Tax (8%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>${(tax / 100).toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="flex justify-between mb-6">
                 <span className="text-black">Total</span>
-                <span className="text-2xl text-black">${total.toFixed(2)}</span>
+                <span className="text-2xl text-black">${(total / 100).toFixed(2)}</span>
               </div>
 
               <Button

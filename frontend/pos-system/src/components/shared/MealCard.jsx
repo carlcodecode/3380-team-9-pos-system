@@ -17,14 +17,14 @@ export const MealCard = ({ meal, onAddToCart }) => {
         <div className="relative h-48 overflow-hidden bg-gray-100">
           <ImageWithFallback
             src={meal.img_url}
-            alt={meal.name}
+            alt={meal.meal_name || meal.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           {/* Stock badge */}
-          {meal.stock < 10 && (
+          {(meal.quantity_in_stock || meal.stock) < 10 && (
             <div className="absolute top-3 right-3">
               <Badge className="bg-black text-white border-0">
-                Only {meal.stock} left
+                Only {meal.quantity_in_stock || meal.stock} left
               </Badge>
             </div>
           )}
@@ -61,8 +61,8 @@ export const MealCard = ({ meal, onAddToCart }) => {
 
           {/* Name & Description */}
           <div>
-            <h3 className="text-black mb-1">{meal.name}</h3>
-            <p className="text-sm text-gray-500 line-clamp-2">{meal.description}</p>
+            <h3 className="text-black mb-1">{meal.meal_name || meal.name}</h3>
+            <p className="text-sm text-gray-500 line-clamp-2">{meal.meal_description || meal.description}</p>
           </div>
 
           {/* Nutrition */}
@@ -81,7 +81,7 @@ export const MealCard = ({ meal, onAddToCart }) => {
             </div>
             <Button
               onClick={() => onAddToCart(meal)}
-              disabled={meal.status === 'unavailable'}
+              disabled={meal.meal_status === 'unavailable' || meal.status === 'unavailable'}
               className="bg-black hover:bg-black text-white gap-2 rounded-lg btn-glossy"
             >
               <Plus className="w-4 h-4" />
