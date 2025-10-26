@@ -439,7 +439,7 @@ export const deleteStaff = async (req, res) => {
 // Get Staff/Meal Created report
 export const getStaffMealCreatedReport = async (req, res) => {
 	try {
-		const { start_date, end_date, staff_id } = req.query;
+		const { start_date, end_date, staff_id } = req.query || {};
 
 		let query = `
 			SELECT
@@ -472,7 +472,7 @@ export const getStaffMealCreatedReport = async (req, res) => {
 
 		if (staff_id) {
 			query += ' AND staff_id = ?';
-			params.push(staff_id);
+			params.push(parseInt(staff_id));
 		}
 
 		query += ' ORDER BY activity_timestamp DESC';
@@ -498,7 +498,7 @@ export const getStaffMealCreatedReport = async (req, res) => {
 // Get Staff/Meal Updated report
 export const getStaffMealUpdatedReport = async (req, res) => {
 	try {
-		const { start_date, end_date, staff_id } = req.query;
+		const { start_date, end_date, staff_id } = req.query || {};
 
 		let query = `
 			SELECT
@@ -531,7 +531,7 @@ export const getStaffMealUpdatedReport = async (req, res) => {
 
 		if (staff_id) {
 			query += ' AND staff_id = ?';
-			params.push(staff_id);
+			params.push(parseInt(staff_id));
 		}
 
 		query += ' ORDER BY activity_timestamp DESC';
