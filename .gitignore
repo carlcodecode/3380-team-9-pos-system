@@ -47,3 +47,6 @@ Thumbs.db
 .npm/
 .yarn-integrity
 .pnp.*
+
+backend/bento_pos_backup.sql
+backend/pos-key.pem

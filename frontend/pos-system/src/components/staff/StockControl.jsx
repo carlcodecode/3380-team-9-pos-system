@@ -1,6 +1,5 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
-import { mockMeals } from '../../lib/mockData';
 import { StockRestockForm } from './StockRestockForm';
 import { StockSettingsForm } from './StockSettingsForm';
 import { motion } from 'framer-motion';
@@ -14,28 +13,58 @@ export const StockControl = () => {
   const [showSettingsForm, setShowSettingsForm] = useState(false);
   const [showRestockForm, setShowRestockForm] = useState(false);
 
+  // ==============================
+  // FETCH + POLL STOCKS
+  // ==============================
   useEffect(() => {
+    let isMounted = true;
+
     const fetchStocks = async () => {
       try {
-        setLoading(true);
         const data = await api.getAllStocks();
-        setStocks(data);
+        if (isMounted) {
+          setStocks((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(data)) {
+              return data;
+            }
+            return prev;
+          });
+          setLoading(false);
+        }
       } catch (err) {
-        setError('Failed to load stock data');
-      } finally {
-        setLoading(false);
+        console.error('Polling error:', err);
+        if (isMounted) setError('Failed to load stock data');
       }
     };
 
     fetchStocks();
+    const interval = setInterval(fetchStocks, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
+  // ==============================
+  // RESTOCK HANDLER
+  // ==============================
   const handleRestock = async (stockId, quantity) => {
     try {
       await api.restockMeal(stockId, { quantity_to_add: quantity });
-
-      const updated = await api.getAllStocks();
-      setStocks(updated);
+      // Optimistic UI update
+      setStocks((prev) =>
+        prev.map((s) =>
+          s.stock_id === stockId
+            ? {
+                ...s,
+                quantity_in_stock: Math.min(
+                  s.quantity_in_stock + quantity,
+                  s.max_stock
+                ),
+              }
+            : s
+        )
+      );
       setShowRestockForm(false);
       setSelectedStock(null);
     } catch (err) {
@@ -44,6 +73,9 @@ export const StockControl = () => {
     }
   };
 
+  // ==============================
+  // SETTINGS HANDLER
+  // ==============================
   const handleUpdateSettings = async (stockId, settings) => {
     try {
       await api.updateStockSettings(stockId, settings);
@@ -57,9 +89,15 @@ export const StockControl = () => {
     }
   };
 
+  // ==============================
+  // UI LOADING + ERROR STATES
+  // ==============================
   if (loading) return <div>Loading inventory...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
 
+  // ==============================
+  // MAIN RENDER
+  // ==============================
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -68,6 +106,8 @@ export const StockControl = () => {
     >
       <div className="flex items-center justify-between">
         <h3 className="text-black text-lg font-medium">Inventory Management</h3>
+
+        {/* Future feature: bulk restock button */}
         {/*
         <Button
           size="sm"
@@ -81,42 +121,53 @@ export const StockControl = () => {
 
       <div className="space-y-3">
         {stocks.map((stock) => {
-          const stockPercent =
-            Math.min((stock.quantity_in_stock / stock.max_stock) * 100, 100);
+          const quantity = Number(stock.quantity_in_stock) || 0;
+          const max = Number(stock.max_stock) || 1;
+          const stockPercent = Math.min((quantity / max) * 100, 100);
+
+          console.log(
+            'Stock:',
+            stock.meal_name,
+            'Quantity:',
+            quantity,
+            'Max:',
+            max,
+            'Percent:',
+            stockPercent
+          );
 
           return (
             <div
               key={stock.stock_id}
               className="flex items-center justify-between p-5 bg-gray-50 rounded-lg border border-gray-200"
             >
+              {/* LEFT SIDE — DETAILS */}
               <div className="flex-1">
                 <div className="text-black font-medium mb-2">
                   {stock.meal_name}
                 </div>
+
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-gray-500">Stock Level</span>
                       <span className="text-black">
-                        {stock.quantity_in_stock} / {stock.max_stock}
+                        {quantity} / {max}
                       </span>
                     </div>
+
+                    {/* ✅ Black progress bar */}
                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${
-                          stock.quantity_in_stock < stock.reorder_threshold
-                            ? 'bg-red-600'
-                            : stock.quantity_in_stock <
-                              stock.max_stock * 0.3
-                            ? 'bg-yellow-500'
-                            : 'bg-green-500'
-                        }`}
+                        className="h-full bg-black rounded-full transition-all duration-500"
                         style={{ width: `${stockPercent}%` }}
                       ></div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* RIGHT SIDE — BUTTONS */}
               <div className="flex flex-col gap-2 ml-4">
                 <Button
                   size="sm"
@@ -129,6 +180,7 @@ export const StockControl = () => {
                 >
                   Restock
                 </Button>
+
                 <Button
                   size="sm"
                   variant="outline"
@@ -146,7 +198,7 @@ export const StockControl = () => {
         })}
       </div>
 
-      {/* Modals */}
+      {/* RESTOCK FORM */}
       {showRestockForm && (
         <StockRestockForm
           open={showRestockForm}
@@ -156,6 +208,7 @@ export const StockControl = () => {
         />
       )}
 
+      {/* SETTINGS FORM */}
       {showSettingsForm && (
         <StockSettingsForm
           open={showSettingsForm}

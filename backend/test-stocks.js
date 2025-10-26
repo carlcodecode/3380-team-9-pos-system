@@ -47,7 +47,7 @@ if (!staffLogin.data.token) {
 	process.exit(1);
 }
 
-const staffToken = staffLogin.data.user_id;
+const staffToken = staffLogin.data.token;
 
 // Test 2: Get all stocks (should be empty initially)
 console.log('2. Testing GET /api/stocks (get all stocks)...');
@@ -79,7 +79,7 @@ console.log(`   Status: ${createMealResult.status}`);
 console.log(`   Response:`, createMealResult.data);
 console.log('');
 
-if (createMealResult.status !== 200) {
+if (createMealResult.status !== 201) {
 	console.error('Failed to create meal. Cannot proceed with stock tests.');
 	process.exit(1);
 }
