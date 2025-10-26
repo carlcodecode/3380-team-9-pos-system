@@ -9,12 +9,18 @@ import { authenticateToken, requireRole } from '../middleware/auth.js';
 import {
   getLowStockAlerts,
   markAlertResolved,
+  getDeliveryAlerts,
 } from '../controllers/triggerController.js';
 
 export default function stockRoutes(req, res, pathname, method) {
   // All routes require staff access
   const withStaffAuth = (handler) =>
     authenticateToken(req, res, () => requireRole('staff')(req, res, handler));
+
+  // Get delivery alerts
+  if (pathname === '/api/stocks/delivery-alerts' && method === 'GET') {
+    return withStaffAuth(() => getDeliveryAlerts(req, res));
+  }
 
   // Low Stock Alerts — Get All (Unresolved)
   if (pathname === '/api/stocks/alerts' && method === 'GET') {
@@ -24,6 +30,15 @@ export default function stockRoutes(req, res, pathname, method) {
   // Get All Stocks
   if (pathname === '/api/stocks' && method === 'GET') {
     return withStaffAuth(() => getAllStocks(req, res));
+  }
+
+  const deliveryResolveMatch = pathname.match(/^\/api\/stocks\/delivery-alerts\/(\d+)\/resolve$/);
+  if (deliveryResolveMatch) {
+    const eventId = deliveryResolveMatch[1];
+
+    if (method === 'PUT') {
+      return withStaffAuth(() => markAlertResolved({ ...req, params: { eventId } }, res));
+    }
   }
 
   // Get or Update Stock by ID
@@ -46,9 +61,7 @@ export default function stockRoutes(req, res, pathname, method) {
     const id = stockSettingsMatch[1];
 
     if (method === 'PUT') {
-      return withStaffAuth(() =>
-        updateStockSettings({ ...req, params: { id } }, res)
-      );
+      return withStaffAuth(() => updateStockSettings({ ...req, params: { id } }, res));
     }
   }
 
@@ -58,28 +71,20 @@ export default function stockRoutes(req, res, pathname, method) {
     const id = stockRestockMatch[1];
 
     if (method === 'POST') {
-      return withStaffAuth(() =>
-        restockMeal({ ...req, params: { id } }, res)
-      );
+      return withStaffAuth(() => restockMeal({ ...req, params: { id } }, res));
     }
   }
 
   // Mark as resolved
   const alertResolveMatch = pathname.match(/^\/api\/stocks\/alerts\/(\d+)\/resolve$/);
-    if (alertResolveMatch) {
+  if (alertResolveMatch) {
     const eventId = alertResolveMatch[1];
 
     if (method === 'PUT') {
-        return withStaffAuth(() =>
-        markAlertResolved({ ...req, params: { eventId } }, res)
-        );
+      return withStaffAuth(() => markAlertResolved({ ...req, params: { eventId } }, res));
     }
-    }
-
+  }
 
   // Default fallback
   return res.status(405).json({ error: 'Method not allowed' });
 }
-
-
-

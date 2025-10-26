@@ -11,7 +11,7 @@ export default function mealRoutes(req, res, pathname, method) {
   }
 
   if (pathname === '/api/meals' && method === 'GET') {
-    return withStaffAuth(() => getAllMeals(req, res));
+    return getAllMeals(req, res);
   }
 
   // Meal by ID routes

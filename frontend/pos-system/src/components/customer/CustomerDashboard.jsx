@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { mockMeals } from '../../lib/mockData';
 import { Navbar } from '../shared/Navbar';
 import { MealCard } from '../shared/MealCard';
 import { Cart } from './Cart';
@@ -11,7 +10,7 @@ import { Profile } from './Profile';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
-import { Search, TrendingUp, Gift, ShoppingBag, User as UserIcon, History } from 'lucide-react';
+import { Search, Gift, ShoppingBag, User as UserIcon, History } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { motion } from 'motion/react';
 import * as api from '../../services/api';
@@ -24,19 +23,23 @@ export const CustomerDashboard = () => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [promotions, setPromotions] = useState([]);
   const [loadingPromos, setLoadingPromos] = useState(true);
+  const [meals, setMeals] = useState([]);
+  const [loadingMeals, setLoadingMeals] = useState(true);
+  const [mealCategories, setMealCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
-  // Fetch promotions on component mount
   useEffect(() => {
     fetchPromotions();
+    fetchMeals();
+    fetchMealCategories();
   }, []);
 
   const fetchPromotions = async () => {
     try {
       setLoadingPromos(true);
       const response = await api.getAllPromos();
-      // Filter only active promotions (not expired)
-      const activePromos = (response.promotions || []).filter(promo => 
-        new Date(promo.promo_exp_date) > new Date()
+      const activePromos = (response.promotions || []).filter(
+        promo => new Date(promo.promo_exp_date) > new Date()
       );
       setPromotions(activePromos);
     } catch (error) {
@@ -47,91 +50,142 @@ export const CustomerDashboard = () => {
     }
   };
 
-  const handleAddToCart = (meal) => {
+  const fetchMeals = async () => {
+    try {
+      setLoadingMeals(true);
+      const data = await api.getAllMeals();
+
+      // Normalize meal_types (JSON string → array)
+      const normalizedMeals = (data || []).map(meal => ({
+        ...meal,
+        meal_types: Array.isArray(meal.meal_types)
+          ? meal.meal_types
+          : typeof meal.meal_types === 'string'
+          ? JSON.parse(meal.meal_types)
+          : [],
+      }));
+
+      setMeals(normalizedMeals);
+    } catch (error) {
+      console.error('Failed to load meals:', error);
+      toast.error('Failed to load meals');
+      setMeals([]);
+    } finally {
+      setLoadingMeals(false);
+    }
+  };
+
+  const fetchMealCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const data = await api.getAllMealCategories();
+      setMealCategories(data || []);
+    } catch (error) {
+      console.error('Failed to load meal categories:', error);
+      toast.error('Failed to load meal categories');
+      setMealCategories([]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const handleAddToCart = meal => {
     addToCart(meal);
-    toast.success(`${meal.name} added to cart!`);
+    toast.success(`${meal.meal_name || meal.name} added to cart!`);
   };
 
-  const handleLogoClick = () => {
-    setCurrentView('browse');
-  };
+  const handleLogoClick = () => setCurrentView('browse');
 
-  const filteredMeals = mockMeals.filter((meal) => {
+  const filteredMeals = meals.filter(meal => {
+    const search = searchQuery.toLowerCase();
+
     const matchesSearch =
-      meal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meal.description.toLowerCase().includes(searchQuery.toLowerCase());
+      meal.meal_name?.toLowerCase().includes(search) ||
+      meal.meal_description?.toLowerCase().includes(search);
+
     const matchesFilter =
-      selectedFilter === 'all' || meal.type.includes(selectedFilter);
+      selectedFilter === 'all' ||
+      (Array.isArray(meal.meal_types) &&
+        meal.meal_types.some(
+          type => type.toLowerCase() === selectedFilter.toLowerCase()
+        ));
+
     return matchesSearch && matchesFilter;
   });
 
-  const filters = ['all', 'High Protein', 'Vegan', 'Keto', 'Low Calorie'];
+  const filters = ['all', ...mealCategories.map(cat => cat.meal_type)];
 
-  if (currentView === 'cart') {
+  // --- View switching ---
+  if (currentView === 'cart')
     return (
       <>
-        <Navbar 
-          onCartClick={() => setCurrentView('browse')} 
+        <Navbar
+          onCartClick={() => setCurrentView('browse')}
           onProfileClick={() => setCurrentView('profile')}
           onLogoClick={handleLogoClick}
         />
-        <Cart onBack={() => setCurrentView('browse')} onCheckout={() => setCurrentView('checkout')} />
+        <Cart
+          onBack={() => setCurrentView('browse')}
+          onCheckout={() => setCurrentView('checkout')}
+        />
       </>
     );
-  }
 
-  if (currentView === 'checkout') {
+  if (currentView === 'checkout')
     return (
       <>
-        <Navbar 
-          onCartClick={() => setCurrentView('cart')} 
+        <Navbar
+          onCartClick={() => setCurrentView('cart')}
           onProfileClick={() => setCurrentView('profile')}
           onLogoClick={handleLogoClick}
         />
-        <Checkout onBack={() => setCurrentView('cart')} onComplete={() => setCurrentView('orders')} />
+        <Checkout
+          onBack={() => setCurrentView('cart')}
+          onComplete={() => setCurrentView('orders')}
+        />
       </>
     );
-  }
 
-  if (currentView === 'orders') {
+  if (currentView === 'orders')
     return (
       <>
-        <Navbar 
-          onCartClick={() => setCurrentView('cart')} 
+        <Navbar
+          onCartClick={() => setCurrentView('cart')}
           onProfileClick={() => setCurrentView('profile')}
           onLogoClick={handleLogoClick}
         />
-        <OrderHistory onBack={() => setCurrentView('browse')} onReorder={(items) => {
-          items.forEach(item => addToCart(item.meal));
-          toast.success('Items added to cart!');
-          setCurrentView('cart');
-        }} />
+        <OrderHistory
+          onBack={() => setCurrentView('browse')}
+          onReorder={items => {
+            items.forEach(item => addToCart(item.meal));
+            toast.success('Items added to cart!');
+            setCurrentView('cart');
+          }}
+        />
       </>
     );
-  }
 
-  if (currentView === 'profile') {
+  if (currentView === 'profile')
     return (
       <>
-        <Navbar 
-          onCartClick={() => setCurrentView('cart')} 
+        <Navbar
+          onCartClick={() => setCurrentView('cart')}
           onProfileClick={() => setCurrentView('profile')}
           onLogoClick={handleLogoClick}
         />
         <Profile onBack={() => setCurrentView('browse')} />
       </>
     );
-  }
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar 
-        onCartClick={() => setCurrentView('cart')} 
+      <Navbar
+        onCartClick={() => setCurrentView('cart')}
         onProfileClick={() => setCurrentView('profile')}
         onLogoClick={handleLogoClick}
       />
 
-      {/* Hero Section */}
+      {/* Hero */}
       <div className="border-b border-gray-200 bg-white">
         <div className="container mx-auto px-6 py-12">
           <motion.div
@@ -154,14 +208,13 @@ export const CustomerDashboard = () => {
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-6 py-10">
           <h2 className="text-black mb-6">Special Offers</h2>
-          
           {loadingPromos ? (
             <div className="text-center py-8">
               <p className="text-gray-500">Loading offers...</p>
             </div>
           ) : promotions.length > 0 ? (
-            <div className="grid md:grid-cols-3 gap-6">
-              {promotions.slice(0, 3).map((promo) => (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {promotions.map(promo => (
                 <motion.div
                   key={promo.promotion_id}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -181,13 +234,16 @@ export const CustomerDashboard = () => {
                           {promo.promo_type}% OFF
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-500 mb-3">{promo.promo_description}</p>
+                      <p className="text-sm text-gray-500 mb-3">
+                        {promo.promo_description}
+                      </p>
                       <div className="flex items-center justify-between">
                         <code className="text-xs bg-gray-100 text-black px-2 py-1 rounded">
                           {promo.promo_code}
                         </code>
                         <span className="text-xs text-gray-400">
-                          Expires: {new Date(promo.promo_exp_date).toLocaleDateString()}
+                          Expires:{' '}
+                          {new Date(promo.promo_exp_date).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
@@ -217,7 +273,11 @@ export const CustomerDashboard = () => {
           <Button
             variant="ghost"
             onClick={() => setCurrentView('browse')}
-            className={`gap-2 rounded-lg ${currentView === 'browse' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+            className={`gap-2 rounded-lg ${
+              currentView === 'browse'
+                ? 'bg-black text-white'
+                : 'hover:bg-gray-100'
+            }`}
           >
             <ShoppingBag className="w-4 h-4" />
             Browse Meals
@@ -225,7 +285,11 @@ export const CustomerDashboard = () => {
           <Button
             variant="ghost"
             onClick={() => setCurrentView('orders')}
-            className={`gap-2 rounded-lg ${currentView === 'orders' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+            className={`gap-2 rounded-lg ${
+              currentView === 'orders'
+                ? 'bg-black text-white'
+                : 'hover:bg-gray-100'
+            }`}
           >
             <History className="w-4 h-4" />
             Order History
@@ -233,7 +297,11 @@ export const CustomerDashboard = () => {
           <Button
             variant="ghost"
             onClick={() => setCurrentView('profile')}
-            className={`gap-2 rounded-lg ${currentView === 'profile' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+            className={`gap-2 rounded-lg ${
+              currentView === 'profile'
+                ? 'bg-black text-white'
+                : 'hover:bg-gray-100'
+            }`}
           >
             <UserIcon className="w-4 h-4" />
             My Profile
@@ -248,13 +316,13 @@ export const CustomerDashboard = () => {
               type="text"
               placeholder="Search meals..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-12 h-12 bg-white border border-gray-200 focus:border-black rounded-lg"
             />
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            {filters.map((filter) => (
+            {filters.map(filter => (
               <Button
                 key={filter}
                 variant="ghost"
@@ -274,14 +342,20 @@ export const CustomerDashboard = () => {
 
         {/* Meals grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMeals.map((meal) => (
-            <MealCard key={meal.id} meal={meal} onAddToCart={handleAddToCart} />
+          {filteredMeals.map(meal => (
+            <MealCard
+              key={meal.meal_id}
+              meal={meal}
+              onAddToCart={handleAddToCart}
+            />
           ))}
         </div>
 
         {filteredMeals.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-gray-500">No meals found matching your criteria</p>
+            <p className="text-gray-500">
+              No meals found matching your criteria
+            </p>
           </div>
         )}
       </div>

@@ -16,15 +16,15 @@ export const MealCard = ({ meal, onAddToCart }) => {
         {/* Image */}
         <div className="relative h-48 overflow-hidden bg-gray-100">
           <ImageWithFallback
-            src={meal.image}
-            alt={meal.name}
+            src={meal.img_url}
+            alt={meal.meal_name || meal.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           {/* Stock badge */}
-          {meal.stock < 10 && (
+          {(meal.quantity_in_stock || meal.stock) < 10 && (
             <div className="absolute top-3 right-3">
               <Badge className="bg-black text-white border-0">
-                Only {meal.stock} left
+                Only {meal.quantity_in_stock || meal.stock} left
               </Badge>
             </div>
           )}
@@ -39,40 +39,49 @@ export const MealCard = ({ meal, onAddToCart }) => {
         <div className="p-5 space-y-3">
           {/* Types */}
           <div className="flex flex-wrap gap-2">
-            {meal.type.map((type) => (
+            {meal.meal_types && Array.isArray(meal.meal_types) && meal.meal_types.length > 0 ? (
+              meal.meal_types.map((type) => (
+                <Badge
+                  key={type}
+                  variant="secondary"
+                  className="text-xs bg-gray-100 text-black border-0"
+                >
+                  {type}
+                </Badge>
+              ))
+            ) : (
               <Badge
-                key={type}
                 variant="secondary"
                 className="text-xs bg-gray-100 text-black border-0"
               >
-                {type}
+                No types
               </Badge>
-            ))}
+            )}
           </div>
 
           {/* Name & Description */}
           <div>
-            <h3 className="text-black mb-1">{meal.name}</h3>
-            <p className="text-sm text-gray-500 line-clamp-2">{meal.description}</p>
+            <h3 className="text-black mb-1">{meal.meal_name || meal.name}</h3>
+            <p className="text-sm text-gray-500 line-clamp-2">{meal.meal_description || meal.description}</p>
           </div>
 
           {/* Nutrition */}
           <div className="flex items-center gap-3 text-xs text-gray-500 pb-3 border-b border-gray-200">
-            <span>{meal.calories} cal</span>
+            <span>{meal.nutrition_facts.calories} cal</span>
             <span>•</span>
-            <span>{meal.protein}g protein</span>
+            <span>{meal.nutrition_facts.protein}g protein</span>
             <span>•</span>
-            <span>{meal.carbs}g carbs</span>
+            <span>{meal.nutrition_facts.carbs}g carbs</span>
           </div>
 
           {/* Price & Add to Cart */}
           <div className="flex items-center justify-between pt-1">
             <div>
-              <span className="text-2xl text-black">${meal.price}</span>
+              <span className="text-2xl text-black">${(meal.price / 100).toFixed(2)}</span>
             </div>
             <Button
               onClick={() => onAddToCart(meal)}
-              disabled={meal.status === 'unavailable'}
+              disabled={meal.meal_status === 'unavailable' || meal.status === 'unavailable'}
               className="bg-black hover:bg-black text-white gap-2 rounded-lg btn-glossy"
             >
               <Plus className="w-4 h-4" />

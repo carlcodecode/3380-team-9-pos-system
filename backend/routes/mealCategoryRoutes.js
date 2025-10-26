@@ -11,7 +11,7 @@ export default function mealCategoryRoutes(req, res, pathname, method) {
   }
 
   if (pathname === '/api/meal-categories' && method === 'GET') {
-    return withStaffAuth(() => getAllMealCategories(req, res));
+    return getAllMealCategories(req, res);
   }
 
   // Meal category by ID routes

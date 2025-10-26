@@ -9,7 +9,18 @@ export const register = async (req, res) => {
   const connection = await pool.getConnection();
 
   try {
-    const { email, password, firstName, lastName, username, address, phoneNumber } = req.body;
+    const { 
+      email, 
+      password, 
+      firstName, 
+      lastName, 
+      username, 
+      street, 
+      city, 
+      stateCode, 
+      zipcode, 
+      phoneNumber 
+    } = req.body;
 
     // Validation
     if (!email || !password || !username) {
@@ -50,10 +61,22 @@ export const register = async (req, res) => {
 
     const userId = userResult.insertId;
 
-    // Insert into CUSTOMER table with street (using address as street) and phone
+    // Insert into CUSTOMER table with separate address fields
     const [customerResult] = await connection.query(
-      'INSERT INTO CUSTOMER (user_ref, first_name, last_name, street, phone_number, loyalty_points, total_amount_spent, refunds_per_month) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [userId, firstName || '', lastName || '', address || null, phoneNumber || null, 0, 0, 0]
+      'INSERT INTO CUSTOMER (user_ref, first_name, last_name, street, city, state_code, zipcode, phone_number, loyalty_points, total_amount_spent, refunds_per_month) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        userId, 
+        firstName || '', 
+        lastName || '', 
+        street || null, 
+        city || null, 
+        stateCode || null, 
+        zipcode || null, 
+        phoneNumber || null, 
+        0, 
+        0, 
+        0
+      ]
     );
 
     await connection.commit();
@@ -135,7 +158,7 @@ export const login = async (req, res) => {
     // Get customer or staff data based on role
     if (role === 'customer') {
       const [customers] = await pool.query(
-        'SELECT customer_id, first_name, last_name, street, city, state_code, zipcode, phone_number FROM CUSTOMER WHERE user_ref = ?',
+        'SELECT customer_id, first_name, last_name, street, city, state_code, zipcode, phone_number, loyalty_points, total_amount_spent FROM CUSTOMER WHERE user_ref = ?',
         [user.user_id]
       );
 
@@ -144,8 +167,13 @@ export const login = async (req, res) => {
           customerId: customers[0].customer_id,
           firstName: customers[0].first_name,
           lastName: customers[0].last_name,
-          address: customers[0].street || '', // Use street as address
-          phone: customers[0].phone_number
+          address: customers[0].street || '',
+          city: customers[0].city,
+          state: customers[0].state_code,
+          zipcode: customers[0].zipcode,
+          phone: customers[0].phone_number,
+          loyaltyPoints: customers[0].loyalty_points,
+          totalSpent: customers[0].total_amount_spent
         };
       }
     } else if (role === 'staff' || role === 'admin') {

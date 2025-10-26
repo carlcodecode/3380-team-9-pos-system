@@ -33,6 +33,13 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const data = await api.register(userData);
+      
+      // Save token and user to localStorage (same as login)
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
       setUser(data.user);
       return data;
     } catch (err) {
