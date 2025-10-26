@@ -1,17 +1,33 @@
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, requireRole } from '../middleware/auth.js';
 import {
+  getAllOrders,
   getCustomerOrders,
   getOrderById,
   createOrder,
-  updateOrder
+  updateOrder,
+  updateOrderStatus
 } from '../controllers/orderController.js';
 
 export default function orderRoutes(req, res, pathname, method) {
-  // All routes require authentication
-  
+  // GET /api/orders/all - Get all orders (staff/admin only)
+  if (pathname === '/api/orders/all' && method === 'GET') {
+    return authenticateToken(req, res, () => 
+      requireRole('staff', 'admin')(req, res, () => getAllOrders(req, res))
+    );
+  }
+
   // GET /api/orders - Get all orders for authenticated customer
   if (pathname === '/api/orders' && method === 'GET') {
     return authenticateToken(req, res, () => getCustomerOrders(req, res));
+  }
+
+  // PUT /api/orders/:id/status - Update order status (staff/admin only)
+  if (pathname.match(/^\/api\/orders\/\d+\/status$/) && method === 'PUT') {
+    const orderId = pathname.split('/')[3];
+    req.params = { orderId };
+    return authenticateToken(req, res, () =>
+      requireRole('staff', 'admin')(req, res, () => updateOrderStatus(req, res))
+    );
   }
 
   // GET /api/orders/:id - Get specific order by ID

@@ -347,6 +347,15 @@ export const getCustomerOrders = async () => {
   return res.json();
 };
 
+export const getAllOrders = async () => {
+  const res = await fetch(`${API_BASE_URL}/orders/all`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get all orders');
+  return res.json();
+};
+
 export const getOrderById = async (id) => {
   const res = await fetch(`${API_BASE_URL}/orders/${id}`, {
     method: 'GET',
@@ -373,6 +382,16 @@ export const updateOrder = async (id, data) => {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update order');
+  return res.json();
+};
+
+export const updateOrderStatus = async (id, status) => {
+  const res = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ orderStatus: status }),
+  });
+  if (!res.ok) throw new Error('Failed to update order status');
   return res.json();
 };
 

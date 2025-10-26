@@ -4,6 +4,72 @@ import pool from '../config/database.js';
 // This should be a valid staff_id in your STAFF table
 const SYSTEM_STAFF_ID = 1; // Change this to match your system/master staff ID in the database
 
+// Get all orders (for staff/admin)
+export const getAllOrders = async (req, res) => {
+  try {
+    const [orders] = await pool.query(
+      `SELECT 
+        o.order_id,
+        o.customer_ref,
+        o.order_date,
+        o.order_status,
+        o.delivery_date,
+        o.unit_price,
+        o.tax,
+        o.discount,
+        o.notes,
+        o.refund_message,
+        o.shipping_street,
+        o.shipping_city,
+        o.shipping_state_code,
+        o.shipping_zipcode,
+        o.created_by,
+        o.created_at,
+        o.updated_by_staff,
+        o.updated_by_customer,
+        o.last_updated_at,
+        o.tracking_number,
+        c.first_name,
+        c.last_name,
+        u.email
+       FROM ORDERS o
+       JOIN CUSTOMER c ON o.customer_ref = c.customer_id
+       JOIN USER_ACCOUNT u ON c.user_ref = u.user_id
+       ORDER BY o.created_at DESC`
+    );
+
+    res.json({
+      orders: orders.map(order => ({
+        id: order.order_id,
+        customerId: order.customer_ref,
+        customerName: `${order.first_name} ${order.last_name}`,
+        customerEmail: order.email,
+        orderDate: order.order_date,
+        orderStatus: order.order_status,
+        deliveryDate: order.delivery_date,
+        unitPrice: order.unit_price / 100,
+        tax: order.tax / 100,
+        discount: (order.discount || 0) / 100,
+        total: (order.unit_price + order.tax - (order.discount || 0)) / 100,
+        notes: order.notes,
+        refundMessage: order.refund_message,
+        shippingAddress: {
+          street: order.shipping_street,
+          city: order.shipping_city,
+          state: order.shipping_state_code,
+          zipcode: order.shipping_zipcode
+        },
+        trackingNumber: order.tracking_number,
+        createdAt: order.created_at,
+        lastUpdatedAt: order.last_updated_at
+      }))
+    });
+  } catch (error) {
+    console.error('Get all orders error:', error);
+    res.status(500).json({ error: 'Failed to get orders' });
+  }
+};
+
 // Get customer order history
 export const getCustomerOrders = async (req, res) => {
   try {
@@ -412,6 +478,122 @@ export const updateOrder = async (req, res) => {
     await connection.rollback();
     console.error('Update order error:', error);
     res.status(500).json({ error: 'Failed to update order', details: error.message });
+  } finally {
+    connection.release();
+  }
+};
+
+// Update order status (staff only)
+export const updateOrderStatus = async (req, res) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    const staffId = req.user.staffId;
+    const { orderId } = req.params;
+    const { orderStatus } = req.body;
+
+    if (!staffId) {
+      return res.status(403).json({ 
+        error: 'Only staff members can update order status' 
+      });
+    }
+
+    // Validate order status (0-3 based on schema)
+    if (orderStatus === undefined || orderStatus < 0 || orderStatus > 3) {
+      return res.status(400).json({ 
+        error: 'Invalid order status. Must be 0 (processing), 1 (delivered), 2 (shipped), or 3 (refunded)' 
+      });
+    }
+
+    // Verify order exists
+    const [orders] = await pool.query(
+      'SELECT order_id FROM ORDERS WHERE order_id = ?',
+      [orderId]
+    );
+
+    if (orders.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    await connection.beginTransaction();
+
+    await connection.query(
+      `UPDATE ORDERS 
+       SET order_status = ?,
+           updated_by_staff = ?
+       WHERE order_id = ?`,
+      [orderStatus, staffId, orderId]
+    );
+
+    await connection.commit();
+
+    // Fetch updated order
+    const [updatedOrders] = await pool.query(
+      `SELECT 
+        o.order_id,
+        o.customer_ref,
+        o.order_date,
+        o.order_status,
+        o.delivery_date,
+        o.unit_price,
+        o.tax,
+        o.discount,
+        o.notes,
+        o.refund_message,
+        o.shipping_street,
+        o.shipping_city,
+        o.shipping_state_code,
+        o.shipping_zipcode,
+        o.created_by,
+        o.created_at,
+        o.updated_by_staff,
+        o.updated_by_customer,
+        o.last_updated_at,
+        o.tracking_number,
+        c.first_name,
+        c.last_name,
+        u.email
+       FROM ORDERS o
+       JOIN CUSTOMER c ON o.customer_ref = c.customer_id
+       JOIN USER_ACCOUNT u ON c.user_ref = u.user_id
+       WHERE o.order_id = ?`,
+      [orderId]
+    );
+
+    const order = updatedOrders[0];
+
+    res.json({
+      message: 'Order status updated successfully',
+      order: {
+        id: order.order_id,
+        customerId: order.customer_ref,
+        customerName: `${order.first_name} ${order.last_name}`,
+        customerEmail: order.email,
+        orderDate: order.order_date,
+        orderStatus: order.order_status,
+        deliveryDate: order.delivery_date,
+        unitPrice: order.unit_price / 100,
+        tax: order.tax / 100,
+        discount: (order.discount || 0) / 100,
+        total: (order.unit_price + order.tax - (order.discount || 0)) / 100,
+        notes: order.notes,
+        refundMessage: order.refund_message,
+        shippingAddress: {
+          street: order.shipping_street,
+          city: order.shipping_city,
+          state: order.shipping_state_code,
+          zipcode: order.shipping_zipcode
+        },
+        trackingNumber: order.tracking_number,
+        createdAt: order.created_at,
+        lastUpdatedAt: order.last_updated_at
+      }
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('Update order status error:', error);
+    res.status(500).json({ error: 'Failed to update order status', details: error.message });
   } finally {
     connection.release();
   }
