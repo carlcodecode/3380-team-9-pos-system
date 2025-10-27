@@ -205,7 +205,8 @@ export const OrderManagement = () => {
 
       {/* Order View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px]">
+          <div className="order-items-scroll px-1">
           <DialogHeader>
             <DialogTitle className="text-black text-xl">Order #{selectedOrder?.id}</DialogTitle>
             <DialogDescription className="flex items-center gap-2">
@@ -216,7 +217,7 @@ export const OrderManagement = () => {
               <span>{selectedOrder?.orderDate ? new Date(selectedOrder.orderDate).toLocaleDateString() : ''}</span>
             </DialogDescription>
           </DialogHeader>
-
+          
           {selectedOrder && (
             <div className="space-y-4 py-2">
               {/* Customer & Address Section */}
@@ -240,7 +241,6 @@ export const OrderManagement = () => {
                   )}
                 </div>
               </div>
-
               {/* Order Items Section */}
               {selectedOrder.items && selectedOrder.items.length > 0 && (
                 <div>
@@ -351,7 +351,7 @@ export const OrderManagement = () => {
               </div>
             </div>
           )}
-
+          </div>
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
