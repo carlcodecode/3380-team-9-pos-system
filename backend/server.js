@@ -192,13 +192,11 @@ function handleHealthCheck(req, res) {
 
 const server = http.createServer(handleRequest);
 
-server.listen(PORT, async () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-
-    // Test database connection
-    await testConnection();
+server.listen(PORT, '0.0.0.0', async () => {
+  console.log(`🚀 Server running on port ${PORT} (listening on 0.0.0.0)`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  await testConnection();
 });
 
 export default server;
