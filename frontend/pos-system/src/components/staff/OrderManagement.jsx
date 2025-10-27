@@ -73,13 +73,13 @@ export const OrderManagement = () => {
   const getStatusBadgeClass = (status) => {
     switch(status) {
       case 1: // delivered
-        return 'bg-green-600 text-white border-0';
+        return 'bg-black text-white border-0';
       case 0: // processing
-        return 'bg-blue-600 text-white border-0';
+        return 'bg-black text-white border-0';
       case 2: // shipped
-        return 'bg-gray-800 text-white border-0';
+        return 'bg-black text-white border-0';
       case 3: // refunded
-        return 'bg-red-600 text-white border-0';
+        return 'bg-black text-white border-0';
       default:
         return 'bg-gray-300 text-black border-0';
     }
@@ -131,18 +131,25 @@ export const OrderManagement = () => {
             Try Again
           </Button>
         </div>
-      ) : orders.filter(order => order.orderStatus !== 1 && order.orderStatus !== 3).length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
             <Package className="w-10 h-10 text-gray-400" />
           </div>
-          <h3 className="text-black mb-3">No pending orders</h3>
-          <p className="text-gray-500">All orders have been processed!</p>
+          <h3 className="text-black mb-3">No orders</h3>
+          <p className="text-gray-500">No orders available at the moment!</p>
         </div>
       ) : (
         <div className="space-y-3">
           {orders
-            .filter(order => order.orderStatus !== 1 && order.orderStatus !== 3) // Filter out Delivered (1) and Refunded (3)
+            .sort((a, b) => {
+              // Sort: Processing (0) and Shipped (2) first, then Delivered (1) and Refunded (3) at bottom
+              const aPriority = (a.orderStatus === 0 || a.orderStatus === 2) ? 0 : 1;
+              const bPriority = (b.orderStatus === 0 || b.orderStatus === 2) ? 0 : 1;
+              if (aPriority !== bPriority) return aPriority - bPriority;
+              // Within same priority, sort by order ID (newest first)
+              return b.id - a.id;
+            })
             .map((order) => (
             <div
               key={order.id}
@@ -171,14 +178,23 @@ export const OrderManagement = () => {
                 {order.orderStatus === 0 && (
                   <Button
                     size="sm"
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      setSelectedStatus(2); // Set to shipped
-                      handleUpdateStatus();
+                    onClick={async () => {
+                      try {
+                        setUpdating(true);
+                        await updateOrderStatus(order.id, 2); // Update to shipped directly
+                        toast.success(`Order #${order.id} marked as shipped`);
+                        await fetchOrders(); // Refresh the list
+                      } catch (error) {
+                        console.error('Failed to update order status:', error);
+                        toast.error('Failed to update order status');
+                      } finally {
+                        setUpdating(false);
+                      }
                     }}
+                    disabled={updating}
                     className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
                   >
-                    Process
+                    {updating ? 'Processing...' : 'Process'}
                   </Button>
                 )}
               </div>
