@@ -9,6 +9,7 @@ import mealCategoryRoutes from './routes/mealCategoryRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
 import promoRoutes from './routes/promoRoutes.js';
 import saleEventRoutes from './routes/saleEventRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -142,6 +143,11 @@ function handleRequest(req, res) {
             // Sale event routes
             if (pathname.startsWith('/api/sale-events')) {
                 return saleEventRoutes(req, res, pathname, method);
+            }
+
+            // Order routes
+            if (pathname.startsWith('/api/orders')) {
+                return orderRoutes(req, res, pathname, method);
             }
 
             // Health check

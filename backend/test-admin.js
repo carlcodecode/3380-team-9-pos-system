@@ -59,7 +59,13 @@ const createData = {
 	lastName: 'Staff',
 	phone_number: '555-123-4567',
 	hire_date: '2025-01-15',
-	salary: 45000
+	salary: 45000,
+	report_perm: true,
+	meal_perm: true,
+	stock_perm: true,
+	meal_category_perm: true,
+	sale_event_perm: true,
+	promo_perm: true
 };
 const createResult = await makeRequest('/api/admin/staff', 'POST', createData, adminToken);
 console.log(`   Status: ${createResult.status}`);
@@ -78,6 +84,9 @@ if (createResult.status === 201) {
 	if (staff.salary !== createData.salary) {
 		console.error(`   ERROR: Expected salary ${createData.salary}, got ${staff.salary}`);
 	}
+	if (staff.PERMISSIONS !== 63) {
+		console.error(`   ERROR: Expected PERMISSIONS 63, got ${staff.PERMISSIONS}`);
+	}
 	console.log('   Verification complete.');
 }
 console.log('');
@@ -94,6 +103,21 @@ console.log('3. Testing GET /api/admin/staff (get all staff)...');
 const getAllResult = await makeRequest('/api/admin/staff', 'GET', null, adminToken);
 console.log(`   Status: ${getAllResult.status}`);
 console.log(`   Response:`, getAllResult.data);
+
+// Verify permissions are included in response
+if (getAllResult.status === 200) {
+	console.log('   Verifying permissions are included...');
+	const staffList = getAllResult.data.staff;
+	if (staffList.length > 0) {
+		const firstStaff = staffList[0];
+		if (firstStaff.PERMISSIONS === undefined) {
+			console.error('   ERROR: PERMISSIONS field missing from staff response');
+		} else {
+			console.log(`   Found PERMISSIONS: ${firstStaff.PERMISSIONS}`);
+		}
+	}
+	console.log('   Verification complete.');
+}
 console.log('');
 
 // Test 4: Get specific staff user by ID
@@ -101,6 +125,18 @@ console.log(`4. Testing GET /api/admin/staff/${staffId} (get staff by ID)...`);
 const getByIdResult = await makeRequest(`/api/admin/staff/${staffId}`, 'GET', null, adminToken);
 console.log(`   Status: ${getByIdResult.status}`);
 console.log(`   Response:`, getByIdResult.data);
+
+// Verify permissions are included in response
+if (getByIdResult.status === 200) {
+	console.log('   Verifying permissions are included...');
+	const staff = getByIdResult.data.staff;
+	if (staff.PERMISSIONS === undefined) {
+		console.error('   ERROR: PERMISSIONS field missing from staff response');
+	} else {
+		console.log(`   Found PERMISSIONS: ${staff.PERMISSIONS}`);
+	}
+	console.log('   Verification complete.');
+}
 console.log('');
 
 // Test 5: Update the staff user
@@ -108,11 +144,27 @@ console.log(`5. Testing PUT /api/admin/staff/${staffId} (update staff)...`);
 const updateData = {
 	firstName: 'Updated',
 	lastName: 'StaffUser',
-	email: 'updatedstaff@test.com'
+	email: 'updatedstaff@test.com',
+	report_perm: false,
+	meal_perm: true,
+	stock_perm: false,
+	meal_category_perm: true,
+	sale_event_perm: false,
+	promo_perm: true
 };
 const updateResult = await makeRequest(`/api/admin/staff/${staffId}`, 'PUT', updateData, adminToken);
 console.log(`   Status: ${updateResult.status}`);
 console.log(`   Response:`, updateResult.data);
+
+// Verify the updated staff has the correct permissions (meal + meal_category + promo = 2 + 8 + 32 = 42)
+if (updateResult.status === 200) {
+	const staff = updateResult.data.staff;
+	console.log('   Verifying updated staff permissions...');
+	if (staff.PERMISSIONS !== 42) {
+		console.error(`   ERROR: Expected PERMISSIONS 42, got ${staff.PERMISSIONS}`);
+	}
+	console.log('   Verification complete.');
+}
 console.log('');
 
 // Test 6: Delete the staff user
@@ -142,5 +194,40 @@ const invalidCreateData = { firstName: 'Invalid' }; // Missing email, username, 
 const invalidCreateResult = await makeRequest('/api/admin/staff', 'POST', invalidCreateData, adminToken);
 console.log(`   Status: ${invalidCreateResult.status}`);
 console.log(`   Response:`, invalidCreateResult.data);
+console.log('');
+
+// Test 10: Get Staff/Meal Created report
+console.log('10. Testing GET /api/admin/reports/staff-meal-created (get staff meal created report)...');
+const createdReportResult = await makeRequest('/api/admin/reports/staff-meal-created', 'GET', null, adminToken);
+console.log(`   Status: ${createdReportResult.status}`);
+console.log(`   Response:`, createdReportResult.data);
+console.log('');
+
+// Test 11: Get Staff/Meal Updated report
+console.log('11. Testing GET /api/admin/reports/staff-meal-updated (get staff meal updated report)...');
+const updatedReportResult = await makeRequest('/api/admin/reports/staff-meal-updated', 'GET', null, adminToken);
+console.log(`   Status: ${updatedReportResult.status}`);
+console.log(`   Response:`, updatedReportResult.data);
+console.log('');
+
+// Test 12: Get Staff/Meal Created report with date filters
+console.log('12. Testing GET /api/admin/reports/staff-meal-created with date filters...');
+const createdReportWithFiltersResult = await makeRequest('/api/admin/reports/staff-meal-created?start_date=2025-01-01&end_date=2025-12-31', 'GET', null, adminToken);
+console.log(`   Status: ${createdReportWithFiltersResult.status}`);
+console.log(`   Response:`, createdReportWithFiltersResult.data);
+console.log('');
+
+// Test 13: Get Staff/Meal Updated report with staff_id filter
+console.log('13. Testing GET /api/admin/reports/staff-meal-updated with staff_id filter...');
+const updatedReportWithStaffFilterResult = await makeRequest('/api/admin/reports/staff-meal-updated?staff_id=1', 'GET', null, adminToken);
+console.log(`   Status: ${updatedReportWithStaffFilterResult.status}`);
+console.log(`   Response:`, updatedReportWithStaffFilterResult.data);
+console.log('');
+
+// Test 14: Error cases - Try to access reports without authentication
+console.log('14. Testing GET /api/admin/reports/staff-meal-created without authentication...');
+const noAuthReportResult = await makeRequest('/api/admin/reports/staff-meal-created', 'GET');
+console.log(`   Status: ${noAuthReportResult.status}`);
+console.log(`   Response:`, noAuthReportResult.data);
 
 console.log('\nAll admin endpoint tests completed!');

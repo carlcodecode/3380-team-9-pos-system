@@ -261,3 +261,58 @@ export const deletePromo = async (req, res) => {
     connection.release();
   }
 };
+
+// Validate promo code
+export const validatePromoCode = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    if (!code) {
+      return res.status(400).json({ error: 'Promo code is required' });
+    }
+
+    const [promos] = await pool.query(
+      `SELECT
+        promotion_id,
+        promo_description,
+        promo_type,
+        promo_code,
+        promo_exp_date,
+        created_at
+      FROM PROMOTION
+      WHERE promo_code = ?`,
+      [code.toUpperCase()]
+    );
+
+    if (promos.length === 0) {
+      return res.status(404).json({ error: 'Invalid promo code' });
+    }
+
+    const promo = promos[0];
+
+    // Check if promo code is expired
+    if (promo.promo_exp_date) {
+      const expiryDate = new Date(promo.promo_exp_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (expiryDate < today) {
+        return res.status(400).json({ error: 'Promo code has expired' });
+      }
+    }
+
+    res.json({
+      valid: true,
+      promotion: {
+        id: promo.promotion_id,
+        description: promo.promo_description,
+        type: promo.promo_type,
+        code: promo.promo_code,
+        expiryDate: promo.promo_exp_date
+      }
+    });
+  } catch (error) {
+    console.error('Validate promo code error:', error);
+    res.status(500).json({ error: 'Failed to validate promo code', details: error.message });
+  }
+};

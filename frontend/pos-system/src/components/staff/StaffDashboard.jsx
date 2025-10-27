@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { mockOrders, mockMeals } from '../../lib/mockData';
 import { Navbar } from '../shared/Navbar';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -15,6 +14,7 @@ import {
   Percent,
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { StockRestockForm } from './StockRestockForm';
 import * as api from '../../services/api';
 
 // Import the new component modules
@@ -26,16 +26,98 @@ import { SeasonalDiscountManagement } from './SeasonalDiscountManagement';
 
 export const StaffDashboard = () => {
   const { user } = useAuth();
+  
+  const [selectedStock, setSelectedStock] = useState(null);
+  const [showRestockForm, setShowRestockForm] = useState(false);
+  const [stocks, setStocks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState([]);
 
+  useEffect(() => {
+      let isMounted = true;
+  
+      const fetchStocks = async () => {
+        try {
+          const data = await api.getAllStocks();
+          if (isMounted) {
+            setStocks((prev) => {
+              if (JSON.stringify(prev) !== JSON.stringify(data)) {
+                return data;
+              }
+              return prev;
+            });
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+          if (isMounted) setError('Failed to load stock data');
+        }
+      };
+  
+      fetchStocks();
+      const interval = setInterval(fetchStocks, 3000);
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }, []);
+
+  // Fetch orders for stats
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await api.getAllOrders();
+        setOrders(response.orders || []);
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+      }
+    };
+
+    fetchOrders();
+    // Auto-refresh every 5 seconds for real-time updates
+    const interval = setInterval(fetchOrders, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+    // ==============================
+    // RESTOCK HANDLER
+    // ==============================
+    const handleRestock = async (stockId, quantity) => {
+      try {
+        await api.restockMeal(stockId, { quantity_to_add: quantity });
+        // Optimistic UI update
+        setStocks((prev) =>
+          prev.map((s) =>
+            s.stock_id === stockId
+              ? {
+                  ...s,
+                  quantity_in_stock: Math.min(
+                    s.quantity_in_stock + quantity,
+                    s.max_stock
+                  ),
+                }
+              : s
+          )
+        );
+        setShowRestockForm(false);
+        setSelectedStock(null);
+      } catch (err) {
+        console.error('Restock error:', err);
+        alert('Restock failed.');
+      }
+    };
+
+  // Calculate order stats from real data
   const todayOrders = {
-    pending: mockOrders.filter((o) => o.status === 'pending').length,
-    processing: mockOrders.filter((o) => o.status === 'processing').length,
-    shipped: mockOrders.filter((o) => o.status === 'shipped').length,
-    delivered: mockOrders.filter((o) => o.status === 'delivered').length,
+    processing: orders.filter((o) => o.orderStatus === 0).length,
+    delivered: orders.filter((o) => o.orderStatus === 1).length,
+    shipped: orders.filter((o) => o.orderStatus === 2).length,
+    refunded: orders.filter((o) => o.orderStatus === 3).length,
   };
 
   const [lowStockMeals, setLowStockMeals] = useState([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchLowStockMeals = async () => {
@@ -84,15 +166,7 @@ export const StaffDashboard = () => {
         >
           <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
             <div className="flex items-center gap-3 mb-3">
-              <Clock className="w-6 h-6 text-black" />
-              <span className="text-sm text-gray-500">Pending</span>
-            </div>
-            <div className="text-3xl text-black">{todayOrders.pending}</div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
-            <div className="flex items-center gap-3 mb-3">
-              <RefreshCw className="w-6 h-6 text-black" />
+              <RefreshCw className="w-6 h-6 text-blue-600" />
               <span className="text-sm text-gray-500">Processing</span>
             </div>
             <div className="text-3xl text-black">{todayOrders.processing}</div>
@@ -100,7 +174,7 @@ export const StaffDashboard = () => {
 
           <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
             <div className="flex items-center gap-3 mb-3">
-              <Truck className="w-6 h-6 text-black" />
+              <Truck className="w-6 h-6 text-gray-800" />
               <span className="text-sm text-gray-500">Shipped</span>
             </div>
             <div className="text-3xl text-black">{todayOrders.shipped}</div>
@@ -108,10 +182,18 @@ export const StaffDashboard = () => {
 
           <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
             <div className="flex items-center gap-3 mb-3">
-              <CheckCircle className="w-6 h-6 text-black" />
+              <CheckCircle className="w-6 h-6 text-green-600" />
               <span className="text-sm text-gray-500">Delivered</span>
             </div>
             <div className="text-3xl text-black">{todayOrders.delivered}</div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
+            <div className="flex items-center gap-3 mb-3">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+              <span className="text-sm text-gray-500">Refunded</span>
+            </div>
+            <div className="text-3xl text-black">{todayOrders.refunded}</div>
           </div>
         </motion.div>
 
@@ -150,6 +232,10 @@ export const StaffDashboard = () => {
                     <Button
                       size="sm"
                       className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+                      onClick={() => {
+                      setSelectedStock(meal);
+                      setShowRestockForm(true);
+                  }}
                     >
                       Restock
                     </Button>
@@ -177,6 +263,16 @@ export const StaffDashboard = () => {
               </div>
             </div>
           </motion.div>
+        )}
+
+        {/* RESTOCK FORM */}
+        {showRestockForm && (
+          <StockRestockForm
+            open={showRestockForm}
+            onClose={() => setShowRestockForm(false)}
+            stock={selectedStock}
+            onSave={handleRestock}
+          />
         )}
 
 

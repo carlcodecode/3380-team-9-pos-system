@@ -1,93 +1,153 @@
 import pool from '../config/database.js';
 
-// Create sale event
 export const createSaleEvent = async (req, res) => {
 	console.log('Create sale event request received:', req.body);
 	const connection = await pool.getConnection();
 
 	try {
-		const { event_description, event_start, event_end, sitewide_event_type, sitewide_discount_value } = req.body;
+		const { event_name, event_description, event_start, event_end, meals = [] } = req.body;
 
-		// Validation
-		if (!event_description || sitewide_event_type === undefined || !sitewide_discount_value || !event_start || !event_end) {
-			return res.status(400).json({
-				error: 'All fields are required',
-			});
+		console.log('Parsed body:', { event_name, event_description, event_start, event_end, meals_count: meals.length });
+
+		// Validation (can add meals later)
+		if (!event_name || !event_start || !event_end) {
+			console.log('Missing required fields');
+			return res.status(400).json({ error: 'All fields are required' });
 		}
 
 		if (isNaN(Date.parse(event_start))) {
+			console.log('Invalid start date');
 			return res.status(400).json({ error: 'Event start date is invalid' });
 		}
-
 		if (isNaN(Date.parse(event_end))) {
+			console.log('Invalid end date');
 			return res.status(400).json({ error: 'Event end date is invalid' });
 		}
+
 		await connection.beginTransaction();
+		console.log('🧾 Transaction started');
 
 		// Get staff_id for created_by
-		const staffUserId = req.user.userId;
-		const [staff] = await connection.query('SELECT staff_id FROM STAFF WHERE user_ref = ?', [
-			staffUserId,
-		]);
+		console.log('🔍 Checking staff for user_ref:', req.user?.userId);
+		const [staff] = await connection.query('SELECT staff_id FROM STAFF WHERE user_ref = ?', [req.user?.userId]);
+		console.log('🔍 Staff lookup result:', staff);
 
 		if (staff.length === 0) {
+			console.log('No staff found for user');
 			await connection.rollback();
 			return res.status(403).json({ error: 'Staff user not found' });
 		}
 
 		const createdById = staff[0].staff_id;
 
-		// Insert into SALE_EVENT table
+		// Insert into SALE_EVENT
+		console.log('Inserting sale event...');
 		const [result] = await connection.query(
 			`INSERT INTO SALE_EVENT (
-event_description, event_start, event_end, sitewide_event_type, sitewide_discount_value, created_by, created_at
-) VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-			[event_description, event_start, event_end, sitewide_event_type, sitewide_discount_value, createdById],
+				event_name, event_description, event_start, event_end, created_by, created_at, last_updated_at
+			) VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+			[event_name, event_description, event_start, event_end, createdById]
 		);
 
 		const saleEventId = result.insertId;
+		console.log('SALE_EVENT inserted with ID:', saleEventId);
+
+		// Insert meals
+		if (meals.length > 0) {
+			console.log(`🧾 Inserting ${meals.length} meals for sale_event_id=${saleEventId}`);
+			for (const { meal_ref, discount_rate } of meals) {
+				console.log('🔹 Attempting meal insert:', { meal_ref, discount_rate });
+
+				if (!meal_ref || discount_rate === undefined) {
+					console.log('Invalid meal entry, rolling back');
+					await connection.rollback();
+					return res.status(400).json({ error: 'Each meal must have meal_ref and discount_rate' });
+				}
+				if (discount_rate < 0 || discount_rate >= 100) {
+					console.log('Invalid discount rate, rolling back');
+					await connection.rollback();
+					return res.status(400).json({ error: 'Discount rate must be between 0 and 100' });
+				}
+
+				try {
+					await connection.query(
+						`INSERT INTO MEAL_SALE (meal_ref, sale_event_ref, discount_rate)
+						 VALUES (?, ?, ?)`,
+						[meal_ref, saleEventId, discount_rate]
+					);
+					console.log('Inserted MEAL_SALE for meal_ref:', meal_ref);
+				} catch (mealError) {
+					console.error('❌ Meal insert failed:', mealError.sqlMessage || mealError.message);
+					throw mealError; // Let it bubble to rollback
+				}
+			}
+		} else {
+			console.log('No meals provided, skipping MEAL_SALE inserts');
+		}
 
 		await connection.commit();
+		console.log('Transaction committed successfully');
 
 		res.status(201).json({
 			message: 'Sale event created successfully',
 			sale_event: {
 				sale_event_id: saleEventId,
+				event_name,
 				event_description,
 				event_start,
 				event_end,
-				sitewide_event_type,
-				sitewide_discount_value,
-				created_by: createdById
+				created_by: createdById,
+				created_at: new Date(),
+				meals,
 			},
 		});
 	} catch (error) {
+		console.error('Create sale event error:', error.sqlMessage || error.message);
 		await connection.rollback();
-		console.error('Create sale event error:', error);
-		res.status(500).json({ error: 'Failed to create sale event', details: error.message });
+		res.status(500).json({
+			error: 'Failed to create sale event',
+			details: error.sqlMessage || error.message,
+		});
 	} finally {
+		console.log('🔚 Releasing connection');
 		connection.release();
 	}
 };
+
 
 // Get all sale events
 export const getAllSaleEvents = async (req, res) => {
 	try {
 		const [events] = await pool.query(`
-SELECT
-s.sale_event_id,
-s.event_description,
-s.event_start,
-s.event_end,
-s.sitewide_event_type,
-s.sitewide_discount_value,
-s.created_by,
-s.created_at,
-s.updated_by,
-s.last_updated_at
-FROM SALE_EVENT s
-ORDER BY s.sale_event_id
-`);
+		SELECT
+			s.sale_event_id,
+			s.event_name,
+			s.event_description,
+			s.event_start,
+			s.event_end,
+			s.created_by,
+			s.created_at,
+			s.updated_by,
+			s.last_updated_at,
+			COALESCE(
+				JSON_ARRAYAGG(
+					CASE 
+					WHEN ms.meal_ref IS NOT NULL THEN
+						JSON_OBJECT(
+						'meal_ref', ms.meal_ref,
+						'meal_name', m.meal_name,
+						'discount_rate', ms.discount_rate
+						)
+					END
+				),
+				JSON_ARRAY()
+				) AS meals
+		FROM SALE_EVENT s
+		LEFT JOIN MEAL_SALE ms ON s.sale_event_id = ms.sale_event_ref
+		LEFT JOIN MEAL m ON ms.meal_ref = m.meal_id
+		GROUP BY s.sale_event_id
+		ORDER BY s.sale_event_id
+		`);
 
 		res.json({
 			sale_events: events,
@@ -105,22 +165,30 @@ export const getSaleEventById = async (req, res) => {
 		const { id } = req.params;
 
 		const [rows] = await pool.query(
-			`
-SELECT
-s.sale_event_id,
-s.event_description,
-s.event_start,
-s.event_end,
-s.sitewide_event_type,
-s.sitewide_discount_value,
-s.created_by,
-s.created_at,
-s.updated_by,
-s.last_updated_at
-FROM SALE_EVENT s
-
-WHERE s.sale_event_id = ?
-`,
+					`
+		SELECT
+		s.sale_event_id,
+		s.event_name,
+		s.event_description,
+		s.event_start,
+		s.event_end,
+		s.created_by,
+		s.created_at,
+		s.updated_by,
+		s.last_updated_at,
+		JSON_ARRAYAGG(
+		CASE WHEN ms.meal_ref IS NOT NULL THEN
+			JSON_OBJECT(
+			'meal_ref', ms.meal_ref,
+			'discount_rate', ms.discount_rate
+			)
+		END
+		) AS meals
+		FROM SALE_EVENT s
+		LEFT JOIN MEAL_SALE ms ON s.sale_event_id = ms.sale_event_ref
+		WHERE s.sale_event_id = ?
+		GROUP BY s.sale_event_id
+		`,
 			[id],
 		);
 
@@ -128,173 +196,147 @@ WHERE s.sale_event_id = ?
 			return res.status(404).json({ error: 'Sale event not found' });
 		}
 
-		res.json({ sale_event: rows[0] });
+		const event = rows[0];
+
+		// If no meals return [] so front end doesn't get confused
+		event.meals = event.meals ? JSON.parse(event.meals) : [];
+
+		res.json({ sale_event: event });
 	} catch (error) {
 		console.error('Get sale event by ID error:', error);
 		res.status(500).json({ error: 'Failed to retrieve sale event', details: error.message });
 	}
 };
 
-// Update sale event
 export const updateSaleEvent = async (req, res) => {
-	console.log('Update sale event request received:', { id: req.params.id, ...req.body });
-	const connection = await pool.getConnection();
+  const { id } = req.params;
+  console.log(`Update sale event request for ID ${id}`);
+  console.log('Body received:', req.body);
 
-	try {
-		const { id } = req.params;
-		const { event_description, event_start, event_end, sitewide_event_type, sitewide_discount_value } = req.body;
+  const connection = await pool.getConnection();
 
-		await connection.beginTransaction();
+  try {
+    const { event_name, event_description, event_start, event_end, meals = [] } = req.body;
 
-		// Ensure sale event existence
-		const [existing] = await connection.query(
-			'SELECT sale_event_id FROM SALE_EVENT WHERE sale_event_id = ?',
-			[id],
-		);
-		if (existing.length === 0) {
-			await connection.rollback();
-			return res.status(404).json({ error: 'Sale event not found' });
-		}
+    if (!event_name || !event_start || !event_end) {
+      console.log('Missing required fields in update');
+      return res.status(400).json({
+        error: 'Event name, start date, and end date are required',
+      });
+    }
 
-		// Staff updated_by
-		const staffUserId = req.user.userId;
-		const [staff] = await connection.query('SELECT staff_id FROM STAFF WHERE user_ref = ?', [
-			staffUserId,
-		]);
-		if (staff.length === 0) {
-			await connection.rollback();
-			return res.status(403).json({ error: 'Staff user not found' });
-		}
-		const updatedById = staff[0].staff_id;
+    await connection.beginTransaction();
+    console.log('Transaction started for update');
 
-		const fields = [];
-		const params = [];
+    // Check existing record
+    const [existing] = await connection.query('SELECT * FROM SALE_EVENT WHERE sale_event_id = ?', [id]);
+    if (existing.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Sale event not found' });
+    }
 
-		if (event_description !== undefined) {
-			fields.push('event_description = ?');
-			params.push(event_description);
-		}
-		if (sitewide_event_type !== undefined) {
-			if (!Number.isInteger(sitewide_event_type) || sitewide_event_type < 0) {
-				await connection.rollback();
-				return res.status(400).json({ error: 'sitewide_event_type must be a non-negative integer' });
-			}
-			fields.push('sitewide_event_type = ?');
-			params.push(sitewide_event_type);
-		}
+    console.log('🔍 Existing event:', existing[0]);
 
-		if (sitewide_discount_value !== undefined) {
-			if (!Number.isInteger(sitewide_discount_value) || sitewide_discount_value < 0) {
-				await connection.rollback();
-				return res.status(400).json({ error: 'Discount value must be a non-negative integer' });
-			}
-			else if (!Number.isInteger(sitewide_discount_value) || sitewide_discount_value >= 100) {
-				await connection.rollback();
-				return res.status(400).json({ error: 'Discount value must be below 100.' });
-			}
+    // Normalize fields
+    const desc = event_description?.trim() || null;
 
-			fields.push('sitewide_discount_value = ?');
-			params.push(sitewide_discount_value);
-		}
+    // Update SALE_EVENT
+    console.log('🧾 Updating SALE_EVENT...');
+    await connection.query(
+      `UPDATE SALE_EVENT 
+       SET event_name = ?, event_description = ?, event_start = ?, event_end = ?, 
+           last_updated_at = NOW() 
+       WHERE sale_event_id = ?`,
+      [event_name, desc, event_start, event_end, id]
+    );
+    console.log('SALE_EVENT updated successfully');
 
-		if (event_start !== undefined) {
-			if (isNaN(Date.parse(event_start))) {
-				await connection.rollback();
-				return res.status(400).json({ error: 'Event start must be a valid date (YYYY-MM-DD)' });
-			}
-			fields.push('event_start = ?');
-			params.push(event_start);
-		}
+    // Clear existing meals
+    console.log('🧹 Deleting old MEAL_SALE links...');
+    await connection.query('DELETE FROM MEAL_SALE WHERE sale_event_ref = ?', [id]);
 
-		if (event_end !== undefined) {
-			if (isNaN(Date.parse(event_end))) {
-				await connection.rollback();
-				return res.status(400).json({ error: 'Event end must be a valid date (YYYY-MM-DD)' });
-			}
-			fields.push('event_end = ?');
-			params.push(event_end);
-		}
+    // Re-insert new meals (if any)
+    if (meals.length > 0) {
+      console.log(`Reinserting ${meals.length} meals`);
+      for (const { meal_ref, discount_rate } of meals) {
+        console.log('🔹 Inserting meal link:', { meal_ref, discount_rate });
+        await connection.query(
+          `INSERT INTO MEAL_SALE (meal_ref, sale_event_ref, discount_rate)
+           VALUES (?, ?, ?)`,
+          [meal_ref, id, discount_rate]
+        );
+      }
+    } else {
+      console.log('No meals provided for update');
+    }
 
-		// Update updated_by
-		fields.push('updated_by = ?');
-		params.push(updatedById);
+    await connection.commit();
+    console.log('Transaction committed for update');
 
-		if (fields.length > 0) {
-			params.push(id);
-			await connection.query(
-				`UPDATE SALE_EVENT SET ${fields.join(', ')} WHERE sale_event_id = ?`,
-				params,
-			);
-		}
-
-		await connection.commit();
-
-		// Return updated row
-		const [rows] = await pool.query(
-			`
-SELECT
-s.sale_event_id,
-s.event_description,
-s.event_start,
-s.event_end,
-s.sitewide_event_type,
-s.sitewide_discount_value,
-s.created_by,
-s.created_at,
-s.updated_by,
-s.last_updated_at
-FROM SALE_EVENT s
-
-WHERE s.sale_event_id = ?
-`
-,
-			[id],
-		);
-
-		res.json({
-			message: 'Sale event updated successfully',
-			sale_event: rows[0],
-		});
-	} catch (error) {
-		await connection.rollback();
-		console.error('Update sale event error:', error);
-		res.status(500).json({ error: 'Failed to update sale event', details: error.message });
-	} finally {
-		connection.release();
-	}
+    res.status(200).json({
+      message: 'Sale event updated successfully',
+      sale_event: {
+        sale_event_id: id,
+        event_name,
+        event_description: desc,
+        event_start,
+        event_end,
+        meals,
+      },
+    });
+  } catch (error) {
+    console.error('Update sale event error:', error.sqlMessage || error.message);
+    await connection.rollback();
+    res.status(500).json({
+      error: 'Failed to update sale event',
+      details: error.sqlMessage || error.message,
+    });
+  } finally {
+    connection.release();
+    console.log('🔚 Connection released');
+  }
 };
 
 // Delete sale event
 export const deleteSaleEvent = async (req, res) => {
-	console.log('Delete sale event request received:', { id: req.params.id });
-	const connection = await pool.getConnection();
+  console.log('Delete sale event request received:', { id: req.params.id });
+  const connection = await pool.getConnection();
 
-	try {
-		const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-		await connection.beginTransaction();
+    await connection.beginTransaction();
 
-		// Ensure exists
-		const [existing] = await connection.query(
-			'SELECT sale_event_id FROM SALE_EVENT WHERE sale_event_id = ?',
-			[id],
-		);
-		if (existing.length === 0) {
-			await connection.rollback();
-			return res.status(404).json({ error: 'Sale event not found' });
-		}
+    // Ensure event exists
+    const [existing] = await connection.query(
+      'SELECT sale_event_id FROM SALE_EVENT WHERE sale_event_id = ?',
+      [id]
+    );
+    if (existing.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Sale event not found' });
+    }
 
-		// Explicit delete
-		await connection.query('DELETE FROM SALE_EVENT WHERE sale_event_id = ?', [id]);
+    // 🧹 Delete related MEAL_SALE records first
+    await connection.query('DELETE FROM MEAL_SALE WHERE sale_event_ref = ?', [id]);
 
-		await connection.commit();
+    // Then delete the SALE_EVENT itself
+    await connection.query('DELETE FROM SALE_EVENT WHERE sale_event_id = ?', [id]);
 
-		res.json({ message: 'Sale event deleted successfully' });
-	} catch (error) {
-		await connection.rollback();
-		console.error('Delete sale event error:', error);
-		res.status(500).json({ error: 'Failed to delete sale event', details: error.message });
-	} finally {
-		connection.release();
-	}
+    await connection.commit();
+
+    res.json({
+      message: 'Sale event and related meals deleted successfully',
+      deleted_sale_event_id: id
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Delete sale event error:', error);
+    res.status(500).json({
+      error: 'Failed to delete sale event',
+      details: error.message
+    });
+  } finally {
+    connection.release();
+  }
 };

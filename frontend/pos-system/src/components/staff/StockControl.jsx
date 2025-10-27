@@ -171,8 +171,7 @@ export const StockControl = () => {
               <div className="flex flex-col gap-2 ml-4">
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="border-gray-200 hover:bg-gray-100 rounded-lg"
+                  className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
                   onClick={() => {
                     setSelectedStock(stock);
                     setShowRestockForm(true);

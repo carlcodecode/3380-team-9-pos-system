@@ -285,6 +285,77 @@ export const deletePromo = async (id) => {
   return res.json();
 };
 
+export const validatePromoCode = async (code) => {
+  const res = await fetch(`${API_BASE_URL}/promotions/validate/${code}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Invalid promo code');
+  }
+  return res.json();
+};
+
+// ==============================
+// SEASONAL DISCOUNT / SALE EVENT MANAGEMENT
+// ==============================
+export const getAllSaleEvents = async () => {
+  const res = await fetch(`${API_BASE_URL}/sale-events`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load sale events');
+  return res.json();
+};
+
+export const getSaleEventById = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/sale-events/${id}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get sale event');
+  return res.json();
+};
+
+export const createSaleEvent = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/sale-events`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (![200, 201].includes(res.status)) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to create sale event');
+  }
+  return res.json();
+};
+
+export const updateSaleEvent = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/sale-events/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to update sale event');
+  }
+  return res.json();
+};
+
+export const deleteSaleEvent = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/sale-events/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to delete sale event');
+  }
+  return res.json();
+};
+
 // ==============================
 // CUSTOMER PROFILE & PAYMENT METHODS
 // ==============================
@@ -336,7 +407,98 @@ export const deletePaymentMethod = async (id) => {
 };
 
 // ==============================
+// ORDERS
+// ==============================
+export const getCustomerOrders = async () => {
+  const res = await fetch(`${API_BASE_URL}/orders`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get orders');
+  return res.json();
+};
+
+export const getAllOrders = async () => {
+  const res = await fetch(`${API_BASE_URL}/orders/all`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get all orders');
+  return res.json();
+};
+
+export const getOrderById = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/orders/${id}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get order');
+  return res.json();
+};
+
+export const createOrder = async (data) => {
+  const res = await fetch(`${API_BASE_URL}/orders`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to create order');
+  return res.json();
+};
+
+export const updateOrder = async (id, data) => {
+  const res = await fetch(`${API_BASE_URL}/orders/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update order');
+  return res.json();
+};
+
+export const updateOrderStatus = async (id, status) => {
+  const res = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ orderStatus: status }),
+  });
+  if (!res.ok) throw new Error('Failed to update order status');
+  return res.json();
+};
+
+// ==============================
 // Token helper
 // ==============================
 export const getToken = () => localStorage.getItem('token');
 export const removeToken = () => localStorage.removeItem('token');
+
+// ==============================
+// ADMIN REPORTS
+// ==============================
+export const getStaffMealCreatedReport = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.start_date) queryParams.append('start_date', params.start_date);
+  if (params.end_date) queryParams.append('end_date', params.end_date);
+  if (params.staff_id) queryParams.append('staff_id', params.staff_id);
+
+  const res = await fetch(`${API_BASE_URL}/admin/reports/staff-meal-created?${queryParams}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get staff meal created report');
+  return res.json();
+};
+
+export const getStaffMealUpdatedReport = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.start_date) queryParams.append('start_date', params.start_date);
+  if (params.end_date) queryParams.append('end_date', params.end_date);
+  if (params.staff_id) queryParams.append('staff_id', params.staff_id);
+
+  const res = await fetch(`${API_BASE_URL}/admin/reports/staff-meal-updated?${queryParams}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get staff meal updated report');
+  return res.json();
+};

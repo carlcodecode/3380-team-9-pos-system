@@ -32,9 +32,12 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
     password: '',
     email: '',
     permissions: {
-      mealsCrud: false,
-      stockCrud: false,
-      reportsView: false,
+      reports: false,
+      orders: false,
+      mealManagement: false,
+      stockControl: false,
+      promoCodes: false,
+      seasonalDiscounts: false,
     }
   });
 
@@ -68,9 +71,12 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
         email: selectedStaff.email || '',
         password: '',
         permissions: selectedStaff.permissions || {
-          mealsCrud: false,
-          stockCrud: false,
-          reportsView: false,
+          reports: false,
+          orders: false,
+          mealManagement: false,
+          stockControl: false,
+          promoCodes: false,
+          seasonalDiscounts: false,
         }
       });
     } else if (viewMode === 'staff-add') {
@@ -84,9 +90,12 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
         email: '',
         password: '',
         permissions: {
-          mealsCrud: false,
-          stockCrud: false,
-          reportsView: false,
+          reports: false,
+          orders: false,
+          mealManagement: false,
+          stockControl: false,
+          promoCodes: false,
+          seasonalDiscounts: false,
         }
       });
     }
@@ -643,47 +652,92 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="mealsCrud"
-                      checked={formData.permissions.mealsCrud}
+                      id="reports"
+                      checked={formData.permissions.reports}
                       onCheckedChange={(checked) => 
                         setFormData({
                           ...formData,
-                          permissions: {...formData.permissions, mealsCrud: checked}
+                          permissions: {...formData.permissions, reports: checked}
                         })
                       }
                     />
-                    <Label htmlFor="mealsCrud" className="cursor-pointer font-normal">
-                      Meals CRUD
+                    <Label htmlFor="reports" className="cursor-pointer font-normal">
+                      Reports
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="stockCrud"
-                      checked={formData.permissions.stockCrud}
+                      id="orders"
+                      checked={formData.permissions.orders}
                       onCheckedChange={(checked) => 
                         setFormData({
                           ...formData,
-                          permissions: {...formData.permissions, stockCrud: checked}
+                          permissions: {...formData.permissions, orders: checked}
                         })
                       }
                     />
-                    <Label htmlFor="stockCrud" className="cursor-pointer font-normal">
-                      Stock CRUD
+                    <Label htmlFor="orders" className="cursor-pointer font-normal">
+                      Orders
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="reportsView"
-                      checked={formData.permissions.reportsView}
+                      id="mealManagement"
+                      checked={formData.permissions.mealManagement}
                       onCheckedChange={(checked) => 
                         setFormData({
                           ...formData,
-                          permissions: {...formData.permissions, reportsView: checked}
+                          permissions: {...formData.permissions, mealManagement: checked}
                         })
                       }
                     />
-                    <Label htmlFor="reportsView" className="cursor-pointer font-normal">
-                      Reports View
+                    <Label htmlFor="mealManagement" className="cursor-pointer font-normal">
+                      Meal Management
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="stockControl"
+                      checked={formData.permissions.stockControl}
+                      onCheckedChange={(checked) => 
+                        setFormData({
+                          ...formData,
+                          permissions: {...formData.permissions, stockControl: checked}
+                        })
+                      }
+                    />
+                    <Label htmlFor="stockControl" className="cursor-pointer font-normal">
+                      Stock Control
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="promoCodes"
+                      checked={formData.permissions.promoCodes}
+                      onCheckedChange={(checked) => 
+                        setFormData({
+                          ...formData,
+                          permissions: {...formData.permissions, promoCodes: checked}
+                        })
+                      }
+                    />
+                    <Label htmlFor="promoCodes" className="cursor-pointer font-normal">
+                      Promo Codes
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="seasonalDiscounts"
+                      checked={formData.permissions.seasonalDiscounts}
+                      onCheckedChange={(checked) => 
+                        setFormData({
+                          ...formData,
+                          permissions: {...formData.permissions, seasonalDiscounts: checked}
+                        })
+                      }
+                    />
+                    <Label htmlFor="seasonalDiscounts" className="cursor-pointer font-normal">
+                      Seasonal Discounts
                     </Label>
                   </div>
                 </div>
@@ -818,21 +872,39 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
                 <h3 className="text-black mb-4">Permissions</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.mealsCrud ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.mealsCrud ? 'text-black' : 'text-gray-400'}>
-                      Meals CRUD
+                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.reports ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={selectedStaff.permissions?.reports ? 'text-black' : 'text-gray-400'}>
+                      Reports
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.stockCrud ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.stockCrud ? 'text-black' : 'text-gray-400'}>
-                      Stock CRUD
+                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.orders ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={selectedStaff.permissions?.orders ? 'text-black' : 'text-gray-400'}>
+                      Orders
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.reportsView ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.reportsView ? 'text-black' : 'text-gray-400'}>
-                      Reports View
+                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.mealManagement ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={selectedStaff.permissions?.mealManagement ? 'text-black' : 'text-gray-400'}>
+                      Meal Management
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.stockControl ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={selectedStaff.permissions?.stockControl ? 'text-black' : 'text-gray-400'}>
+                      Stock Control
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.promoCodes ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={selectedStaff.permissions?.promoCodes ? 'text-black' : 'text-gray-400'}>
+                      Promo Codes
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.seasonalDiscounts ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={selectedStaff.permissions?.seasonalDiscounts ? 'text-black' : 'text-gray-400'}>
+                      Seasonal Discounts
                     </span>
                   </div>
                 </div>

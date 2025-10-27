@@ -4,6 +4,7 @@ import {
   getPromoById,
   updatePromo,
   deletePromo,
+  validatePromoCode,
 } from '../controllers/promoController.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
@@ -23,6 +24,13 @@ export default function promoRoutes(req, res, pathname, method) {
 
   if (pathname === '/api/promotions' && method === 'GET') {
     return withAuth(() => getAllPromos(req, res)); // Changed from withStaffAuth to withAuth
+  }
+
+  // Validate promo code by code string
+  const validateMatch = pathname.match(/^\/api\/promotions\/validate\/(.+)$/);
+  if (validateMatch && method === 'GET') {
+    const code = decodeURIComponent(validateMatch[1]);
+    return withAuth(() => validatePromoCode({ ...req, params: { code } }, res));
   }
 
   // Single promotion with ID
