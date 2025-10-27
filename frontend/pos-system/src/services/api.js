@@ -1,7 +1,38 @@
 // src/services/api.js
+import { io } from 'socket.io-client';
 
 // Base API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+// Socket.IO client
+const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3001', {
+    autoConnect: false,
+    withCredentials: true,
+});
+
+// Socket connection management
+export const connectSocket = (userId) => {
+    if (!socket.connected) {
+        socket.connect();
+        socket.emit('authenticate', userId);
+    }
+};
+
+export const disconnectSocket = () => {
+    if (socket.connected) {
+        socket.disconnect();
+    }
+};
+
+export const onNotification = (callback) => {
+    socket.on('notification', callback);
+    return () => socket.off('notification', callback);
+};
+
+export const onOrderNotification = (callback) => {
+    socket.on('order_notification', callback);
+    return () => socket.off('order_notification', callback);
+};
 
 // Helper: build request with auth token
 const getHeaders = (isJSON = true) => {
