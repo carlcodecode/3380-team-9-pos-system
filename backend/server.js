@@ -1,5 +1,6 @@
 import http from 'http';
 import url from 'url';
+import { Server as SocketIOServer } from 'socket.io';
 import pool, { testConnection } from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -191,10 +192,45 @@ function handleHealthCheck(req, res) {
 
 const server = http.createServer(handleRequest);
 
+// Initialize Socket.IO
+const io = new SocketIOServer(server, {
+    cors: {
+        origin: [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3002',
+            'http://localhost:5173',
+            process.env.FRONTEND_URL,
+        ].filter(Boolean),
+        credentials: true,
+    },
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+    console.log('🔌 Client connected:', socket.id);
+
+    // Handle user authentication for notifications
+    socket.on('authenticate', (userId) => {
+        socket.join(`user_${userId}`);
+        console.log(`👤 User ${userId} authenticated for notifications`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('🔌 Client disconnected:', socket.id);
+    });
+});
+
+// Make io available globally for controllers
+global.io = io;
+
+// ============ START SERVER ============
+
 server.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    console.log(`🔌 WebSocket server initialized`);
 
     // Test database connection
     await testConnection();

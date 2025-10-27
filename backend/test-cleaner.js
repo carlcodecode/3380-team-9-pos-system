@@ -157,19 +157,19 @@ const cleanupMealCategories = async () => {
 	}
 };
 
-const cleanupStocks = async () => {
-	try {
+//const cleanupStocks = async () => {
+//	try {
 		// This will be handled by foreign key constraints when meals are deleted
 		// But let's also clean up any orphaned stock records
-		const [result] = await pool.query(
-			'DELETE FROM STOCK WHERE quantity_in_stock = ? OR reorder_threshold = ?',
-			[50, 10] // Common test values
-		);
-		console.log(`✓ Deleted ${result.affectedRows} test stock records from database`);
-	} catch (error) {
-		console.log(`✗ Database stock cleanup failed: ${error.message}`);
-	}
-};
+//		const [result] = await pool.query(
+//			'DELETE FROM STOCK WHERE quantity_in_stock = ? OR reorder_threshold = ?',
+//			[50, 10] // Common test values
+//		);
+//		console.log(`✓ Deleted ${result.affectedRows} test stock records from database`);
+//	} catch (error) {
+//		console.log(`✗ Database stock cleanup failed: ${error.message}`);
+//	}
+//};
 
 const cleanupUsers = async () => {
 	try {
@@ -200,7 +200,7 @@ const cleanupOrders = async () => {
 // Execute database cleanup
 await cleanupMeals();
 await cleanupMealCategories();
-await cleanupStocks();
+//await cleanupStocks();
 await cleanupUsers();
 await cleanupOrders();
 

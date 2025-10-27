@@ -1,5 +1,26 @@
 import pool from '../config/database.js';
 
+// Helper function to emit notifications
+const emitNotification = (eventType, data) => {
+    if (global.io) {
+        // Emit to all connected clients (staff/admin)
+        global.io.emit('notification', {
+            type: eventType,
+            data: data,
+            timestamp: new Date().toISOString()
+        });
+
+        // If it's an order-related event, also emit to the specific customer
+        if (data.customer_ref) {
+            global.io.to(`user_${data.customer_ref}`).emit('order_notification', {
+                type: eventType,
+                data: data,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+};
+
 // formatAlerts so alerts is re-usable for both triggers
 const formatAlerts = (rows) => {
   return rows.map((row) => {
@@ -85,23 +106,26 @@ export const getLowStockAlerts = async (req, res) => {
 };
 
 export const markAlertResolved = async (req, res) => {
-  try {
-    const { eventId } = req.params;
+    try {
+        const { eventId } = req.params;
 
-    const [result] = await pool.query(
-      `UPDATE EVENT_OUTBOX 
-       SET resolved = 1, resolved_at = NOW()
-       WHERE event_id = ?`,
-      [eventId],
-    );
+        const [result] = await pool.query(
+            `UPDATE EVENT_OUTBOX
+             SET resolved = 1, resolved_at = NOW()
+             WHERE event_id = ?`,
+            [eventId],
+        );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Alert not found' });
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Alert not found' });
+        }
+
+        // Emit notification for resolved alert
+        emitNotification('ALERT_RESOLVED', { eventId });
+
+        return res.json({ success: true, message: 'Alert marked as resolved' });
+    } catch (error) {
+        console.error('Error resolving alert:', error);
+        return res.status(500).json({ error: 'Failed to resolve alert' });
     }
-
-    return res.json({ success: true, message: 'Alert marked as resolved' });
-  } catch (error) {
-    console.error('Error resolving alert:', error);
-    return res.status(500).json({ error: 'Failed to resolve alert' });
-  }
 };
