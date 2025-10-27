@@ -653,3 +653,53 @@ WHERE activity_type = 'UPDATED'
 		});
 	}
 };
+
+// Get Meal Sales Report
+export const getMealSalesReport = async (req, res) => {
+	try {
+		const { start_date, end_date } = req.query || {};
+
+		let query = `
+SELECT
+    ol.meal_ref as meal_id,
+    m.meal_name,
+    SUM(ol.num_units_ordered) as total_quantity_sold,
+    SUM(ol.price_at_sale * ol.num_units_ordered) as total_revenue,
+    ROUND(AVG(ol.price_at_sale)) as average_price
+FROM ORDER_LINE ol
+JOIN ORDERS o ON ol.order_ref = o.order_id
+JOIN MEAL m ON ol.meal_ref = m.meal_id
+WHERE o.order_status != 3
+`;
+
+		const params = [];
+
+		if (start_date) {
+			query += ' AND o.order_date >= ?';
+			params.push(start_date);
+		}
+
+		if (end_date) {
+			query += ' AND o.order_date <= ?';
+			params.push(end_date);
+		}
+
+		query += ' GROUP BY ol.meal_ref, m.meal_name ORDER BY total_revenue DESC';
+
+		const [results] = await pool.query(query, params);
+
+		res.json({
+			report: 'Meal Sales',
+			filters: { start_date, end_date },
+			data: results,
+			count: results.length
+		});
+
+	} catch (error) {
+		console.error('Get meal sales report error:', error);
+		res.status(500).json({
+			error: 'Failed to retrieve meal sales report',
+			details: error.message
+		});
+	}
+};
