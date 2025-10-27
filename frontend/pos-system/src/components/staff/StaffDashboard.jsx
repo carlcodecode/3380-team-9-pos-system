@@ -32,7 +32,7 @@ export const StaffDashboard = () => {
   
   const [selectedStock, setSelectedStock] = useState(null);
   const [showRestockForm, setShowRestockForm] = useState(false);
-  const [showReports, setShowReports] = useState(false);
+  const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard', 'reports', 'report-view'
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
@@ -190,240 +190,244 @@ export const StaffDashboard = () => {
       <Navbar />
 
       <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="bg-white rounded-lg border border-gray-200 p-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-black mb-2">Staff Dashboard</h1>
-                <p className="text-gray-500">Operations and inventory management</p>
-              </div>
-              {/* Generate Report Button - Only visible if user has Reports permission */}
-              {canViewReports && (
-                <Button
-                  onClick={() => setShowReports(true)}
-                  className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  Generate Report
-                </Button>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Order Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-        >
-          <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
-            <div className="flex items-center gap-3 mb-3">
-              <RefreshCw className="w-6 h-6 text-blue-600" />
-              <span className="text-sm text-gray-500">Processing</span>
-            </div>
-            <div className="text-3xl text-black">{todayOrders.processing}</div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
-            <div className="flex items-center gap-3 mb-3">
-              <Truck className="w-6 h-6 text-gray-800" />
-              <span className="text-sm text-gray-500">Shipped</span>
-            </div>
-            <div className="text-3xl text-black">{todayOrders.shipped}</div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
-            <div className="flex items-center gap-3 mb-3">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <span className="text-sm text-gray-500">Delivered</span>
-            </div>
-            <div className="text-3xl text-black">{todayOrders.delivered}</div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
-            <div className="flex items-center gap-3 mb-3">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-              <span className="text-sm text-gray-500">Refunded</span>
-            </div>
-            <div className="text-3xl text-black">{todayOrders.refunded}</div>
-          </div>
-        </motion.div>
-
-        {/* Low Stock Alert (Live from API) */}
-        {!loadingAlerts && lowStockMeals.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8"
-          >
-            <div className="bg-white rounded-lg border-2 border-black p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <AlertTriangle className="w-6 h-6 text-black" />
-                <h3 className="text-black">Low Stock Alerts</h3>
-                <Badge className="bg-black text-white border-0">
-                  {lowStockMeals.length}
-                </Badge>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                {lowStockMeals.map((meal) => (
-                  <div
-                    key={meal.event_id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div>
-                      <div className="text-black mb-1">
-                        {meal.meal_name || `Meal #${meal.meal_ref}`}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Only {meal.quantity_in_stock} units remaining
-                        (threshold: {meal.reorder_threshold})
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-                      onClick={() => {
-                      setSelectedStock(meal);
-                      setShowRestockForm(true);
-                  }}
-                    >
-                      Restock
-                    </Button>
-                    <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-gray-600 hover:text-black border-gray-300 rounded-lg"
-                    onClick={async () => {
-                      try {
-                        await api.resolveLowStockAlert(meal.event_id);
-                        console.log(`Marked ${meal.meal_name} as resolved`);
-                        // Remove this alert immediately from UI
-                        setLowStockMeals((prev) =>
-                          prev.filter((m) => m.event_id !== meal.event_id)
-                        );
-                      } catch (err) {
-                        console.error('Failed to mark alert resolved:', err);
-                      }
-                    }}
-                  >
-                    Mark as Resolved
-                  </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* RESTOCK FORM */}
-        {showRestockForm && (
-          <StockRestockForm
-            open={showRestockForm}
-            onClose={() => setShowRestockForm(false)}
-            stock={selectedStock}
-            onSave={handleRestock}
+        {/* Show Reports View */}
+        {(viewMode === 'reports' || viewMode === 'report-view') ? (
+          <StaffReports 
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
           />
-        )}
-
-
-        {/* Main Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-lg border border-gray-200 p-8"
-        >
-          <Tabs defaultValue={getDefaultTab()} className="space-y-6">
-            <TabsList className="w-full grid bg-gray-100 border-gray-200 h-auto" style={{ gridTemplateColumns: `repeat(${[canViewOrders, canViewMeals, canViewStock, canViewPromos, canViewDiscounts].filter(Boolean).length}, 1fr)` }}>
-              {canViewOrders && (
-                <TabsTrigger value="orders" className="data-[state=active]:bg-white">
-                  Orders
-                </TabsTrigger>
-              )}
-              {canViewMeals && (
-                <TabsTrigger value="meals" className="data-[state=active]:bg-white">
-                  Meal Management
-                </TabsTrigger>
-              )}
-              {canViewStock && (
-                <TabsTrigger value="stock" className="data-[state=active]:bg-white">
-                  Stock Control
-                </TabsTrigger>
-              )}
-              {canViewPromos && (
-                <TabsTrigger value="promos" className="data-[state=active]:bg-white flex items-center justify-center">
-                  <Gift className="w-4 h-4 mr-2" />
-                  Promo Codes
-                </TabsTrigger>
-              )}
-              {canViewDiscounts && (
-                <TabsTrigger value="discounts" className="data-[state=active]:bg-white flex items-center justify-center">
-                  <Percent className="w-4 h-4 mr-2" />
-                  Seasonal Discounts
-                </TabsTrigger>
-              )}
-            </TabsList>
-
-            {/* Orders Tab */}
-            {canViewOrders && (
-              <TabsContent value="orders" className="space-y-4">
-                <OrderManagement />
-              </TabsContent>
-            )}
-
-            {/* Meals Tab */}
-            {canViewMeals && (
-              <TabsContent value="meals" className="space-y-4">
-                <MealManagement />
-              </TabsContent>
-            )}
-
-            {/* Stock Tab */}
-            {canViewStock && (
-              <TabsContent value="stock" className="space-y-4">
-                <StockControl />
-              </TabsContent>
-            )}
-
-            {/* Promo Codes Tab */}
-            {canViewPromos && (
-              <TabsContent value="promos" className="space-y-4">
-                <PromoCodeManagement />
-              </TabsContent>
-            )}
-
-            {/* Seasonal Discounts Tab */}
-            {canViewDiscounts && (
-              <TabsContent value="discounts" className="space-y-4">
-                <SeasonalDiscountManagement />
-              </TabsContent>
-            )}
-
-            {/* No Permissions Message */}
-            {!canViewOrders && !canViewMeals && !canViewStock && !canViewPromos && !canViewDiscounts && (
-              <div className="text-center py-16">
-                <AlertTriangle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-black mb-2">No Permissions</h3>
-                <p className="text-gray-500">You don't have access to any modules. Contact your administrator.</p>
+        ) : (
+          <>
+            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <div className="bg-white rounded-lg border border-gray-200 p-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-black mb-2">Staff Dashboard</h1>
+                    <p className="text-gray-500">Operations and inventory management</p>
+                  </div>
+                  {/* Generate Report Button - Only visible if user has Reports permission */}
+                  {canViewReports && (
+                    <Button
+                      onClick={() => setViewMode('reports')}
+                      className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Generate Report
+                    </Button>
+                  )}
+                </div>
               </div>
-            )}
-          </Tabs>
-        </motion.div>
+            </motion.div>
 
-        {/* Staff Reports Modal */}
-        <StaffReports 
-          open={showReports} 
-          onClose={() => setShowReports(false)} 
-        />
+            {/* Order Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+            >
+              <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
+                <div className="flex items-center gap-3 mb-3">
+                  <RefreshCw className="w-6 h-6 text-blue-600" />
+                  <span className="text-sm text-gray-500">Processing</span>
+                </div>
+                <div className="text-3xl text-black">{todayOrders.processing}</div>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
+                <div className="flex items-center gap-3 mb-3">
+                  <Truck className="w-6 h-6 text-gray-800" />
+                  <span className="text-sm text-gray-500">Shipped</span>
+                </div>
+                <div className="text-3xl text-black">{todayOrders.shipped}</div>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
+                <div className="flex items-center gap-3 mb-3">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  <span className="text-sm text-gray-500">Delivered</span>
+                </div>
+                <div className="text-3xl text-black">{todayOrders.delivered}</div>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 p-6 card-glow">
+                <div className="flex items-center gap-3 mb-3">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <span className="text-sm text-gray-500">Refunded</span>
+                </div>
+                <div className="text-3xl text-black">{todayOrders.refunded}</div>
+              </div>
+            </motion.div>
+
+            {/* Low Stock Alert (Live from API) */}
+            {!loadingAlerts && lowStockMeals.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mb-8"
+              >
+                <div className="bg-white rounded-lg border-2 border-black p-6">
+                  <div className="flex items-center gap-3 mb-5">
+                    <AlertTriangle className="w-6 h-6 text-black" />
+                    <h3 className="text-black">Low Stock Alerts</h3>
+                    <Badge className="bg-black text-white border-0">
+                      {lowStockMeals.length}
+                    </Badge>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {lowStockMeals.map((meal) => (
+                      <div
+                        key={meal.event_id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div>
+                          <div className="text-black mb-1">
+                            {meal.meal_name || `Meal #${meal.meal_ref}`}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Only {meal.quantity_in_stock} units remaining
+                            (threshold: {meal.reorder_threshold})
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+                          onClick={() => {
+                          setSelectedStock(meal);
+                          setShowRestockForm(true);
+                      }}
+                        >
+                          Restock
+                        </Button>
+                        <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-gray-600 hover:text-black border-gray-300 rounded-lg"
+                        onClick={async () => {
+                          try {
+                            await api.resolveLowStockAlert(meal.event_id);
+                            console.log(`Marked ${meal.meal_name} as resolved`);
+                            // Remove this alert immediately from UI
+                            setLowStockMeals((prev) =>
+                              prev.filter((m) => m.event_id !== meal.event_id)
+                            );
+                          } catch (err) {
+                            console.error('Failed to mark alert resolved:', err);
+                          }
+                        }}
+                      >
+                        Mark as Resolved
+                      </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* RESTOCK FORM */}
+            {showRestockForm && (
+              <StockRestockForm
+                open={showRestockForm}
+                onClose={() => setShowRestockForm(false)}
+                stock={selectedStock}
+                onSave={handleRestock}
+              />
+            )}
+
+
+            {/* Main Content */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-lg border border-gray-200 p-8"
+            >
+              <Tabs defaultValue={getDefaultTab()} className="space-y-6">
+                <TabsList className="w-full grid bg-gray-100 border-gray-200 h-auto" style={{ gridTemplateColumns: `repeat(${[canViewOrders, canViewMeals, canViewStock, canViewPromos, canViewDiscounts].filter(Boolean).length}, 1fr)` }}>
+                  {canViewOrders && (
+                    <TabsTrigger value="orders" className="data-[state=active]:bg-white">
+                      Orders
+                    </TabsTrigger>
+                  )}
+                  {canViewMeals && (
+                    <TabsTrigger value="meals" className="data-[state=active]:bg-white">
+                      Meal Management
+                    </TabsTrigger>
+                  )}
+                  {canViewStock && (
+                    <TabsTrigger value="stock" className="data-[state=active]:bg-white">
+                      Stock Control
+                    </TabsTrigger>
+                  )}
+                  {canViewPromos && (
+                    <TabsTrigger value="promos" className="data-[state=active]:bg-white flex items-center justify-center">
+                      <Gift className="w-4 h-4 mr-2" />
+                      Promo Codes
+                    </TabsTrigger>
+                  )}
+                  {canViewDiscounts && (
+                    <TabsTrigger value="discounts" className="data-[state=active]:bg-white flex items-center justify-center">
+                      <Percent className="w-4 h-4 mr-2" />
+                      Seasonal Discounts
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+
+                {/* Orders Tab */}
+                {canViewOrders && (
+                  <TabsContent value="orders" className="space-y-4">
+                    <OrderManagement />
+                  </TabsContent>
+                )}
+
+                {/* Meals Tab */}
+                {canViewMeals && (
+                  <TabsContent value="meals" className="space-y-4">
+                    <MealManagement />
+                  </TabsContent>
+                )}
+
+                {/* Stock Tab */}
+                {canViewStock && (
+                  <TabsContent value="stock" className="space-y-4">
+                    <StockControl />
+                  </TabsContent>
+                )}
+
+                {/* Promo Codes Tab */}
+                {canViewPromos && (
+                  <TabsContent value="promos" className="space-y-4">
+                    <PromoCodeManagement />
+                  </TabsContent>
+                )}
+
+                {/* Seasonal Discounts Tab */}
+                {canViewDiscounts && (
+                  <TabsContent value="discounts" className="space-y-4">
+                    <SeasonalDiscountManagement />
+                  </TabsContent>
+                )}
+
+                {/* No Permissions Message */}
+                {!canViewOrders && !canViewMeals && !canViewStock && !canViewPromos && !canViewDiscounts && (
+                  <div className="text-center py-16">
+                    <AlertTriangle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-black mb-2">No Permissions</h3>
+                    <p className="text-gray-500">You don't have access to any modules. Contact your administrator.</p>
+                  </div>
+                )}
+              </Tabs>
+            </motion.div>
+          </>
+        )}
       </div>
     </div>
   );
