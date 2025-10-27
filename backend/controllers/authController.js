@@ -178,7 +178,7 @@ export const login = async (req, res) => {
       }
     } else if (role === 'staff' || role === 'admin') {
       const [staff] = await pool.query(
-        'SELECT staff_id, first_name, last_name FROM STAFF WHERE user_ref = ?',
+        'SELECT staff_id, first_name, last_name, PERMISSIONS FROM STAFF WHERE user_ref = ?',
         [user.user_id]
       );
 
@@ -186,7 +186,8 @@ export const login = async (req, res) => {
         additionalData = {
           staffId: staff[0].staff_id,
           firstName: staff[0].first_name,
-          lastName: staff[0].last_name
+          lastName: staff[0].last_name,
+          permissions: staff[0].PERMISSIONS || 0
         };
       }
     }
