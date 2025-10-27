@@ -224,6 +224,12 @@ io.on('connection', (socket) => {
 // Make io available globally for controllers
 global.io = io;
 
+// Import and start event processing
+import { processEventOutbox } from './controllers/triggerController.js';
+
+// Process EVENT_OUTBOX every 5 seconds to emit notifications for database-triggered events
+setInterval(processEventOutbox, 5000);
+
 // ============ START SERVER ============
 
 server.listen(PORT, async () => {

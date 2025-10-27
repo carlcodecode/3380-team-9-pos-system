@@ -116,7 +116,7 @@ if (customerToken) {
 
   const orderResult = await makeRequest('/api/orders', 'POST', orderData, customerToken);
   console.log(`   Order Creation Status: ${orderResult.status}`);
-  if (orderResult.status === 201) {
+  if (orderResult.status === 200) {
     testOrderId = orderResult.data.order.id;
     console.log(`   ✅ Test order created with ID: ${testOrderId}\n`);
   } else {
@@ -198,5 +198,5 @@ console.log('5. Check browser console for WebSocket connection logs');
 
 console.log('\nAll notification tests completed!');
 
-// Exit after a brief delay to allow cleanup
-setTimeout(() => process.exit(0), 1000);
+// Exit immediately
+process.exit(0);

@@ -21,6 +21,52 @@ const emitNotification = (eventType, data) => {
     }
 };
 
+// Function to process EVENT_OUTBOX and emit notifications for new events
+export const processEventOutbox = async () => {
+    try {
+        // Get unprocessed events from EVENT_OUTBOX
+        const [events] = await pool.query(
+            'SELECT * FROM EVENT_OUTBOX WHERE resolved = 0 ORDER BY created_at ASC'
+        );
+
+        for (const event of events) {
+            const payload = typeof event.payload_json === 'string'
+                ? JSON.parse(event.payload_json)
+                : event.payload_json;
+
+            // Emit notification based on event type
+            if (event.event_type === 'ORDER_SHIPPED') {
+                emitNotification('ORDER_SHIPPED', {
+                    order_id: event.ref_order_id,
+                    customer_ref: payload.customer_ref,
+                    tracking_number: payload.tracking_number,
+                    shipped_at: payload.shipped_at
+                });
+            } else if (event.event_type === 'ORDER_DELIVERED') {
+                emitNotification('ORDER_DELIVERED', {
+                    order_id: event.ref_order_id,
+                    customer_ref: payload.customer_ref,
+                    tracking_number: payload.tracking_number,
+                    delivered_at: payload.delivered_at
+                });
+            } else if (event.event_type === 'ORDER_TRACKING_ASSIGNED') {
+                emitNotification('ORDER_TRACKING_ASSIGNED', {
+                    order_id: event.ref_order_id,
+                    tracking_number: payload.tracking_number,
+                    assigned_at: payload.assigned_at
+                });
+            } else if (event.event_type === 'INVENTORY_RESTOCK_NEEDED') {
+                emitNotification('INVENTORY_RESTOCK_NEEDED', payload);
+            }
+
+            // Mark event as processed (optional - you might want to keep them for history)
+            // await pool.query('UPDATE EVENT_OUTBOX SET resolved = 1 WHERE event_id = ?', [event.event_id]);
+        }
+    } catch (error) {
+        console.error('Error processing event outbox:', error);
+    }
+};
+
 // formatAlerts so alerts is re-usable for both triggers
 const formatAlerts = (rows) => {
   return rows.map((row) => {
