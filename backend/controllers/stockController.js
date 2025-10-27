@@ -58,10 +58,11 @@ export const updateStock = async (req, res) => {
           reorder_threshold = ?, 
           stock_fulfillment_time = ?, 
           needs_reorder = ?, 
-          last_updated_at = NOW() 
+          last_updated_at = NOW(), 
+          updated_by = ?
       WHERE stock_id = ?
       `,
-      [quantity_in_stock, reorder_threshold, stock_fulfillment_time, needs_reorder, id]
+      [quantity_in_stock, reorder_threshold, stock_fulfillment_time, needs_reorder, req.user.userId || null, id]
     );
 
     if (result.affectedRows === 0) {
@@ -172,7 +173,7 @@ export const restockMeal = async (req, res) => {
 
     res.json({
       message: `Restock successful. Added ${quantity_to_add} units.`,
-      data: { newQuantity, additionalCost },
+      data: { newQuantity, additionalCost, newTotalSpent: stock.total_spent + additionalCost },
     });
   } catch (error) {
     await connection.rollback();

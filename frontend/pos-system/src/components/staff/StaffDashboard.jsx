@@ -18,6 +18,7 @@ import { motion } from 'motion/react';
 import { StockRestockForm } from './StockRestockForm';
 import { StaffReports } from './StaffReports';
 import * as api from '../../services/api';
+import { toast } from 'sonner'; 
 import { PERMISSIONS, hasPermission } from '../../utils/permissions';
 
 // Import the new component modules
@@ -129,26 +130,37 @@ export const StaffDashboard = () => {
     // ==============================
     const handleRestock = async (stockId, quantity) => {
       try {
-        await api.restockMeal(stockId, { quantity_to_add: quantity });
+        const response = await api.restockMeal(stockId, { quantity_to_add: quantity });
+        const { newQuantity, additionalCost } = response.data;
+        
         // Optimistic UI update
         setStocks((prev) =>
-          prev.map((s) =>
-            s.stock_id === stockId
-              ? {
-                  ...s,
-                  quantity_in_stock: Math.min(
-                    s.quantity_in_stock + quantity,
-                    s.max_stock
-                  ),
-                }
-              : s
-          )
+          prev.map((s) => {
+            if (s.stock_id === stockId) {
+              const newTotalSpent = (s.total_spent || 0) + additionalCost;
+              return {
+                ...s,
+                quantity_in_stock: newQuantity,
+                total_spent: newTotalSpent
+              };
+            }
+            return s;
+          })
         );
+
+        // Calculate newTotalSpent for toast display
+        const currentStock = stocks.find(s => s.stock_id === stockId);
+        const newTotalSpent = (currentStock?.total_spent || 0) + additionalCost;
+
         setShowRestockForm(false);
         setSelectedStock(null);
       } catch (err) {
         console.error('Restock error:', err);
-        alert('Restock failed.');
+        if (err.response?.data?.error) {
+          toast.error(err.response.data.error);
+        } else {
+          toast.error('Restock failed. Please try again.');
+        }
       }
     };
 
