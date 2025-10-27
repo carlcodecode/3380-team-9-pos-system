@@ -311,10 +311,30 @@ export const StaffDashboard = () => {
                         <Button
                           size="sm"
                           className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-                          onClick={() => {
-                          setSelectedStock(meal);
-                          setShowRestockForm(true);
-                      }}
+                          onClick={async () => {
+                            try {
+                              // Fetch full stock details to get max_stock
+                              // Use stock_id if available, otherwise fetch by meal_ref
+                              let fullStockData;
+                              if (meal.stock_id) {
+                                fullStockData = await api.getStockById(meal.stock_id);
+                              } else {
+                                // Fetch all stocks and find the one for this meal
+                                const allStocks = await api.getAllStocks();
+                                fullStockData = allStocks.find(s => s.meal_ref === meal.meal_ref);
+                              }
+                              
+                              if (fullStockData) {
+                                setSelectedStock(fullStockData);
+                                setShowRestockForm(true);
+                              } else {
+                                toast.error('Could not find stock details');
+                              }
+                            } catch (err) {
+                              console.error('Failed to fetch stock details:', err);
+                              toast.error('Failed to load stock details');
+                            }
+                          }}
                         >
                           Restock
                         </Button>
