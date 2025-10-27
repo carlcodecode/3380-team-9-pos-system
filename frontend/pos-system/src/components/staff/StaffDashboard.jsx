@@ -12,11 +12,14 @@ import {
   RefreshCw,
   Gift,
   Percent,
+  FileText,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StockRestockForm } from './StockRestockForm';
+import { StaffReports } from './StaffReports';
 import * as api from '../../services/api';
 import { toast } from 'sonner'; 
+import { PERMISSIONS, hasPermission } from '../../utils/permissions';
 
 // Import the new component modules
 import { OrderManagement } from './OrderManagement';
@@ -30,9 +33,51 @@ export const StaffDashboard = () => {
   
   const [selectedStock, setSelectedStock] = useState(null);
   const [showRestockForm, setShowRestockForm] = useState(false);
+  const [showReports, setShowReports] = useState(false);
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
+
+  // Debug: Log user object to see what we're getting
+  useEffect(() => {
+    console.log('👤 Current user in StaffDashboard:', user);
+    console.log('🔑 User permissions:', user?.permissions);
+    console.log('🎭 User role:', user?.role);
+  }, [user]);
+
+  // Get user permissions (default to 0 if not available, admins get all permissions)
+  const isAdmin = user?.role === 'admin';
+  const userPermissions = isAdmin ? 63 : (user?.permissions || 0); // 63 = all 6 permissions
+  
+  console.log('📊 Is Admin:', isAdmin);
+  console.log('📊 Calculated userPermissions:', userPermissions);
+  
+  // Check which tabs should be visible
+  const canViewReports = isAdmin || hasPermission(userPermissions, PERMISSIONS.REPORTS);
+  const canViewOrders = isAdmin || hasPermission(userPermissions, PERMISSIONS.ORDERS);
+  const canViewMeals = isAdmin || hasPermission(userPermissions, PERMISSIONS.MEAL_MANAGEMENT);
+  const canViewStock = isAdmin || hasPermission(userPermissions, PERMISSIONS.STOCK_CONTROL);
+  const canViewPromos = isAdmin || hasPermission(userPermissions, PERMISSIONS.PROMO_CODES);
+  const canViewDiscounts = isAdmin || hasPermission(userPermissions, PERMISSIONS.SEASONAL_DISCOUNTS);
+
+  console.log('✅ Permission checks:', {
+    canViewReports,
+    canViewOrders,
+    canViewMeals,
+    canViewStock,
+    canViewPromos,
+    canViewDiscounts
+  });
+
+  // Determine default tab (first available permission)
+  const getDefaultTab = () => {
+    if (canViewOrders) return 'orders';
+    if (canViewMeals) return 'meals';
+    if (canViewStock) return 'stock';
+    if (canViewPromos) return 'promos';
+    if (canViewDiscounts) return 'discounts';
+    return 'orders'; // fallback
+  };
 
   useEffect(() => {
       let isMounted = true;
@@ -164,8 +209,22 @@ export const StaffDashboard = () => {
           className="mb-8"
         >
           <div className="bg-white rounded-lg border border-gray-200 p-8">
-            <h1 className="text-black mb-2">Staff Dashboard</h1>
-            <p className="text-gray-500">Operations and inventory management</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-black mb-2">Staff Dashboard</h1>
+                <p className="text-gray-500">Operations and inventory management</p>
+              </div>
+              {/* Generate Report Button - Only visible if user has Reports permission */}
+              {canViewReports && (
+                <Button
+                  onClick={() => setShowReports(true)}
+                  className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Generate Report
+                </Button>
+              )}
+            </div>
           </div>
         </motion.div>
 
@@ -302,53 +361,88 @@ export const StaffDashboard = () => {
           transition={{ delay: 0.3 }}
           className="bg-white rounded-lg border border-gray-200 p-8"
         >
-          <Tabs defaultValue="orders" className="space-y-6">
-            <TabsList className="w-full grid grid-cols-5 bg-gray-100 border-gray-200 h-auto">
-              <TabsTrigger value="orders" className="data-[state=active]:bg-white">
-                Orders
-              </TabsTrigger>
-              <TabsTrigger value="meals" className="data-[state=active]:bg-white">
-                Meal Management
-              </TabsTrigger>
-              <TabsTrigger value="stock" className="data-[state=active]:bg-white">
-                Stock Control
-              </TabsTrigger>
-              <TabsTrigger value="promos" className="data-[state=active]:bg-white flex items-center justify-center">
-                <Gift className="w-4 h-4 mr-2" />
-                Promo Codes
-              </TabsTrigger>
-              <TabsTrigger value="discounts" className="data-[state=active]:bg-white flex items-center justify-center">
-                <Percent className="w-4 h-4 mr-2" />
-                Seasonal Discounts
-              </TabsTrigger>
+          <Tabs defaultValue={getDefaultTab()} className="space-y-6">
+            <TabsList className="w-full grid bg-gray-100 border-gray-200 h-auto" style={{ gridTemplateColumns: `repeat(${[canViewOrders, canViewMeals, canViewStock, canViewPromos, canViewDiscounts].filter(Boolean).length}, 1fr)` }}>
+              {canViewOrders && (
+                <TabsTrigger value="orders" className="data-[state=active]:bg-white">
+                  Orders
+                </TabsTrigger>
+              )}
+              {canViewMeals && (
+                <TabsTrigger value="meals" className="data-[state=active]:bg-white">
+                  Meal Management
+                </TabsTrigger>
+              )}
+              {canViewStock && (
+                <TabsTrigger value="stock" className="data-[state=active]:bg-white">
+                  Stock Control
+                </TabsTrigger>
+              )}
+              {canViewPromos && (
+                <TabsTrigger value="promos" className="data-[state=active]:bg-white flex items-center justify-center">
+                  <Gift className="w-4 h-4 mr-2" />
+                  Promo Codes
+                </TabsTrigger>
+              )}
+              {canViewDiscounts && (
+                <TabsTrigger value="discounts" className="data-[state=active]:bg-white flex items-center justify-center">
+                  <Percent className="w-4 h-4 mr-2" />
+                  Seasonal Discounts
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* Orders Tab */}
-            <TabsContent value="orders" className="space-y-4">
-              <OrderManagement />
-            </TabsContent>
+            {canViewOrders && (
+              <TabsContent value="orders" className="space-y-4">
+                <OrderManagement />
+              </TabsContent>
+            )}
 
             {/* Meals Tab */}
-            <TabsContent value="meals" className="space-y-4">
-              <MealManagement />
-            </TabsContent>
+            {canViewMeals && (
+              <TabsContent value="meals" className="space-y-4">
+                <MealManagement />
+              </TabsContent>
+            )}
 
             {/* Stock Tab */}
-            <TabsContent value="stock" className="space-y-4">
-              <StockControl />
-            </TabsContent>
+            {canViewStock && (
+              <TabsContent value="stock" className="space-y-4">
+                <StockControl />
+              </TabsContent>
+            )}
 
             {/* Promo Codes Tab */}
-            <TabsContent value="promos" className="space-y-4">
-              <PromoCodeManagement />
-            </TabsContent>
+            {canViewPromos && (
+              <TabsContent value="promos" className="space-y-4">
+                <PromoCodeManagement />
+              </TabsContent>
+            )}
 
             {/* Seasonal Discounts Tab */}
-            <TabsContent value="discounts" className="space-y-4">
-              <SeasonalDiscountManagement />
-            </TabsContent>
+            {canViewDiscounts && (
+              <TabsContent value="discounts" className="space-y-4">
+                <SeasonalDiscountManagement />
+              </TabsContent>
+            )}
+
+            {/* No Permissions Message */}
+            {!canViewOrders && !canViewMeals && !canViewStock && !canViewPromos && !canViewDiscounts && (
+              <div className="text-center py-16">
+                <AlertTriangle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-black mb-2">No Permissions</h3>
+                <p className="text-gray-500">You don't have access to any modules. Contact your administrator.</p>
+              </div>
+            )}
           </Tabs>
         </motion.div>
+
+        {/* Staff Reports Modal */}
+        <StaffReports 
+          open={showReports} 
+          onClose={() => setShowReports(false)} 
+        />
       </div>
     </div>
   );
