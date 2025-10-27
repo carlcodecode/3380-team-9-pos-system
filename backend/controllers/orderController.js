@@ -773,28 +773,31 @@ export const updateOrder = async (req, res) => {
 // Update order status (staff only)
 export const updateOrderStatus = async (req, res) => {
   const connection = await pool.getConnection();
-  
+
   try {
     const staffId = req.user.staffId;
     const { orderId } = req.params;
     const { orderStatus } = req.body;
 
     if (!staffId) {
-      return res.status(403).json({ 
-        error: 'Only staff members can update order status' 
+      return res.status(403).json({
+        error: 'Only staff members can update order status'
       });
     }
 
     // Validate order status (0-3 based on schema)
     if (orderStatus === undefined || orderStatus < 0 || orderStatus > 3) {
-      return res.status(400).json({ 
-        error: 'Invalid order status. Must be 0 (processing), 1 (delivered), 2 (shipped), or 3 (refunded)' 
+      return res.status(400).json({
+        error: 'Invalid order status. Must be 0 (processing), 1 (delivered), 2 (shipped), or 3 (refunded)'
       });
     }
 
-    // Verify order exists
+    // Verify order exists and get customer info for notifications
     const [orders] = await pool.query(
-      'SELECT order_id FROM ORDERS WHERE order_id = ?',
+      `SELECT o.order_id, o.customer_ref, o.tracking_number, c.user_ref
+       FROM ORDERS o
+       JOIN CUSTOMER c ON o.customer_ref = c.customer_id
+       WHERE o.order_id = ?`,
       [orderId]
     );
 
@@ -802,10 +805,12 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    const orderInfo = orders[0];
+
     await connection.beginTransaction();
 
     await connection.query(
-      `UPDATE ORDERS 
+      `UPDATE ORDERS
        SET order_status = ?,
            updated_by_staff = ?
        WHERE order_id = ?`,
@@ -813,6 +818,34 @@ export const updateOrderStatus = async (req, res) => {
     );
 
     await connection.commit();
+
+    // Emit real-time notification for order status change
+    if (global.io) {
+      // Emit to all staff/admin users
+      global.io.emit('notification', {
+        type: orderStatus === 2 ? 'ORDER_SHIPPED' : orderStatus === 1 ? 'ORDER_DELIVERED' : 'ORDER_STATUS_UPDATED',
+        data: {
+          order_id: orderId,
+          customer_ref: orderInfo.user_ref, // user_ref is the user_id
+          order_status: orderStatus,
+          tracking_number: orderInfo.tracking_number,
+          updated_by: staffId
+        },
+        timestamp: new Date().toISOString()
+      });
+
+      // Emit specific notification to the customer
+      global.io.to(`user_${orderInfo.user_ref}`).emit('order_notification', {
+        type: orderStatus === 2 ? 'ORDER_SHIPPED' : orderStatus === 1 ? 'ORDER_DELIVERED' : 'ORDER_STATUS_UPDATED',
+        data: {
+          order_id: orderId,
+          order_status: orderStatus,
+          tracking_number: orderInfo.tracking_number,
+          updated_at: new Date().toISOString()
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
 
     // Fetch updated order
     const [updatedOrders] = await pool.query(
