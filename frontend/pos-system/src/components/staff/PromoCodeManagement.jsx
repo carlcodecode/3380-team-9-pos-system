@@ -322,13 +322,16 @@ export const PromoCodeManagement = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel className="rounded-lg border-gray-200">
+              Cancel
+            </AlertDialogCancel>
+            <button
               onClick={confirmDeletePromo}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              className="inline-flex items-center justify-center rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 px-4 py-2 transition-colors"
+              style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
             >
               Delete
-            </AlertDialogAction>
+            </button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
