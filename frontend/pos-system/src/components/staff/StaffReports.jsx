@@ -110,6 +110,264 @@ export const StaffReports = ({ open, onClose }) => {
     setReportData([]);
   };
 
+  // Export to CSV
+  const exportToCSV = () => {
+    try {
+      // Prepare CSV headers
+      const headers = [
+        'Meal ID',
+        'Meal Name',
+        'Quantity Sold',
+        'Average Price',
+        'Total Revenue',
+        '% of Total'
+      ];
+
+      const totalRevenue = reportData.reduce((sum, item) => sum + item.total_revenue, 0);
+
+      // Prepare CSV rows
+      const rows = reportData
+        .sort((a, b) => b.total_revenue - a.total_revenue)
+        .map(meal => {
+          const percentOfTotal = totalRevenue > 0 ? (meal.total_revenue / totalRevenue) * 100 : 0;
+          return [
+            meal.meal_id,
+            meal.meal_name,
+            meal.total_quantity_sold,
+            `$${(meal.average_price / 100).toFixed(2)}`,
+            `$${(meal.total_revenue / 100).toFixed(2)}`,
+            `${percentOfTotal.toFixed(1)}%`
+          ];
+        });
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `meal_sales_report_${reportDateFrom}_to_${reportDateTo}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('CSV exported successfully');
+    } catch (error) {
+      console.error('CSV export error:', error);
+      toast.error('Failed to export CSV');
+    }
+  };
+
+  // Export to PDF
+  const exportToPDF = () => {
+    try {
+      const totalQuantitySold = reportData.reduce((sum, item) => sum + item.total_quantity_sold, 0);
+      const totalRevenue = reportData.reduce((sum, item) => sum + item.total_revenue, 0);
+      const topSellingMeal = reportData.length > 0 
+        ? reportData.reduce((prev, current) => prev.total_quantity_sold > current.total_quantity_sold ? prev : current)
+        : null;
+      const highestRevenueMeal = reportData.length > 0
+        ? reportData.reduce((prev, current) => prev.total_revenue > current.total_revenue ? prev : current)
+        : null;
+
+      // Create HTML content for PDF
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Meal Sales Report</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 40px;
+              color: #000;
+            }
+            h1 {
+              color: #000;
+              border-bottom: 3px solid #000;
+              padding-bottom: 10px;
+              margin-bottom: 20px;
+            }
+            .summary {
+              background-color: #f9fafb;
+              border: 1px solid #e5e7eb;
+              padding: 20px;
+              margin-bottom: 30px;
+              border-radius: 8px;
+            }
+            .summary h2 {
+              margin-top: 0;
+              color: #000;
+              font-size: 18px;
+            }
+            .summary-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 15px;
+              margin-top: 15px;
+            }
+            .summary-item {
+              background: white;
+              padding: 15px;
+              border-radius: 8px;
+              border: 1px solid #e5e7eb;
+            }
+            .summary-label {
+              color: #6b7280;
+              font-size: 12px;
+              margin-bottom: 5px;
+            }
+            .summary-value {
+              color: #000;
+              font-weight: 600;
+              font-size: 18px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th {
+              background-color: #f9fafb;
+              color: #000;
+              font-weight: 600;
+              text-align: left;
+              padding: 12px;
+              border: 1px solid #e5e7eb;
+            }
+            th.right, td.right {
+              text-align: right;
+            }
+            td {
+              padding: 10px 12px;
+              border: 1px solid #e5e7eb;
+            }
+            tr:nth-child(even) {
+              background-color: #f9fafb;
+            }
+            .footer {
+              margin-top: 40px;
+              text-align: center;
+              color: #6b7280;
+              font-size: 12px;
+            }
+            .badge {
+              display: inline-block;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 12px;
+              font-weight: 500;
+            }
+            .badge-high {
+              background-color: #000;
+              color: #fff;
+            }
+            .badge-normal {
+              background-color: #f3f4f6;
+              color: #374151;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Meal Sales Report</h1>
+          <p style="color: #6b7280; margin-bottom: 30px;">
+            Report Period: ${reportDateFrom} to ${reportDateTo}
+          </p>
+
+          <div class="summary">
+            <h2>Summary</h2>
+            <div class="summary-grid">
+              <div class="summary-item">
+                <div class="summary-label">Total Quantity Sold</div>
+                <div class="summary-value">${totalQuantitySold.toLocaleString()}</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">Total Revenue</div>
+                <div class="summary-value">$${(totalRevenue / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">Top Selling Meal</div>
+                <div class="summary-value" style="font-size: 14px;">${topSellingMeal?.meal_name || 'N/A'}</div>
+                <div style="color: #6b7280; font-size: 12px;">${topSellingMeal?.total_quantity_sold.toLocaleString()} units</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">Highest Revenue Meal</div>
+                <div class="summary-value" style="font-size: 14px;">${highestRevenueMeal?.meal_name || 'N/A'}</div>
+                <div style="color: #6b7280; font-size: 12px;">$${((highestRevenueMeal?.total_revenue || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
+            </div>
+          </div>
+
+          <h2 style="margin-bottom: 15px;">Detailed Sales by Meal</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Meal ID</th>
+                <th>Meal Name</th>
+                <th class="right">Quantity Sold</th>
+                <th class="right">Avg Price</th>
+                <th class="right">Total Revenue</th>
+                <th class="right">% of Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reportData
+                .sort((a, b) => b.total_revenue - a.total_revenue)
+                .map(meal => {
+                  const percentOfTotal = totalRevenue > 0 ? (meal.total_revenue / totalRevenue) * 100 : 0;
+                  const badgeClass = percentOfTotal > 20 ? 'badge-high' : 'badge-normal';
+                  return `
+                    <tr>
+                      <td>${meal.meal_id}</td>
+                      <td><strong>${meal.meal_name}</strong></td>
+                      <td class="right">${meal.total_quantity_sold.toLocaleString()}</td>
+                      <td class="right">$${(meal.average_price / 100).toFixed(2)}</td>
+                      <td class="right"><strong>$${(meal.total_revenue / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                      <td class="right"><span class="badge ${badgeClass}">${percentOfTotal.toFixed(1)}%</span></td>
+                    </tr>
+                  `;
+                }).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>Generated on ${new Date().toLocaleString()}</p>
+            <p>POS System - Meal Sales Report</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Create blob and open in new window for printing
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+            toast.success('PDF ready for printing/saving');
+          }, 250);
+        };
+      } else {
+        toast.error('Please allow popups to export PDF');
+      }
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to export PDF');
+    }
+  };
+
   // Calculate statistics
   const totalQuantitySold = reportData.reduce((sum, item) => sum + item.total_quantity_sold, 0);
   const totalRevenue = reportData.reduce((sum, item) => sum + item.total_revenue, 0);
@@ -228,6 +486,7 @@ export const StaffReports = ({ open, onClose }) => {
                       variant="outline"
                       size="sm"
                       className="rounded-lg border-gray-200 gap-2"
+                      onClick={exportToCSV}
                     >
                       <Download className="w-4 h-4" />
                       Export CSV
@@ -236,6 +495,7 @@ export const StaffReports = ({ open, onClose }) => {
                       variant="outline"
                       size="sm"
                       className="rounded-lg border-gray-200 gap-2"
+                      onClick={exportToPDF}
                     >
                       <Download className="w-4 h-4" />
                       Export PDF
