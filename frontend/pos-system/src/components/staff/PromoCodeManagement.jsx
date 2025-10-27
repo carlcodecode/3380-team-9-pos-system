@@ -208,7 +208,7 @@ export const PromoCodeManagement = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 rounded-lg gap-2"
+                      className="border-gray-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors" 
                       onClick={() => handleDeletePromo(promo)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -267,7 +267,7 @@ export const PromoCodeManagement = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="promo-type">Promo Type *</Label>
+                <Label htmlFor="promo-type">Discount percent *</Label>
                 <Input
                   id="promo-type"
                   type="number"
