@@ -206,8 +206,8 @@ export const OrderHistory = ({ onBack, onReorder }) => {
 
       {/* Order Details Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-2xl bg-white border-gray-200">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[95vh] bg-white border-gray-200 flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-black">Order #{selectedOrder?.id}</DialogTitle>
             <DialogDescription>
               <div className="flex items-center gap-2 mt-2">
@@ -219,12 +219,12 @@ export const OrderHistory = ({ onBack, onReorder }) => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 mt-4">
+          <div className="space-y-6 mt-4 overflow-y-auto flex-1 pr-4 -mr-4 order-items-scroll">
             {/* Order Items */}
             {selectedOrder?.items && selectedOrder.items.length > 0 && (
               <div>
                 <h3 className="text-black mb-4">Order Items</h3>
-                <div className="space-y-2">
+                <div className="space-y-2 order-items-scroll pr-2">
                   {selectedOrder.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div className="flex-1">
