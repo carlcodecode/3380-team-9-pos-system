@@ -22,6 +22,7 @@ function corsMiddleware(req, res) {
         'http://localhost:3001',
         'http://localhost:3002',
         'http://localhost:5173',
+        'https://main.d7s422gb89fta.amplifyapp.com',
         process.env.FRONTEND_URL,
     ].filter(Boolean);
 
