@@ -50,8 +50,9 @@ export const StockControl = () => {
   // ==============================
   const handleRestock = async (stockId, quantity) => {
     try {
-      await api.restockMeal(stockId, { quantity_to_add: quantity });
-      // Optimistic UI update
+      const response = await api.restockMeal(stockId, { quantity_to_add: quantity });
+      const { newQuantity, additionalCost, newTotalSpent } = response.data;
+      
       setStocks((prev) =>
         prev.map((s) =>
           s.stock_id === stockId
@@ -61,6 +62,7 @@ export const StockControl = () => {
                   s.quantity_in_stock + quantity,
                   s.max_stock
                 ),
+                total_spent: newTotalSpent ?? (Number(s.total_spent) || 0) + additionalCost
               }
             : s
         )
@@ -154,9 +156,12 @@ export const StockControl = () => {
                       <span className="text-black">
                         {quantity} / {max}
                       </span>
+                      <p className="text-xs text-gray-500 mt-1">
+                      Total spent: ${(stock.total_spent / 100).toFixed(2)}
+                    </p>
                     </div>
 
-                    {/* ✅ Black progress bar */}
+                    {/* Black progress bar */}
                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-black rounded-full transition-all duration-500"

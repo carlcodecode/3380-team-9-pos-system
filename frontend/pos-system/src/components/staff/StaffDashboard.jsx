@@ -16,6 +16,7 @@ import {
 import { motion } from 'motion/react';
 import { StockRestockForm } from './StockRestockForm';
 import * as api from '../../services/api';
+import { toast } from 'sonner'; 
 
 // Import the new component modules
 import { OrderManagement } from './OrderManagement';
@@ -84,26 +85,37 @@ export const StaffDashboard = () => {
     // ==============================
     const handleRestock = async (stockId, quantity) => {
       try {
-        await api.restockMeal(stockId, { quantity_to_add: quantity });
+        const response = await api.restockMeal(stockId, { quantity_to_add: quantity });
+        const { newQuantity, additionalCost } = response.data;
+        
         // Optimistic UI update
         setStocks((prev) =>
-          prev.map((s) =>
-            s.stock_id === stockId
-              ? {
-                  ...s,
-                  quantity_in_stock: Math.min(
-                    s.quantity_in_stock + quantity,
-                    s.max_stock
-                  ),
-                }
-              : s
-          )
+          prev.map((s) => {
+            if (s.stock_id === stockId) {
+              const newTotalSpent = (s.total_spent || 0) + additionalCost;
+              return {
+                ...s,
+                quantity_in_stock: newQuantity,
+                total_spent: newTotalSpent
+              };
+            }
+            return s;
+          })
         );
+
+        // Calculate newTotalSpent for toast display
+        const currentStock = stocks.find(s => s.stock_id === stockId);
+        const newTotalSpent = (currentStock?.total_spent || 0) + additionalCost;
+
         setShowRestockForm(false);
         setSelectedStock(null);
       } catch (err) {
         console.error('Restock error:', err);
-        alert('Restock failed.');
+        if (err.response?.data?.error) {
+          toast.error(err.response.data.error);
+        } else {
+          toast.error('Restock failed. Please try again.');
+        }
       }
     };
 
@@ -232,10 +244,17 @@ export const StaffDashboard = () => {
                     <Button
                       size="sm"
                       className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-                      onClick={() => {
-                      setSelectedStock(meal);
-                      setShowRestockForm(true);
-                  }}
+                      onClick={async () => {
+                        try {
+                          // Fetch the full stock details to get max_stock
+                          const fullStockData = await api.getStockById(meal.stock_id);
+                          setSelectedStock(fullStockData);
+                          setShowRestockForm(true);
+                        } catch (err) {
+                          console.error('Failed to fetch stock details:', err);
+                          toast.error('Failed to load stock details');
+                        }
+                      }}
                     >
                       Restock
                     </Button>
