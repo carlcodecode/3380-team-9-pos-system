@@ -117,6 +117,8 @@ export const PromoCodeManagement = () => {
   };
 
   const confirmDeletePromo = async () => {
+    if (!promoToDelete) return;
+    
     try {
       await api.deletePromo(promoToDelete.promotion_id);
       toast.success(`Promo code "${promoToDelete.promo_code}" deleted successfully!`);
@@ -124,8 +126,10 @@ export const PromoCodeManagement = () => {
       setPromoToDelete(null);
       fetchPromos(); // Refresh the list
     } catch (error) {
-      toast.error(error.message || 'Failed to delete promotion');
       console.error('Delete promo error:', error);
+      const errorMessage = error.message || 'Failed to delete promotion';
+      toast.error(errorMessage);
+      // Keep dialog open if there was an error so user can see what happened
     }
   };
 
@@ -204,7 +208,7 @@ export const PromoCodeManagement = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                      className="border-gray-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 rounded-lg gap-2"
                       onClick={() => handleDeletePromo(promo)}
                     >
                       <Trash2 className="w-4 h-4" />
