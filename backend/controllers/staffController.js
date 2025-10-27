@@ -1,4 +1,5 @@
 import pool from '../config/database.js';
+import { URL } from 'url';
 
 const PERMISSIONS = { REPORT: 1 << 0 };
 const hasBit = (mask, bit) => ((mask >>> 0) & bit) === bit;
@@ -10,8 +11,21 @@ async function getMyStaffRow(userId) {
   return rows[0] || null;
 }
 
-// POST /api/staff/reports/revenue
-export const createRevenueReport = async (req, res) => {
+// Helper: get ?format= from URL or body
+function getFormat(req, forcedFormat) {
+  if (forcedFormat) return forcedFormat.toLowerCase();
+  try {
+    const u = new URL(req.url, 'http://localhost');
+    const q = (u.searchParams.get('format') || req.body?.format || 'json').toLowerCase();
+    return q;
+  } catch {
+    return (req.body?.format || 'json').toLowerCase();
+  }
+}
+
+// POST /api/staff/reports/revenue  (JSON default)
+// POST /api/staff/reports/revenue.csv  (CSV)
+export const createRevenueReport = async (req, res, forcedFormat) => {
   try {
     const role = req.user?.role; // 'staff' | 'admin'
     const userId = req.user?.userId;
@@ -26,12 +40,12 @@ export const createRevenueReport = async (req, res) => {
 
     let { start_date, end_date, meal_id, limit, offset } = req.body || {};
 
-    // No timeframe = generates for last 30 days
+    // Default to last 30 days if no range
     if (!start_date || !end_date) {
       const end = new Date();
       const start = new Date();
       start.setDate(end.getDate() - 30);
-      start_date = start.toISOString().slice(0, 10); // YYYY-MM-DD
+      start_date = start.toISOString().slice(0, 10);
       end_date = end.toISOString().slice(0, 10);
     }
 
@@ -55,7 +69,6 @@ export const createRevenueReport = async (req, res) => {
 
     const [rows] = await pool.query(sql, params);
 
-    // Totals for report
     const totals = rows.reduce(
       (acc, r) => {
         acc.units += Number(r.units_sold || 0);
@@ -65,6 +78,53 @@ export const createRevenueReport = async (req, res) => {
       { units: 0, cents: 0 },
     );
 
+    const fmt = getFormat(req, forcedFormat);
+
+    if (fmt === 'csv') {
+      const headers = [
+        'order_date',
+        'meal_id',
+        'meal_name',
+        'units_sold',
+        'revenue_cents',
+        'revenue_usd',
+      ];
+      const headerLine = headers.join(',') + '\n';
+      const bodyLines = rows
+        .map((r) =>
+          [
+            r.order_date ?? '',
+            r.meal_id ?? '',
+            JSON.stringify(r.meal_name ?? ''),
+            r.units_sold ?? 0,
+            r.revenue_cents ?? 0,
+            r.revenue_usd ?? 0,
+          ].join(','),
+        )
+        .join('\n');
+
+      // Optional totals row at end:
+      const totalsLine = [
+        'TOTALS',
+        '',
+        '',
+        totals.units,
+        totals.cents,
+        (totals.cents / 100).toFixed(2),
+      ].join(',');
+
+      const csv = `${headerLine}${bodyLines}\n${totalsLine}\n`;
+      const filename = `revenue-${start_date}_${end_date}.csv`;
+
+      res.status(200);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-store');
+      res.end(csv);
+      return;
+    }
+
+    // Default JSON (for “View” page)
     return res.json({
       report: 'revenue_by_meal_and_date',
       filters: { start_date, end_date, meal_id: meal_id ?? null, limit: lim, offset: off },
