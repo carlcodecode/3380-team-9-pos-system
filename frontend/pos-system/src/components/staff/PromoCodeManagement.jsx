@@ -117,6 +117,8 @@ export const PromoCodeManagement = () => {
   };
 
   const confirmDeletePromo = async () => {
+    if (!promoToDelete) return;
+    
     try {
       await api.deletePromo(promoToDelete.promotion_id);
       toast.success(`Promo code "${promoToDelete.promo_code}" deleted successfully!`);
@@ -124,8 +126,10 @@ export const PromoCodeManagement = () => {
       setPromoToDelete(null);
       fetchPromos(); // Refresh the list
     } catch (error) {
-      toast.error(error.message || 'Failed to delete promotion');
       console.error('Delete promo error:', error);
+      const errorMessage = error.message || 'Failed to delete promotion';
+      toast.error(errorMessage);
+      // Keep dialog open if there was an error so user can see what happened
     }
   };
 
@@ -204,7 +208,7 @@ export const PromoCodeManagement = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                      className="border-gray-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 rounded-lg gap-2"
                       onClick={() => handleDeletePromo(promo)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -318,13 +322,16 @@ export const PromoCodeManagement = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel className="rounded-lg border-gray-200">
+              Cancel
+            </AlertDialogCancel>
+            <button
               onClick={confirmDeletePromo}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              className="inline-flex items-center justify-center rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 px-4 py-2 transition-colors"
+              style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
             >
               Delete
-            </AlertDialogAction>
+            </button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
