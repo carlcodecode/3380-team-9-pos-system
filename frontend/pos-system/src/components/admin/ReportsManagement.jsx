@@ -523,10 +523,8 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
 
           {/* Detailed Table */}
           <div>
-            <h3 className="text-black mb-4">Detailed Table</h3>
             {filteredReports.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No records found for the selected filters
               </div>
             ) : (
               <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -570,13 +568,6 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
                 </Table>
               </div>
             )}
-          </div>
-
-          {/* Chart Placeholder */}
-          <div className="mt-6 p-8 bg-gray-50 rounded-lg border border-gray-200 text-center">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <h4 className="text-black mb-2">Bar Graph - Staff vs. Meals {selectedReportType === 'meals-created' ? 'Created' : 'Updated'}</h4>
-            <p className="text-sm text-gray-500">Visual representation of meal activity by staff</p>
           </div>
         </motion.div>
       </div>
