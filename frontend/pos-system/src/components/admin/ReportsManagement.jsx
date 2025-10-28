@@ -305,14 +305,26 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
     }
   };
 
-  // Filtered report data for client-side search by name
+  // Filtered report data for client-side search by name (exact match or contains)
   const filteredReports = reportData.filter(report => {
     if (!reportStaffSearch) return true;
-    const searchLower = reportStaffSearch.toLowerCase();
+    
+    // If it's a number, it was already filtered by backend, so show all results
+    if (!isNaN(reportStaffSearch)) return true;
+    
+    // For name search, do case-insensitive exact match on full name or partial match
+    const searchLower = reportStaffSearch.toLowerCase().trim();
+    const firstName = (report.first_name || '').toLowerCase();
+    const lastName = (report.last_name || '').toLowerCase();
+    const fullName = `${firstName} ${lastName}`.trim();
+    
+    // Match if search term equals first name, last name, or full name
+    // OR if full name contains the search term
     return (
-      report.first_name?.toLowerCase().includes(searchLower) ||
-      report.last_name?.toLowerCase().includes(searchLower) ||
-      `${report.first_name} ${report.last_name}`.toLowerCase().includes(searchLower)
+      firstName === searchLower ||
+      lastName === searchLower ||
+      fullName === searchLower ||
+      fullName.includes(searchLower)
     );
   });
 
@@ -341,35 +353,6 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
           </div>
 
           <div className="space-y-6">
-            {/* Available Reports */}
-            <div>
-              <h3 className="text-black mb-4">Available Reports</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => handleRunReport('meals-created')}
-                  disabled={loading}
-                  className="w-full p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-black transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <FileText className="w-4 h-4 text-black" />
-                    <span className="text-black">Meals Created by Staff</span>
-                  </div>
-                  <p className="text-sm text-gray-500">Track meal creation activity by staff members</p>
-                </button>
-                <button
-                  onClick={() => handleRunReport('meals-updated')}
-                  disabled={loading}
-                  className="w-full p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-black transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <FileText className="w-4 h-4 text-black" />
-                    <span className="text-black">Meals Updated by Staff</span>
-                  </div>
-                  <p className="text-sm text-gray-500">View all meal modifications by staff members</p>
-                </button>
-              </div>
-            </div>
-
             {/* Filters */}
             <div>
               <h3 className="text-black mb-4">Filters</h3>
@@ -393,20 +376,43 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label>Staff ID or Name (Optional)</Label>
+                  <Label>Filter by Staff ID or Name (Optional)</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      placeholder="Enter staff ID or search by name..."
+                      placeholder="Enter staff ID (e.g., 2) or full name (e.g., John Doe)..."
                       value={reportStaffSearch}
                       onChange={(e) => setReportStaffSearch(e.target.value)}
                       className="pl-10 rounded-lg border-gray-200"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Use numeric ID for backend filtering, or name for client-side search
+                    Staff ID filters at database level. Names filter results after loading (exact or partial match).
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Available Reports */}
+            <div>
+              <h3 className="text-black mb-4">Available Reports</h3>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => handleRunReport('meals-created')}
+                  disabled={loading}
+                  className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2 w-full"
+                >
+                  <FileText className="w-4 h-4" />
+                  {loading && selectedReportType === 'meals-created' ? 'Generating Report...' : 'Meals Created by Staff'}
+                </Button>
+                <Button
+                  onClick={() => handleRunReport('meals-updated')}
+                  disabled={loading}
+                  className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2 w-full"
+                >
+                  <FileText className="w-4 h-4" />
+                  {loading && selectedReportType === 'meals-updated' ? 'Generating Report...' : 'Meals Updated by Staff'}
+                </Button>
               </div>
             </div>
 
@@ -523,10 +529,8 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
 
           {/* Detailed Table */}
           <div>
-            <h3 className="text-black mb-4">Detailed Table</h3>
             {filteredReports.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No records found for the selected filters
               </div>
             ) : (
               <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -570,13 +574,6 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
                 </Table>
               </div>
             )}
-          </div>
-
-          {/* Chart Placeholder */}
-          <div className="mt-6 p-8 bg-gray-50 rounded-lg border border-gray-200 text-center">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <h4 className="text-black mb-2">Bar Graph - Staff vs. Meals {selectedReportType === 'meals-created' ? 'Created' : 'Updated'}</h4>
-            <p className="text-sm text-gray-500">Visual representation of meal activity by staff</p>
           </div>
         </motion.div>
       </div>
