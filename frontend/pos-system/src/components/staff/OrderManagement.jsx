@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
 import { getAllOrders, updateOrderStatus } from '../../services/api';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Label } from '../ui/label';
-import { Package, Calendar, DollarSign, MapPin, User, RefreshCw } from 'lucide-react';
+import { Package, Calendar, DollarSign, MapPin, User, RefreshCw, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const OrderManagement = () => {
@@ -13,6 +14,7 @@ export const OrderManagement = () => {
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [updating, setUpdating] = useState(false);
 
@@ -99,15 +101,28 @@ export const OrderManagement = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-black">Order Processing</h3>
-        <Button 
-          size="sm" 
-          onClick={fetchOrders}
-          disabled={loading}
-          className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Search by Order Number */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search order #..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-48 bg-white border-gray-200 focus:border-black rounded-lg h-9"
+            />
+          </div>
+          <Button 
+            size="sm" 
+            onClick={fetchOrders}
+            disabled={loading}
+            className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -140,8 +155,13 @@ export const OrderManagement = () => {
           <p className="text-gray-500">No orders available at the moment!</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {orders
+        (() => {
+          const filteredOrders = orders
+            .filter((order) => {
+              // Filter by order number if search query exists
+              if (searchQuery.trim() === '') return true;
+              return order.id.toString().includes(searchQuery.trim());
+            })
             .sort((a, b) => {
               // Sort: Processing (0) and Shipped (2) first, then Delivered (1) and Refunded (3) at bottom
               const aPriority = (a.orderStatus === 0 || a.orderStatus === 2) ? 0 : 1;
@@ -149,8 +169,30 @@ export const OrderManagement = () => {
               if (aPriority !== bPriority) return aPriority - bPriority;
               // Within same priority, sort by order ID (newest first)
               return b.id - a.id;
-            })
-            .map((order) => (
+            });
+
+          if (filteredOrders.length === 0 && searchQuery.trim() !== '') {
+            return (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                  <Search className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-black mb-3">No orders found</h3>
+                <p className="text-gray-500">No orders match "#{searchQuery}"</p>
+                <Button
+                  onClick={() => setSearchQuery('')}
+                  variant="outline"
+                  className="mt-4 border-gray-200 hover:bg-gray-100 rounded-lg"
+                >
+                  Clear Search
+                </Button>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-3">
+              {filteredOrders.map((order) => (
             <div
               key={order.id}
               className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
@@ -200,7 +242,9 @@ export const OrderManagement = () => {
               </div>
             </div>
           ))}
-        </div>
+            </div>
+          );
+        })()
       )}
 
       {/* Order View Dialog */}
