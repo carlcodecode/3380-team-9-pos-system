@@ -243,7 +243,8 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
       onNavigate('staff-list');
       fetchStaff();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to save staff');
+      console.log('STAFF SAVE ERROR RESPONSE:', error.response?.data);
+      toast.error('Staff already exists!');
     }
   };
 
