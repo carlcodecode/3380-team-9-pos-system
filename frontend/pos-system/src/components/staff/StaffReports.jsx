@@ -22,86 +22,41 @@ import {
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { Badge } from '../ui/badge';
-
-// Mock data for meal sales report
-const generateMockMealSalesData = (startDate, endDate) => {
-  return [
-    {
-      meal_id: 1,
-      meal_name: 'Classic Burger',
-      total_quantity_sold: 145,
-      total_revenue: 217500, // in cents
-      average_price: 1500,
-    },
-    {
-      meal_id: 2,
-      meal_name: 'Caesar Salad',
-      total_quantity_sold: 89,
-      total_revenue: 106800,
-      average_price: 1200,
-    },
-    {
-      meal_id: 3,
-      meal_name: 'Margherita Pizza',
-      total_quantity_sold: 132,
-      total_revenue: 237600,
-      average_price: 1800,
-    },
-    {
-      meal_id: 4,
-      meal_name: 'Grilled Chicken',
-      total_quantity_sold: 67,
-      total_revenue: 114900,
-      average_price: 1700,
-    },
-    {
-      meal_id: 5,
-      meal_name: 'Fish & Chips',
-      total_quantity_sold: 98,
-      total_revenue: 156800,
-      average_price: 1600,
-    },
-    {
-      meal_id: 6,
-      meal_name: 'Pasta Carbonara',
-      total_quantity_sold: 76,
-      total_revenue: 106400,
-      average_price: 1400,
-    },
-    {
-      meal_id: 7,
-      meal_name: 'Veggie Wrap',
-      total_quantity_sold: 54,
-      total_revenue: 59400,
-      average_price: 1100,
-    },
-    {
-      meal_id: 8,
-      meal_name: 'Chocolate Cake',
-      total_quantity_sold: 112,
-      total_revenue: 78400,
-      average_price: 700,
-    },
-  ];
-};
+import * as api from '../../services/api';
 
 export const StaffReports = ({ viewMode, onViewModeChange }) => {
   const [reportDateFrom, setReportDateFrom] = useState('2025-10-01');
-  const [reportDateTo, setReportDateTo] = useState('2025-10-26');
+  const [reportDateTo, setReportDateTo] = useState('2025-10-27');
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     setLoading(true);
     
-    // Simulate API call with mock data
-    setTimeout(() => {
-      const mockData = generateMockMealSalesData(reportDateFrom, reportDateTo);
-      setReportData(mockData);
+    try {
+      const response = await api.getMealSalesReport({
+        start_date: reportDateFrom,
+        end_date: reportDateTo
+      });
+      
+      // Ensure numeric values are parsed correctly
+      const normalizedData = (response.data || []).map(item => ({
+        ...item,
+        meal_id: parseInt(item.meal_id),
+        total_quantity_sold: parseInt(item.total_quantity_sold) || 0,
+        total_revenue: parseInt(item.total_revenue) || 0,
+        average_price: parseInt(item.average_price) || 0
+      }));
+      
+      setReportData(normalizedData);
       onViewModeChange('report-view');
-      setLoading(false);
       toast.success('Report generated successfully');
-    }, 500);
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+      toast.error('Failed to generate report');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Export to CSV
@@ -363,13 +318,24 @@ export const StaffReports = ({ viewMode, onViewModeChange }) => {
   };
 
   // Calculate statistics
+  // Total Quantity Sold: Sum of all quantities across all meals in the date range
   const totalQuantitySold = reportData.reduce((sum, item) => sum + item.total_quantity_sold, 0);
+  
+  // Total Revenue: Sum of all meal revenues in the date range (in cents)
   const totalRevenue = reportData.reduce((sum, item) => sum + item.total_revenue, 0);
+  
+  // Top Selling Meal: Meal with the highest quantity sold in the date range
   const topSellingMeal = reportData.length > 0 
-    ? reportData.reduce((prev, current) => prev.total_quantity_sold > current.total_quantity_sold ? prev : current)
+    ? reportData.reduce((prev, current) => 
+        (current.total_quantity_sold > prev.total_quantity_sold) ? current : prev
+      )
     : null;
+  
+  // Highest Revenue Meal: Meal with the highest total revenue in the date range
   const highestRevenueMeal = reportData.length > 0
-    ? reportData.reduce((prev, current) => prev.total_revenue > current.total_revenue ? prev : current)
+    ? reportData.reduce((prev, current) => 
+        (current.total_revenue > prev.total_revenue) ? current : prev
+      )
     : null;
 
   // Report Selection View
@@ -600,11 +566,99 @@ export const StaffReports = ({ viewMode, onViewModeChange }) => {
             )}
           </div>
 
-          {/* Chart Placeholder */}
-          <div className="mt-6 p-8 bg-gray-50 rounded-lg border border-gray-200 text-center">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <h4 className="text-black mb-2">Bar Graph - Revenue by Meal</h4>
-            <p className="text-sm text-gray-500">Visual representation of meal sales performance</p>
+          {/* Bar Graph - Revenue by Meal */}
+          <div className="mt-6 p-6 bg-white rounded-lg border border-gray-200">
+            <div className="flex items-center gap-2 mb-6">
+              <BarChart3 className="w-5 h-5 text-black" />
+              <h4 className="text-black font-semibold">Revenue Distribution by Meal</h4>
+            </div>
+            
+            {reportData.length > 0 && (
+              <div className="space-y-4">
+                {reportData
+                  .sort((a, b) => b.total_revenue - a.total_revenue)
+                  .slice(0, 10) // Show top 10 meals
+                  .map((meal, index) => {
+                    const percentOfTotal = totalRevenue > 0 
+                      ? (meal.total_revenue / totalRevenue) * 100 
+                      : 0;
+                    
+                    return (
+                      <div key={meal.meal_id} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-gray-500 font-mono text-xs w-6 flex-shrink-0">
+                              #{index + 1}
+                            </span>
+                            <span className="text-black font-medium truncate">
+                              {meal.meal_name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                            <span className="text-gray-600 text-xs font-mono">
+                              {meal.total_quantity_sold} units
+                            </span>
+                            <span className="text-black font-semibold min-w-[80px] text-right">
+                              ${(meal.total_revenue / 100).toLocaleString(undefined, { 
+                                minimumFractionDigits: 2, 
+                                maximumFractionDigits: 2 
+                              })}
+                            </span>
+                            <span className="text-black font-bold min-w-[50px] text-right">
+                              {percentOfTotal.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Bar Graph */}
+                        <div className="relative w-full h-8 bg-gray-100 rounded-lg overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentOfTotal}%` }}
+                            transition={{ duration: 0.8, delay: index * 0.05, ease: "easeOut" }}
+                            className="absolute left-0 top-0 h-full bg-black rounded-lg"
+                            style={{
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                            }}
+                          >
+                            {percentOfTotal > 5 && (
+                              <div className="absolute right-2 top-1/2 -translate-y-1/2 text-white text-xs font-bold">
+                                {percentOfTotal.toFixed(1)}%
+                              </div>
+                            )}
+                          </motion.div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                
+                {/* Legend */}
+                <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-black rounded"></div>
+                      <span>Revenue %</span>
+                    </div>
+                    <span>• Showing top 10 meals by revenue</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-black">
+                      Total: ${(totalRevenue / 100).toLocaleString(undefined, { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {reportData.length === 0 && (
+              <div className="text-center py-8 text-gray-400">
+                <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No data available to display</p>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

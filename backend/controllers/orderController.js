@@ -792,9 +792,9 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Verify order exists
+    // Verify order exists and get current status
     const [orders] = await pool.query(
-      'SELECT order_id FROM ORDERS WHERE order_id = ?',
+      'SELECT order_id, order_status FROM ORDERS WHERE order_id = ?',
       [orderId]
     );
 
@@ -802,7 +802,28 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    const currentStatus = orders[0].order_status;
+
     await connection.beginTransaction();
+
+    // If changing to refunded status (3), restore stock quantities
+    if (orderStatus === 3 && currentStatus !== 3) {
+      // Get all order line items for this order
+      const [orderLines] = await connection.query(
+        `SELECT meal_ref, num_units_ordered FROM ORDER_LINE WHERE order_ref = ?`,
+        [orderId]
+      );
+
+      // Restore stock for each meal in the order
+      for (const line of orderLines) {
+        await connection.query(
+          `UPDATE STOCK 
+           SET quantity_in_stock = quantity_in_stock + ? 
+           WHERE meal_ref = ?`,
+          [line.num_units_ordered, line.meal_ref]
+        );
+      }
+    }
 
     await connection.query(
       `UPDATE ORDERS 

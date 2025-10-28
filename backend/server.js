@@ -79,6 +79,9 @@ function handleRequest(req, res) {
     const pathname = parsedUrl.pathname;
     const method = req.method;
 
+    // Attach query parameters to request object
+    req.query = parsedUrl.query || {};
+
     // Enhanced response methods
     res.json = (data, statusCode = 200) => {
         res.writeHead(statusCode, { 'Content-Type': 'application/json' });

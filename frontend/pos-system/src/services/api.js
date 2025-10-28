@@ -502,3 +502,16 @@ export const getStaffMealUpdatedReport = async (params = {}) => {
   if (!res.ok) throw new Error('Failed to get staff meal updated report');
   return res.json();
 };
+
+export const getMealSalesReport = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.start_date) queryParams.append('start_date', params.start_date);
+  if (params.end_date) queryParams.append('end_date', params.end_date);
+
+  const res = await fetch(`${API_BASE_URL}/admin/reports/meal-sales?${queryParams}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to get meal sales report');
+  return res.json();
+};
