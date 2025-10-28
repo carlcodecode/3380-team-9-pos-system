@@ -162,6 +162,8 @@ export const resolveLowStockAlert = async (alertId) => {
   return res.json();
 };
 
+
+
 // ==============================
 // MEAL MANAGEMENT
 // ==============================
@@ -406,6 +408,20 @@ export const deletePaymentMethod = async (id) => {
   return res.json();
 };
 
+export const markDeliveryAlertResolved = async (eventId) => {
+  const res = await fetch(`${API_BASE_URL}/triggers/alerts/${eventId}/resolve`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!res.ok) throw new Error('Failed to resolve alert');
+  return res.json();
+};
+
+
+
 // ==============================
 // ORDERS
 // ==============================
@@ -466,6 +482,13 @@ export const updateOrderStatus = async (id, status) => {
   return res.json();
 };
 
+export const getCustomerDeliveryAlerts = async (customerId) => {
+  const res = await fetch(`${API_BASE_URL}/triggers/alerts/customer/${customerId}`, {
+    headers: getHeaders(), 
+  });
+  if (!res.ok) throw new Error('Failed to fetch customer alerts');
+  return res.json();
+};
 // ==============================
 // Token helper
 // ==============================

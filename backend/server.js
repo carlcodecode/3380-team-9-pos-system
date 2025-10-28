@@ -10,6 +10,7 @@ import stockRoutes from './routes/stockRoutes.js';
 import promoRoutes from './routes/promoRoutes.js';
 import saleEventRoutes from './routes/saleEventRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import deliveryTriggerRoutes from './routes/deliveryTriggerRoutes.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -152,6 +153,11 @@ function handleRequest(req, res) {
             // Order routes
             if (pathname.startsWith('/api/orders')) {
                 return orderRoutes(req, res, pathname, method);
+            }
+
+            // Delivery Trigger routes
+            if (pathname.startsWith('/api/triggers')) {
+                return deliveryTriggerRoutes(req, res, pathname, method);
             }
 
             // Health check

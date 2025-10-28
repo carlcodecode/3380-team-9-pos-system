@@ -17,6 +17,7 @@ import * as api from '../../services/api';
 
 export const CustomerDashboard = () => {
   const { user } = useAuth();
+  console.log('🔍 CustomerDashboard mounted, user:', user);
   const { cart, addToCart } = useCart();
   const [currentView, setCurrentView] = useState('browse');
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,12 +29,35 @@ export const CustomerDashboard = () => {
   const [mealCategories, setMealCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [saleEvents, setSaleEvents] = useState([]);
+  const [deliveryAlerts, setDeliveryAlerts] = useState([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
 
   useEffect(() => {
     fetchPromotions();
     fetchMealsAndSales();
     fetchMealCategories();
   }, []);
+
+  useEffect(() => {
+    if (!user?.customerId) return;
+
+    const fetchDeliveryAlerts = async () => {
+      try {
+        console.log('Current user in CustomerDashboard:', user);
+        const data = await api.getCustomerDeliveryAlerts(user.customerId);
+        console.log("Fetched alerts:", data);
+        setDeliveryAlerts(data);
+      } catch (error) {
+        console.error('Error fetching delivery alerts:', error);
+      } finally {
+        setLoadingAlerts(false);
+      }
+    };
+
+    fetchDeliveryAlerts();
+    const interval = setInterval(fetchDeliveryAlerts, 3000); // refresh every 3s for real time notifs
+    return () => clearInterval(interval);
+  }, [user]);
 
   const fetchPromotions = async () => {
     try {
@@ -172,7 +196,52 @@ const handleAddToCart = (meal) => {
   });
 
   const filters = ['all', ...mealCategories.map(cat => cat.meal_type)];
+  const deliveryAlertBanner = !loadingAlerts && deliveryAlerts.length > 0 && (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mb-4"
+      >
+        <div className="bg-white rounded-lg border-2 border-black p-4 mx-6 mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-black font-medium">Delivery Updates</h3>
+            <Badge className="bg-black text-white border-0">
+              {deliveryAlerts.length}
+            </Badge>
+          </div>
+          {deliveryAlerts.map((alert) => (
+            <div key={alert.event_id} className="flex justify-between py-2 border-b border-gray-200 last:border-0">
+              <div>
+                <div className="text-black text-sm">Order #{alert.ref_order_id}</div>
+                <div className="text-xs text-gray-500">
+                  {alert.event_type === 'ORDER_SHIPPED' && 'Your order has been shipped!'}
+                  {alert.event_type === 'ORDER_DELIVERED' && 'Your order was delivered successfully!'}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-gray-600 hover:text-black border-gray-300 rounded-lg"
+                onClick={async () => {
+                  try {
+                    await api.markDeliveryAlertResolved(alert.event_id);
+                    setDeliveryAlerts(prev => prev.filter(a => a.event_id !== alert.event_id));
+                    toast.success('Alert dismissed');
+                  } catch (err) {
+                    toast.error('Failed to dismiss alert');
+                    console.error(err);
+                  }
+                }}
+              >
+                Dismiss
+              </Button>
 
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    );
   // --- View switching ---
   if (currentView === 'cart')
     return (
@@ -182,6 +251,7 @@ const handleAddToCart = (meal) => {
           onProfileClick={() => setCurrentView('profile')}
           onLogoClick={handleLogoClick}
         />
+        {deliveryAlertBanner}
         <Cart
           onBack={() => setCurrentView('browse')}
           onCheckout={() => setCurrentView('checkout')}
@@ -197,6 +267,7 @@ const handleAddToCart = (meal) => {
           onProfileClick={() => setCurrentView('profile')}
           onLogoClick={handleLogoClick}
         />
+        {deliveryAlertBanner}
         <Checkout
           onBack={() => setCurrentView('cart')}
           onComplete={() => setCurrentView('orders')}
@@ -212,6 +283,7 @@ const handleAddToCart = (meal) => {
           onProfileClick={() => setCurrentView('profile')}
           onLogoClick={handleLogoClick}
         />
+        {deliveryAlertBanner}
         <OrderHistory
           onBack={() => setCurrentView('browse')}
           onReorder={items => {
@@ -261,7 +333,7 @@ const handleAddToCart = (meal) => {
           </motion.div>
         </div>
       </div>
-
+      {deliveryAlertBanner}
       {/* Promotions */}
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-6 py-10">
