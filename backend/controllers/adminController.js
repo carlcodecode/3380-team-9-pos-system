@@ -75,15 +75,30 @@ export const createStaff = async (req, res) => {
 
 		await connection.beginTransaction();
 
-		// Check if user exists
-		const [existingUsers] = await connection.query(
-			'SELECT user_id FROM USER_ACCOUNT WHERE email = ? OR username = ?',
-			[email, username]
+		// Check if user exists by email
+		const [emailExists] = await connection.query(
+		'SELECT user_id FROM USER_ACCOUNT WHERE email = ?',
+		[email]
 		);
 
-		if (existingUsers.length > 0) {
-			await connection.rollback();
-			return res.status(409).json({ error: 'Email or username already registered' });
+		// Check if user exists by username
+		const [usernameExists] = await connection.query(
+		'SELECT user_id FROM USER_ACCOUNT WHERE username = ?',
+		[username]
+		);
+
+		if (emailExists.length > 0) {
+		await connection.rollback();
+		res.writeHead(409, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify({ error: 'Email already registered' }));
+		return;
+		}
+
+		if (usernameExists.length > 0) {
+		await connection.rollback();
+		res.writeHead(409, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify({ error: 'Username already taken' }));
+		return;
 		}
 
 		// Hash password

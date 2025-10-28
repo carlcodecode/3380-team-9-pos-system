@@ -73,7 +73,8 @@ export const Register = ({ onSwitchToLogin }) => {
       });
       toast.success('Account created successfully!');
     } catch (error) {
-      toast.error(error.message || 'Registration failed');
+      console.log("REGISTER ERROR RESPONSE:", error.response?.data);
+      toast.error('User or Email already in use!');
     } finally {
       setLoading(false);
     }
