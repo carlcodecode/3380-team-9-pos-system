@@ -342,78 +342,68 @@ export const StaffReports = ({ viewMode, onViewModeChange }) => {
   if (viewMode === 'reports') {
     return (
       <div className="space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg border border-gray-200 p-8"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2"
-                onClick={() => onViewModeChange('dashboard')}
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-              <h2 className="text-black">Reports - Meal Sales</h2>
-            </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-lg border border-gray-200 p-8"
+      >
+        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Button
+          variant="ghost"
+          size="sm"
+          className="gap-2"
+          onClick={() => onViewModeChange('dashboard')}
+          >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+          </Button>
+          <h2 className="text-black">Reports - Meal Sales</h2>
+        </div>
+        </div>
+
+        <div className="space-y-6">
+        {/* Filters */}
+        <div>
+          <h3 className="text-black mb-4">Filters</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <Label>Date Range - From</Label>
+            <Input
+            type="date"
+            value={reportDateFrom}
+            onChange={(e) => setReportDateFrom(e.target.value)}
+            className="rounded-lg border-gray-200"
+            />
           </div>
-
-          <div className="space-y-6">
-            {/* Available Reports */}
-            <div>
-              <h3 className="text-black mb-4">Available Reports</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={handleGenerateReport}
-                  disabled={loading}
-                  className="w-full p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-black transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <FileText className="w-4 h-4 text-black" />
-                    <span className="text-black">Meal Sales Report</span>
-                  </div>
-                  <p className="text-sm text-gray-500">View detailed sales data including meal names, quantities sold, and total revenue</p>
-                </button>
-              </div>
-            </div>
-
-            {/* Filters */}
-            <div>
-              <h3 className="text-black mb-4">Filters</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Date Range - From</Label>
-                  <Input
-                    type="date"
-                    value={reportDateFrom}
-                    onChange={(e) => setReportDateFrom(e.target.value)}
-                    className="rounded-lg border-gray-200"
-                  />
-                </div>
-                <div>
-                  <Label>Date Range - To</Label>
-                  <Input
-                    type="date"
-                    value={reportDateTo}
-                    onChange={(e) => setReportDateTo(e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="rounded-lg border-gray-200"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {loading && (
-              <div className="text-center py-4">
-                <p className="text-gray-500">Generating report...</p>
-              </div>
-            )}
+          <div>
+            <Label>Date Range - To</Label>
+            <Input
+            type="date"
+            value={reportDateTo}
+            onChange={(e) => setReportDateTo(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            className="rounded-lg border-gray-200"
+            />
           </div>
-        </motion.div>
+          </div>
+        </div>
+
+        {/* Available Reports */}
+        <div>
+          <div className="space-y-3">
+          <Button
+            onClick={handleGenerateReport}
+            disabled={loading}
+            className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2 w-full"
+          >
+            <FileText className="w-4 h-4" />
+            {loading ? 'Generating Report...' : 'Generate Report'}
+          </Button>
+          </div>
+        </div>
+        </div>
+      </motion.div>
       </div>
     );
   }
