@@ -87,6 +87,7 @@ export const getLowStockAlerts = async (req, res) => {
 export const markAlertResolved = async (req, res) => {
   try {
     const { eventId } = req.params;
+    console.log("🟡 markAlertResolved called with eventId:", eventId);
 
     const [result] = await pool.query(
       `UPDATE EVENT_OUTBOX 
@@ -95,13 +96,45 @@ export const markAlertResolved = async (req, res) => {
       [eventId],
     );
 
+    console.log("🟢 Update result:", result);
+
     if (result.affectedRows === 0) {
+      console.warn("⚠️ No rows updated for event_id:", eventId);
       return res.status(404).json({ error: 'Alert not found' });
     }
 
     return res.json({ success: true, message: 'Alert marked as resolved' });
   } catch (error) {
-    console.error('Error resolving alert:', error);
+    console.error('🔴 Error resolving alert:', error);
     return res.status(500).json({ error: 'Failed to resolve alert' });
   }
 };
+
+
+export const getCustomerDeliveryAlerts = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+
+    const [rows] = await pool.query(`
+      SELECT 
+        e.event_id,
+        e.event_type,
+        e.payload_json,
+        e.created_at,
+        e.resolved,
+        e.ref_order_id
+      FROM EVENT_OUTBOX e
+      JOIN ORDERS o ON e.ref_order_id = o.order_id
+      WHERE o.customer_ref = ?
+        AND e.event_type IN ('ORDER_SHIPPED', 'ORDER_DELIVERED')
+        AND (e.resolved = 0 OR e.resolved IS NULL)
+      ORDER BY e.created_at DESC
+    `, [customerId]);
+
+    return res.json(formatAlerts(rows));
+  } catch (error) {
+    console.error('Error fetching customer delivery alerts:', error);
+    return res.status(500).json({ error: 'Failed to fetch customer delivery alerts' });
+  }
+};
+

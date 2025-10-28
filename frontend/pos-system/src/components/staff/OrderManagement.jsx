@@ -90,9 +90,9 @@ export const OrderManagement = () => {
   const getStatusText = (status) => {
     switch(status) {
       case 0: return 'Processing';
-      case 1: return 'Delivered';
+      case 1: return 'Refunded';
       case 2: return 'Shipped';
-      case 3: return 'Refunded';
+      case 3: return 'Delivered';
       default: return 'Unknown';
     }
   };
@@ -369,9 +369,9 @@ export const OrderManagement = () => {
                   </button>
 
                   <button
-                    onClick={() => setSelectedStatus(1)}
+                    onClick={() => setSelectedStatus(3)}
                     className={`p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedStatus === 1
+                      selectedStatus === 3
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
@@ -381,9 +381,9 @@ export const OrderManagement = () => {
                   </button>
 
                   <button
-                    onClick={() => setSelectedStatus(3)}
+                    onClick={() => setSelectedStatus(1)}
                     className={`p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedStatus === 3
+                      selectedStatus === 1
                         ? 'border-red-500 bg-red-50'
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
