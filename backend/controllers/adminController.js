@@ -69,13 +69,23 @@ export const createStaff = async (req, res) => {
 			return res.status(400).json({ error: 'Phone number, hire date, and salary are required' });
 		}
 
-		if (password.length < 6) {
-			return res.status(400).json({ error: 'Password must be at least 6 characters' });
+	if (password.length < 6) {
+		return res.status(400).json({ error: 'Password must be at least 6 characters' });
+	}
+
+	// Validate hire date is not in the future
+	if (hire_date) {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const hireDateObj = new Date(hire_date);
+		hireDateObj.setHours(0, 0, 0, 0);
+		
+		if (hireDateObj > today) {
+			return res.status(400).json({ error: 'Hire date cannot be in the future' });
 		}
+	}
 
-		await connection.beginTransaction();
-
-		// Check if user exists by email
+	await connection.beginTransaction();		// Check if user exists by email
 		const [emailExists] = await connection.query(
 		'SELECT user_id FROM USER_ACCOUNT WHERE email = ?',
 		[email]
