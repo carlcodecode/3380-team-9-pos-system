@@ -22,12 +22,12 @@ export const Checkout = ({ onBack, onComplete }) => {
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [addressForm, setAddressForm] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    street: user?.address || '',
-    city: user?.city || '',
-    stateCode: user?.state || '',
-    zipcode: user?.zipcode || '',
+    firstName: '',
+    lastName: '',
+    street: '',
+    city: '',
+    stateCode: '',
+    zipcode: '',
   });
   const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
@@ -41,6 +41,20 @@ export const Checkout = ({ onBack, onComplete }) => {
     billingZipcode: '',
     paymentType: 0, 
   });
+
+  // Initialize address form with user data
+  useEffect(() => {
+    if (user) {
+      setAddressForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        street: user.address || '',
+        city: user.city || '',
+        stateCode: user.state || '',
+        zipcode: user.zipcode || '',
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchPaymentMethods();
@@ -118,10 +132,10 @@ export const Checkout = ({ onBack, onComplete }) => {
         tax: Math.round(tax), // Store in cents
         discount: Math.round(discount), // Store in cents
         notes: deliveryNotes || null,
-        shippingStreet: user?.address || null,
-        shippingCity: user?.city || null,
-        shippingState: user?.state || null,
-        shippingZipcode: user?.zipcode ? String(user.zipcode) : null,
+        shippingStreet: addressForm.street || null,
+        shippingCity: addressForm.city || null,
+        shippingState: addressForm.stateCode || null,
+        shippingZipcode: addressForm.zipcode ? String(addressForm.zipcode) : null,
         trackingNumber: null,
         cartItems: cartItems, // Add cart items to order data
         paymentMethodId: parseInt(selectedPayment), // Add selected payment method ID
@@ -185,7 +199,7 @@ export const Checkout = ({ onBack, onComplete }) => {
                     <Label className="text-black">First Name *</Label>
                     <Input
                       placeholder="John"
-                      value={user?.firstName || ''}
+                      value={addressForm.firstName}
                       onChange={(e) =>
                         setAddressForm((prev) => ({
                           ...prev,
@@ -200,7 +214,7 @@ export const Checkout = ({ onBack, onComplete }) => {
                     <Label className="text-black">Last Name *</Label>
                     <Input
                       placeholder="Doe"
-                      value={user?.lastName || ''}
+                      value={addressForm.lastName}
                       onChange={(e) =>
                         setAddressForm((prev) => ({
                           ...prev,

@@ -117,6 +117,13 @@ const [emailExists] = await connection.query(
         username,
         firstName: firstName || '',
         lastName: lastName || '',
+        address: street || '',
+        city: city || '',
+        state: stateCode || '',
+        zipcode: zipcode || '',
+        phone: phoneNumber || '',
+        loyaltyPoints: 0,
+        totalSpent: 0,
         role: 'customer'
       }
     }, 201);
