@@ -59,6 +59,29 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
     }
   };
 
+  // Auto-format phone number as user types (333-333-3333)
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    const limited = cleaned.slice(0, 10);
+    
+    // Format as 333-333-3333
+    if (limited.length <= 3) {
+      return limited;
+    } else if (limited.length <= 6) {
+      return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+    } else {
+      return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setFormData({...formData, phone_number: formatted});
+  };
+
   // Update form when switching modes
   useEffect(() => {
     if (viewMode === 'staff-edit' && selectedStaff) {
@@ -567,13 +590,12 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
                     <Input 
                       id="phone"
                       value={formData.phone_number} 
-                      onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+                      onChange={handlePhoneChange}
                       className="rounded-lg border-gray-200"
-                      placeholder="111-111-1111"
-                      pattern="\d{3}-\d{3}-\d{4}"
+                      placeholder="333-333-3333"
                       required
                     />
-                    <p className="text-xs text-gray-500 mt-1">Format: 111-111-1111</p>
+                    <p className="text-xs text-gray-500 mt-1">Format: 333-333-3333 (auto-formatted)</p>
                   </div>
                 </div>
               </div>

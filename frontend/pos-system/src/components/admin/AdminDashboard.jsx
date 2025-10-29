@@ -36,9 +36,14 @@ export const AdminDashboard = () => {
     }
   };
 
+  const handleLogoClick = () => {
+    setViewMode('dashboard');
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <Navbar onLogoClick={handleLogoClick} />
 
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
