@@ -308,9 +308,6 @@ export const Profile = ({ onBack }) => {
               <TabsTrigger value="payment" className="data-[state=active]:bg-white">
                 Payment Methods
               </TabsTrigger>
-              <TabsTrigger value="stats" className="data-[state=active]:bg-white">
-                Statistics
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="payment" className="space-y-4">
@@ -368,52 +365,6 @@ export const Profile = ({ onBack }) => {
               </div>
             </TabsContent>
 
-            <TabsContent value="stats" className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-black rounded-lg p-6 text-white">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Award className="w-6 h-6" />
-                    <h3>Loyalty Points</h3>
-                  </div>
-                  <p className="text-4xl mb-2">{user?.loyaltyPoints || 0}</p>
-                  <p className="text-sm text-gray-300">Available to redeem</p>
-                </div>
-
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <TrendingUp className="w-6 h-6 text-black" />
-                    <h3 className="text-black">Total Spent</h3>
-                  </div>
-                  <p className="text-4xl text-black mb-2">${user?.totalSpent?.toFixed(2) || '0.00'}</p>
-                  <p className="text-sm text-gray-500">All time</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-black mb-4">Rewards Progress</h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-500">Points until next reward</span>
-                      <span className="text-black">
-                        {user?.loyaltyPoints ? 2000 - (user.loyaltyPoints % 2000) : 2000} points
-                      </span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-black rounded-full transition-all"
-                        style={{
-                          width: `${user?.loyaltyPoints ? ((user.loyaltyPoints % 2000) / 2000) * 100 : 0}%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Earn 100 points for every $10 spent. Redeem 2000 points for $20 off your next order.
-                  </p>
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
         </div>
       </div>
