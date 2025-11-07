@@ -5,10 +5,14 @@ import { Input } from '../ui/input';
 import { getAllOrders, updateOrderStatus } from '../../services/api';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Label } from '../ui/label';
-import { Package, Calendar, DollarSign, MapPin, User, RefreshCw, Search } from 'lucide-react';
+import { Package, Calendar, DollarSign, MapPin, User, RefreshCw, Search, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
 
-export const OrderManagement = () => {
+export const OrderManagement = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -98,27 +102,46 @@ export const OrderManagement = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-black">Order Processing</h3>
-        <div className="flex items-center gap-2">
-          {/* Search by Order Number */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search order #..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-48 bg-white border-gray-200 focus:border-black rounded-lg h-9"
-            />
+    <div className="space-y-6">
+      {/* Header with Back Button (only show for admin) */}
+      {isAdmin && onNavigate && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => onNavigate('dashboard')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <h2 className="text-black">Order Management</h2>
           </div>
-          <Button 
-            size="sm" 
-            onClick={fetchOrders}
-            disabled={loading}
-            className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-          >
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-black">Order Processing</h3>
+          <div className="flex items-center gap-2">
+            {/* Search by Order Number */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search order #..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-48 bg-white border-gray-200 focus:border-black rounded-lg h-9"
+              />
+            </div>
+            <Button 
+              size="sm" 
+              onClick={fetchOrders}
+              disabled={loading}
+              className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+            >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -414,6 +437,7 @@ export const OrderManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };

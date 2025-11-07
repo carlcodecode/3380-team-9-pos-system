@@ -11,7 +11,7 @@ import { authenticateToken, requireRole } from '../middleware/auth.js';
 export default function promoRoutes(req, res, pathname, method) {
   // Allow staff or admin for CUD operations
   const withStaffAuth = (handler) =>
-    authenticateToken(req, res, () => requireRole('staff')(req, res, handler));
+    authenticateToken(req, res, () => requireRole('staff', 'admin')(req, res, handler));
 
   // Allow any authenticated user to view promotions (customers need to see them)
   const withAuth = (handler) =>

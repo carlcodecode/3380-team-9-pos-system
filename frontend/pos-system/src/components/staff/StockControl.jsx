@@ -4,8 +4,13 @@ import { StockRestockForm } from './StockRestockForm';
 import { StockSettingsForm } from './StockSettingsForm';
 import { motion } from 'framer-motion';
 import * as api from '../../services/api';
+import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
-export const StockControl = () => {
+export const StockControl = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -104,22 +109,41 @@ export const StockControl = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      className="space-y-6"
     >
-      <div className="flex items-center justify-between">
-        <h3 className="text-black text-lg font-medium">Inventory Management</h3>
+      {/* Header with Back Button (only show for admin) */}
+      {isAdmin && onNavigate && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => onNavigate('dashboard')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <h2 className="text-black">Stock Control</h2>
+          </div>
+        </div>
+      )}
 
-        {/* Future feature: bulk restock button */}
-        {/*
-        <Button
-          size="sm"
-          className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-          onClick={() => alert('Will restock all low-stock items (coming soon)')}
-        >
-          Restock All Low Items
-        </Button>
-        */}
-      </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-black text-lg font-medium">Inventory Management</h3>
+
+          {/* Future feature: bulk restock button */}
+          {/*
+          <Button
+            size="sm"
+            className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+            onClick={() => alert('Will restock all low-stock items (coming soon)')}
+          >
+            Restock All Low Items
+          </Button>
+          */}
+        </div>
 
       <div className="space-y-3">
         {stocks.map((stock) => {
@@ -221,6 +245,7 @@ export const StockControl = () => {
           onSave={handleUpdateSettings}
         />
       )}
+      </div>
     </motion.div>
   );
 };
