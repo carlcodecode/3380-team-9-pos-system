@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Plus, Star } from 'lucide-react';
 import { motion } from 'motion/react';
-import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { ImageWithFallback } from '../figma/ImageWithFallback.tsx';
 import { toast } from 'sonner';
 
 export const MealCard = ({ meal, onAddToCart }) => {

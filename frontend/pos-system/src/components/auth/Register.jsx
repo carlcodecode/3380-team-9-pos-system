@@ -5,9 +5,9 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Package } from 'lucide-react';
+import { Package, ArrowLeft } from 'lucide-react';
 
-export const Register = ({ onSwitchToLogin }) => {
+export const Register = ({ onSwitchToLogin, onBackToHome }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -92,6 +92,21 @@ export const Register = ({ onSwitchToLogin }) => {
         transition={{ duration: 0.6 }}
         className="w-full max-w-2xl"
       >
+        {/* Back to Homepage Button */}
+        {onBackToHome && (
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={onBackToHome}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Homepage
+            </Button>
+          </div>
+        )}
+
         {/* Logo */}
         <div className="flex items-center justify-center mb-12">
           <div className="flex items-center gap-3">
