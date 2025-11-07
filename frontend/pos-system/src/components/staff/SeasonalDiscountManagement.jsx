@@ -4,10 +4,15 @@ import { Badge } from '../ui/badge';
 import * as api from '../../services/api';
 import { motion } from 'framer-motion';
 import { SeasonalDiscountForm } from './SeasonalDiscountForm';
-import { Gift, Tag, Plus, Edit, Trash2 } from 'lucide-react';
+import { Gift, Tag, Plus, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'sonner';
 
 
-export const SeasonalDiscountManagement = () => {
+export const SeasonalDiscountManagement = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -54,6 +59,24 @@ export const SeasonalDiscountManagement = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      {/* Header with Back Button (only show for admin) */}
+      {isAdmin && onNavigate && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => onNavigate('dashboard')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <h2 className="text-black">Seasonal Discount Management</h2>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-black text-lg font-medium">Seasonal Discounts</h3>
         <Button

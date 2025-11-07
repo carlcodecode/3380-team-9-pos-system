@@ -4,10 +4,14 @@ import { Badge } from '../ui/badge';
 import * as api from '../../services/api';
 import { motion } from 'framer-motion';
 import { MealForm } from './MealForm';
-import { Gift, Tag, Plus, Edit, Trash2 } from 'lucide-react';
+import { Gift, Tag, Plus, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 
-export const MealManagement = () => {
+export const MealManagement = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [meals, setMeals] = useState([]);
   const [saleEvents, setSaleEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +103,24 @@ export const MealManagement = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      {/* Header with Back Button (only show for admin) */}
+      {isAdmin && onNavigate && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => onNavigate('dashboard')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <h2 className="text-black">Meal Management</h2>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-black text-lg font-medium">Meal Catalog</h3>
         <Button

@@ -2,8 +2,8 @@ import { getAllMealCategories, getMealCategoryById, createMealCategory, updateMe
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 export default function mealCategoryRoutes(req, res, pathname, method) {
-  // All routes require staff role (staff or admin)
-  const withStaffAuth = (handler) => authenticateToken(req, res, () => requireRole('staff')(req, res, handler));
+  // All routes require staff or admin role
+  const withStaffAuth = (handler) => authenticateToken(req, res, () => requireRole('staff', 'admin')(req, res, handler));
 
   // Meal category CRUD routes
   if (pathname === '/api/meal-categories' && method === 'POST') {

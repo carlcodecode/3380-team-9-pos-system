@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Users, FileText, LogOut, Clock, UserPlus } from 'lucide-react';
+import { 
+  Users, 
+  FileText, 
+  LogOut, 
+  Clock, 
+  UserPlus, 
+  Utensils, 
+  ShoppingCart, 
+  Gift, 
+  Percent, 
+  Package 
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import * as api from '../../services/api';
 
@@ -88,6 +99,51 @@ export const AdminOverview = ({ totalStaff, activeStaff, inactiveStaff, onNaviga
           >
             <Users className="w-4 h-4" />
             Staff Management
+          </Button>
+          
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 rounded-lg hover:bg-gray-100 text-black"
+            onClick={() => onNavigate('orders')}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Orders
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 rounded-lg hover:bg-gray-100 text-black"
+            onClick={() => onNavigate('meals')}
+          >
+            <Utensils className="w-4 h-4" />
+            Meal Management
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 rounded-lg hover:bg-gray-100 text-black"
+            onClick={() => onNavigate('stock')}
+          >
+            <Package className="w-4 h-4" />
+            Stock Control
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 rounded-lg hover:bg-gray-100 text-black"
+            onClick={() => onNavigate('promo-codes')}
+          >
+            <Gift className="w-4 h-4" />
+            Promo Codes
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 rounded-lg hover:bg-gray-100 text-black"
+            onClick={() => onNavigate('seasonal-discounts')}
+          >
+            <Percent className="w-4 h-4" />
+            Seasonal Discounts
           </Button>
           
           <Button
@@ -186,7 +242,7 @@ export const AdminOverview = ({ totalStaff, activeStaff, inactiveStaff, onNaviga
           
           <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <p className="text-sm text-gray-600">
-              <span className="text-black">Note:</span> Access limited to staff CRUD and meal creation reports.
+              <span className="text-black">Admin Access:</span> Full system control including orders, meals, stock, and promotions.
             </p>
           </div>
         </motion.div>

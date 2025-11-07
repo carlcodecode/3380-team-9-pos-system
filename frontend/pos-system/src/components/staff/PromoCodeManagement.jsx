@@ -22,11 +22,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
-import { Gift, Tag, Plus, Edit, Trash2 } from 'lucide-react';
+import { Gift, Tag, Plus, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import * as api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
-export const PromoCodeManagement = () => {
+export const PromoCodeManagement = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [promos, setPromos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [promoDialogOpen, setPromoDialogOpen] = useState(false);
@@ -140,10 +144,29 @@ export const PromoCodeManagement = () => {
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-black mb-1">Promo Code Management</h3>
+      <div className="space-y-6">
+        {/* Header with Back Button (only show for admin) */}
+        {isAdmin && onNavigate && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                onClick={() => onNavigate('dashboard')}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <h2 className="text-black">Promo Code Management</h2>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-black mb-1">Promo Code Management</h3>
             <p className="text-sm text-gray-500">Create and manage promotional codes for customers</p>
           </div>
           <Button 
@@ -335,6 +358,7 @@ export const PromoCodeManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </>
   );
 };

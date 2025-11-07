@@ -2,8 +2,8 @@ import { createMeal, getAllMeals, getMealById, updateMeal, deleteMeal } from '..
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 export default function mealRoutes(req, res, pathname, method) {
-  // All routes require staff role (staff or admin)
-  const withStaffAuth = (handler) => authenticateToken(req, res, () => requireRole('staff')(req, res, handler));
+  // All routes require staff or admin role
+  const withStaffAuth = (handler) => authenticateToken(req, res, () => requireRole('staff', 'admin')(req, res, handler));
 
   // Meal CRUD routes
   if (pathname === '/api/meals' && method === 'POST') {
@@ -33,5 +33,5 @@ export default function mealRoutes(req, res, pathname, method) {
   }
 
   // Method not allowed
-  res.json({ error: 'Method not allowed' }, 405);
+  return res.status(405).json({ error: 'Method not allowed' });
 }
