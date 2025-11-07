@@ -33,5 +33,5 @@ export default function mealRoutes(req, res, pathname, method) {
   }
 
   // Method not allowed
-  res.json({ error: 'Method not allowed' }, 405);
+  return res.status(405).json({ error: 'Method not allowed' });
 }
