@@ -4,45 +4,39 @@ import { ImageWithFallback } from '../figma/ImageWithFallback.tsx';
 import { Button } from '../ui/button';
 
 export const LandingPage = ({ onLogin, onRegister }) => {
-  const heroMeals = [
-    { url: "https://images.unsplash.com/photo-1666819691716-827f78d892f3?w=600", cal: 420 },
-    { url: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600", cal: 480 },
-    { url: "https://images.unsplash.com/photo-1638502182261-7be714a565ce?w=600", cal: 520 },
-    { url: "https://images.unsplash.com/photo-1676300184847-4ee4030409c0?w=600", cal: 390 },
-    { url: "https://images.unsplash.com/photo-1693422666037-92ff9346d701?w=600", cal: 550 },
-    { url: "https://images.unsplash.com/photo-1617212287762-93de692f8c8b?w=600", cal: 450 },
-  ];
+const heroMeals = [
+];
 
-  const meals = [
-    {
-      name: "Grilled Chicken Bowl",
-      img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600",
-      cal: 480,
-      price: 15.0,
-      desc: "Tender grilled chicken with roasted vegetables",
-    },
-    {
-      name: "Salmon & Rice Bowl",
-      img: "https://images.unsplash.com/photo-1638502182261-7be714a565ce?w=600",
-      cal: 520,
-      price: 16.5,
-      desc: "Fresh salmon with quinoa and greens",
-    },
-    {
-      name: "Mediterranean Pasta",
-      img: "https://images.unsplash.com/photo-1676300184847-4ee4030409c0?w=600",
-      cal: 390,
-      price: 14.0,
-      desc: "Whole grain pasta with fresh vegetables",
-    },
-    {
-      name: "Asian Stir-Fry Bowl",
-      img: "https://images.unsplash.com/photo-1617212287762-93de692f8c8b?w=600",
-      cal: 450,
-      price: 15.5,
-      desc: "Savory stir-fry with protein and veggies",
-    },
-  ];
+const meals = [
+  {
+    name: "Grilled Chicken Bowl",
+    img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600",
+    cal: 480,
+    price: 15.0,
+    desc: "Tender grilled chicken with roasted vegetables",
+  },
+  {
+    name: "Salmon & Rice Bowl",
+    img: "https://images.unsplash.com/photo-1638502182261-7be714a565ce?w=600",
+    cal: 520,
+    price: 16.5,
+    desc: "Fresh salmon with quinoa and greens",
+  },
+  {
+    name: "Mediterranean Pasta",
+    img: "https://images.unsplash.com/photo-1676300184847-4ee4030409c0?w=600",
+    cal: 390,
+    price: 14.0,
+    desc: "Whole grain pasta with fresh vegetables",
+  },
+  {
+    name: "Asian Stir-Fry Bowl",
+    img: "https://images.unsplash.com/photo-1617212287762-93de692f8c8b?w=600",
+    cal: 450,
+    price: 15.5,
+    desc: "Savory stir-fry with protein and veggies",
+  },
+];
 
   return (
     <div className="min-h-screen bg-white">
@@ -73,21 +67,18 @@ export const LandingPage = ({ onLogin, onRegister }) => {
       {/* Hero */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="flex flex-col items-center text-center">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
+              className="max-w-4xl mb-12"
             >
               <h1 className="text-5xl md:text-6xl leading-tight mb-6">
-                Fresh, Healthy
-                <br />
-                Meals Delivered
-                <br />
-                To Your Door
+                Fresh, Healthy Meals Delivered To Your Door
               </h1>
 
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3 mb-8 flex flex-col items-center">
                 {["Chef-prepared with premium ingredients", "Never frozen, always fresh", "Ready in just 3 minutes"].map((text, i) => (
                   <div key={i} className="flex items-center gap-3 text-lg text-gray-700">
                     <svg className="w-6 h-6 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +91,7 @@ export const LandingPage = ({ onLogin, onRegister }) => {
 
               <button 
                 onClick={onRegister}
-                className="px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-900 transition shadow-lg hover:shadow-xl flex items-center gap-2 text-lg"
+                className="px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-900 transition shadow-lg hover:shadow-xl inline-flex items-center gap-2 text-lg mx-auto"
               >
                 Get Started Today
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +108,7 @@ export const LandingPage = ({ onLogin, onRegister }) => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="grid grid-cols-2 gap-4"
+              className="grid grid-cols-2 gap-1 mx-auto"
             >
               {heroMeals.map((meal, i) => (
                 <motion.div
@@ -125,7 +116,8 @@ export const LandingPage = ({ onLogin, onRegister }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + i * 0.1 }}
-                  className="relative aspect-square rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition"
+                  className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition"
+                  style={{ width: '337px', height: '337px' }}
                 >
                   <ImageWithFallback
                     src={meal.url}
@@ -206,7 +198,7 @@ export const LandingPage = ({ onLogin, onRegister }) => {
                 transition={{ delay: i * 0.1 }}
                 className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition group card-glow"
               >
-                <div className="relative aspect-square overflow-hidden">
+                <div className="relative overflow-hidden" style={{ width: '337px', height: '337px' }}>
                   <ImageWithFallback
                     src={meal.img}
                     alt={meal.name}
