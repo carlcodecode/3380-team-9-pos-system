@@ -65,76 +65,76 @@ const meals = [
       </nav>
 
       {/* Hero */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col items-center text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="max-w-4xl mb-12"
-            >
-              <h1 className="text-5xl md:text-6xl leading-tight mb-6">
-                Fresh, Healthy Meals Delivered To Your Door
-              </h1>
+        <section className="py-20">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex flex-col items-center text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-4xl mb-12"
+          >
+            <h1 className="text-4xl md:text-5xl leading-tight mb-6">
+              Fresh, Healthy Meals Delivered To Your Door
+            </h1>
 
-              <div className="space-y-3 mb-8 flex flex-col items-center">
-                {["Chef-prepared with premium ingredients", "Never frozen, always fresh", "Ready in just 3 minutes"].map((text, i) => (
-                  <div key={i} className="flex items-center gap-3 text-lg text-gray-700">
-                    <svg className="w-6 h-6 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{text}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button 
-                onClick={onRegister}
-                className="px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-900 transition shadow-lg hover:shadow-xl inline-flex items-center gap-2 text-lg mx-auto"
-              >
-                Get Started Today
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </button>
-
-              <p className="text-sm text-gray-500 mt-4">
-                Join thousands of satisfied customers • Cancel anytime
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="grid grid-cols-2 gap-1 mx-auto"
-            >
-              {heroMeals.map((meal, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                  className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition"
-                  style={{ width: '337px', height: '337px' }}
-                >
-                  <ImageWithFallback
-                    src={meal.url}
-                    alt={`Meal ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-3 right-3 bg-yellow-400 text-black px-3 py-1 rounded-full shadow-md text-sm">
-                    {meal.cal} cal
-                  </div>
-                </motion.div>
+            <div className="space-y-3 mb-8 flex flex-col items-center">
+              {["Chef-prepared with premium ingredients", "Never frozen, always fresh", "Ready in just 3 minutes"].map((text, i) => (
+            <div key={i} className="flex items-center gap-3 text-base text-gray-700">
+              <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{text}</span>
+            </div>
               ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* How It Works */}
+            <Button
+              onClick={onRegister}
+              className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2 px-8 py-4 inline-flex mx-auto"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+              Get Started Today
+            </Button>
+
+            <p className="text-xs text-gray-800 mt-4">
+              Join thousands of satisfied customers 
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-2 gap-1 mx-auto"
+          >
+            {heroMeals.map((meal, i) => (
+              <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 + i * 0.1 }}
+            className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition"
+            style={{ width: '337px', height: '337px' }}
+              >
+            <ImageWithFallback
+              src={meal.url}
+              alt={`Meal ${i + 1}`}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-3 right-3 bg-yellow-400 text-black px-3 py-1 rounded-full shadow-md text-sm">
+              {meal.cal} cal
+            </div>
+              </motion.div>
+            ))}
+          </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works */}
       <section id="how" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
