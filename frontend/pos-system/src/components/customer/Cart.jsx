@@ -6,7 +6,7 @@ import { Badge } from '../ui/badge';
 import { ArrowLeft, Minus, Plus, Trash2, Tag } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
-import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { ImageWithFallback } from '../figma/ImageWithFallback.tsx';
 
 export const Cart = ({ onBack, onCheckout }) => {
   const {
