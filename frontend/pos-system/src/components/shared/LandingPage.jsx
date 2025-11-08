@@ -147,33 +147,39 @@ const meals = [
             <p className="text-xl text-gray-600">Fresh meals in three simple steps</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { icon: "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z", title: "Choose Your Meals", desc: "Browse our weekly menu and select your favorite dishes" },
-              { icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4", title: "We Prepare", desc: "Our chefs cook fresh meals with premium ingredients" },
-              { icon: "M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0", title: "Delivered Fresh", desc: "Meals arrive at your door, ready to heat and eat" },
-            ].map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className="bg-white rounded-xl border border-gray-200 p-8 text-center relative hover:shadow-lg transition card-glow"
-              >
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-black text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md font-medium">
-                  {i + 1}
-                </div>
-                <svg className="w-12 h-12 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={step.icon} />
-                </svg>
-                <h3 className="text-xl font-normal mb-3">{step.title}</h3>
-                <p className="text-gray-600">{step.desc}</p>
-              </motion.div>
-            ))}
+      <div className="grid md:grid-cols-3 gap-8">
+        {[
+          { icon: "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z", title: "Choose Your Meals", desc: "Browse our weekly menu and select your favorite dishes" },
+          { icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4", title: "We Prepare", desc: "Our chefs cook fresh meals with premium ingredients" },
+          { icon: "M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0", title: "Delivered Fresh", desc: "Meals arrive at your door, ready to heat and eat" },
+        ].map((step, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.15 }}
+            className="pt-0"
+          >
+            {/* Step number */}
+            <div className="bg-black text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md font-medium mx-auto mb-4">
+              {i + 1}
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center hover:shadow-lg transition card-glow">
+            {/* Icon */}
+            <svg className="w-12 h-12 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={step.icon} />
+            </svg>
+
+            <h3 className="text-xl font-normal mb-3">{step.title}</h3>
+            <p className="text-gray-600">{step.desc}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* Featured Meals */}
       <section id="meals" className="py-20">
@@ -226,16 +232,6 @@ const meals = [
           </div>
 
           <div className="text-center">
-            <Button
-              onClick={onLogin}
-              variant="outline"
-              className="px-8 py-4 border-2 border-black rounded-lg hover:bg-black hover:text-white transition text-lg inline-flex items-center gap-2"
-            >
-              Browse All Meals
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Button>
           </div>
         </div>
       </section>
