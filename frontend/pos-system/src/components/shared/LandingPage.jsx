@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ImageWithFallback } from '../figma/ImageWithFallback.tsx';
 import { Button } from '../ui/button';
+import { Package } from 'lucide-react';
 
 export const LandingPage = ({ onLogin, onRegister }) => {
 const heroMeals = [
@@ -44,9 +45,9 @@ const meals = [
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
+            <div className="p-2 rounded-lg bg-black">
+              <Package className="w-5 h-5 text-white" />
+            </div>
             <span className="text-2xl font-normal">Bento</span>
           </div>
           <Button
