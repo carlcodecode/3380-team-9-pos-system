@@ -49,18 +49,12 @@ const meals = [
             </svg>
             <span className="text-2xl font-normal">Bento</span>
           </div>
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#how" className="text-gray-600 hover:text-black transition">How It Works</a>
-            <a href="#meals" className="text-gray-600 hover:text-black transition">Browse Meals</a>
-            <a href="#why" className="text-gray-600 hover:text-black transition">About</a>
-            <Button
-              onClick={onLogin}
-              variant="outline"
-              className="px-4 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition"
-            >
-              Login
-            </Button>
-          </div>
+          <button 
+            onClick={onLogin}
+            className="px-4 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition"
+          >
+            Login
+          </button>
         </div>
       </nav>
 
@@ -249,7 +243,7 @@ const meals = [
             <p className="text-xl text-gray-600">The best choice for your healthy lifestyle</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
               { icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z", title: "Fresh Ingredients", desc: "Never frozen, sourced locally, delivered fresh to your door" },
               { icon: "M13 10V3L4 14h7v7l9-11h-7z", title: "Quick & Easy", desc: "Ready in 3 minutes. Just microwave and enjoy" },
@@ -261,13 +255,13 @@ const meals = [
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.15 }}
-                className="bg-white rounded-xl border border-gray-200 p-8 text-center hover:shadow-lg transition card-glow"
+                className="bg-white rounded-xl border border-gray-200 p-6 text-center hover:shadow-lg transition card-glow"
               >
-                <svg className="w-10 h-10 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                 </svg>
-                <h3 className="text-xl font-normal mb-3">{item.title}</h3>
-                <p className="text-gray-600">{item.desc}</p>
+                <h3 className="text-lg font-normal mb-2">{item.title}</h3>
+                <p className="text-sm text-gray-600">{item.desc}</p>
               </motion.div>
             ))}
           </div>
