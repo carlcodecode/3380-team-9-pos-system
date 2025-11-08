@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ImageWithFallback } from '../figma/ImageWithFallback.tsx';
 import { Button } from '../ui/button';
 import { Package } from 'lucide-react';
+import { LandingMealCard } from './LandingMealCard';
 
 export const LandingPage = ({ onLogin, onRegister }) => {
 const heroMeals = [
@@ -10,32 +11,64 @@ const heroMeals = [
 
 const meals = [
   {
-    name: "Grilled Chicken Bowl",
-    img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600",
-    cal: 480,
-    price: 15.0,
-    desc: "Tender grilled chicken with roasted vegetables",
+    meal_id: 90,
+    meal_name: "Lemon Herb Chicken with Roasted Broccoli",
+    img_url: "https://i.imgur.com/M6wILjJ.png",
+    price: 1450,
+    meal_description: "Tender grilled chicken with fresh lemon herbs and perfectly roasted broccoli",
+    meal_types: ["Lunch", "Dinner"],
+    nutrition_facts: {
+      calories: 420,
+      protein: 35,
+      carbs: 25
+    },
+    quantity_in_stock: 15,
+    rating: 4.8
   },
   {
-    name: "Salmon & Rice Bowl",
-    img: "https://images.unsplash.com/photo-1638502182261-7be714a565ce?w=600",
-    cal: 520,
-    price: 16.5,
-    desc: "Fresh salmon with quinoa and greens",
+    meal_id: 91,
+    meal_name: "Teriyaki Salmon with Cauliflower Rice",
+    img_url: "https://i.imgur.com/bpA1syr.png",
+    price: 1650,
+    meal_description: "Fresh salmon with teriyaki glaze served over healthy cauliflower rice",
+    meal_types: ["Lunch", "Dinner"],
+    nutrition_facts: {
+      calories: 480,
+      protein: 40,
+      carbs: 20
+    },
+    quantity_in_stock: 12,
+    rating: 4.9
   },
   {
-    name: "Mediterranean Pasta",
-    img: "https://images.unsplash.com/photo-1676300184847-4ee4030409c0?w=600",
-    cal: 390,
-    price: 14.0,
-    desc: "Whole grain pasta with fresh vegetables",
+    meal_id: 92,
+    meal_name: "Turkey Chili",
+    img_url: "https://i.imgur.com/OvfbATP.png",
+    price: 1250,
+    meal_description: "Hearty turkey chili with beans and spices, perfect comfort food",
+    meal_types: ["Lunch", "Dinner"],
+    nutrition_facts: {
+      calories: 380,
+      protein: 30,
+      carbs: 35
+    },
+    quantity_in_stock: 20,
+    rating: 4.7
   },
   {
-    name: "Asian Stir-Fry Bowl",
-    img: "https://images.unsplash.com/photo-1617212287762-93de692f8c8b?w=600",
-    cal: 450,
-    price: 15.5,
-    desc: "Savory stir-fry with protein and veggies",
+    meal_id: 93,
+    meal_name: "Grilled Steak with Mashed Potatoes",
+    img_url: "https://i.imgur.com/nTVpq7B.png",
+    price: 1850,
+    meal_description: "Premium grilled steak with creamy mashed potatoes and seasonal vegetables",
+    meal_types: ["Dinner"],
+    nutrition_facts: {
+      calories: 550,
+      protein: 45,
+      carbs: 40
+    },
+    quantity_in_stock: 8,
+    rating: 4.9
   },
 ];
 
@@ -191,38 +224,11 @@ const meals = [
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {meals.map((meal, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition group card-glow"
-              >
-                <div className="relative overflow-hidden" style={{ width: '337px', height: '337px' }}>
-                  <ImageWithFallback
-                    src={meal.img}
-                    alt={meal.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-3 right-3 bg-yellow-400 text-black px-3 py-1 rounded-full text-sm font-medium">
-                    {meal.cal} cal
-                  </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-lg font-normal mb-2">{meal.name}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{meal.desc}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-normal">${meal.price.toFixed(2)}</span>
-                    <Button
-                      onClick={onLogin}
-                      className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 transition text-sm btn-glossy"
-                    >
-                      Add to Cart
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
+              <LandingMealCard
+                key={meal.meal_id}
+                meal={meal}
+                onAddToCart={() => onLogin()}
+              />
             ))}
           </div>
 
