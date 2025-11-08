@@ -1,334 +1,125 @@
 # Bento POS System
 
-A full-stack Point of Sale (POS) system for a meal prep delivery service, built with React, Node.js, Express, and MySQL.
-
-## 🏗️ Project Structure
-
-```
-3380-team-9-pos-system/
-├── backend/                    # Node.js/Express backend server
-│   ├── config/                 # Configuration files
-│   │   └── database.js         # MySQL connection pool
-│   ├── controllers/            # Business logic
-│   │   └── authController.js   # Authentication logic (register, login)
-│   ├── middleware/             # Express middleware
-│   │   └── auth.js             # JWT authentication & role-based access
-│   ├── routes/                 # API route definitions
-│   │   └── authRoutes.js       # Auth endpoints (/register, /login, /me)
-│   ├── utils/                  # Helper utilities
-│   │   └── roleHelper.js       # User role mapping (customer, staff, admin)
-│   ├── server.js               # Main Express server
-│   ├── package.json            # Backend dependencies
-│   └── .env                    # Environment variables (DB, JWT secret)
-│
-└── frontend/
-    └── pos-system/             # React + Vite frontend
-        ├── src/
-        │   ├── components/     # React components
-        │   │   ├── admin/      # Admin dashboard
-        │   │   ├── auth/       # Login & Register forms
-        │   │   ├── customer/   # Customer dashboard, cart, checkout
-        │   │   ├── staff/      # Staff dashboard
-        │   │   ├── shared/     # Reusable components (Navbar, MealCard)
-        │   │   └── ui/         # UI component library (buttons, cards, etc.)
-        │   ├── contexts/       # React Context providers
-        │   │   ├── AuthContext.jsx  # Authentication state management
-        │   │   └── CartContext.jsx  # Shopping cart state
-        │   ├── services/       # API communication
-        │   │   └── api.js      # HTTP client for backend API
-        │   └── lib/            # Libraries and utilities
-        │       └── mockData.js # Mock data for development
-        ├── package.json        # Frontend dependencies
-        └── .env                # Frontend environment variables
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Node.js** v18 or higher
-- **npm** v9 or higher
-- **MySQL** 8.0+ (or access to MySQL database)
-- **Git** (for version control)
-
-### 1. Clone the Repository
-
-```powershell
-git clone https://github.com/carlcodecode/3380-team-9-pos-system.git
-cd 3380-team-9-pos-system
-```
-
-### 2. Database Setup
-
-The project uses MySQL database hosted on AWS RDS. Make sure you have:
-
-1. **Database Connection Details**:
-   - Host: `team-9.c9oog4w20uqy.us-east-2.rds.amazonaws.com`
-   - Database: `bento_pos`
-   - User: `admin`
-   - Password: (provided in backend/.env)
-
-2. **Database Schema**: The database includes 16 tables:
-   - `USER_ACCOUNT` - User credentials and authentication
-   - `CUSTOMER` - Customer profile information
-   - `STAFF` - Staff details
-   - `ORDERS` - Order records
-   - `MEAL` - Meal items
-   - `PAYMENT` - Payment transactions
-   - And more...
-
-3. **Seed Data**: Pre-populated test accounts:
-   - **Admin**: username `admin`, password `admin` (role: 2)
-   - **Staff**: username `staff`, password `staff` (role: 1)
-   - **Customer**: username `customer1`, password `customer1` (role: 0)
-
-### 3. Backend Setup
-
-```powershell
-# Navigate to backend directory
-cd backend
-
-# Install dependencies
-npm install
-
-# Create .env file (if not exists)
-# The .env file should contain:
-# DB_HOST=team-9.c9oog4w20uqy.us-east-2.rds.amazonaws.com
-# DB_USER=admin
-# DB_PASSWORD=<your-password>
-# DB_NAME=bento_pos
-# JWT_SECRET=<your-secret-key>
-# PORT=3001
-# NODE_ENV=development
-# FRONTEND_URL=http://localhost:3000
-
-# Start the backend server
-node server.js
-```
-
-**Expected Output**:
-```
-🚀 Server running on http://localhost:3001
-📍 Environment: development
-🔗 Frontend URL: http://localhost:3000
-✅ Database connected successfully
-```
-
-### 4. Frontend Setup
-
-Open a **new terminal** (keep backend running):
-
-```powershell
-# Navigate to frontend directory
-cd frontend/pos-system
-
-# Install dependencies
-npm install
-
-# Create .env file (if not exists)
-# The .env file should contain:
-# VITE_API_URL=http://localhost:3001/api
-
-# Start the frontend development server
-npm run dev
-```
-
-**Expected Output**:
-```
-VITE v6.3.5  ready in 854 ms
-➜  Local:   http://localhost:3000/
-```
-
-### 5. Access the Application
-
-Open your browser and go to: **http://localhost:3000**
-
-## 🔐 Authentication System
-
-### User Roles
-
-The system supports three user roles:
-
-- **Customer (role: 0)**: Can browse meals, add to cart, place orders, view order history
-- **Staff (role: 1)**: Can manage orders, view customer information, update order status
-- **Admin (role: 2)**: Full system access, user management, reports, and analytics
-
-### API Endpoints
-
-#### Authentication Routes (`/api/auth`)
-
-- `POST /api/auth/register` - Create new customer account
-  - Body: `{ email, username, password, firstName, lastName }`
-  
-- `POST /api/auth/login` - Login and receive JWT token
-  - Body: `{ username, password }`
-  - Returns: `{ token, user: { id, username, email, role } }`
-
-- `GET /api/auth/me` - Get current user (protected)
-  - Headers: `Authorization: Bearer <token>`
-  
-- `POST /api/auth/logout` - Logout (protected)
-  - Headers: `Authorization: Bearer <token>`
-
-### How Authentication Works
-
-1. **Register/Login**: User submits credentials → Backend validates → Returns JWT token
-2. **Token Storage**: Frontend stores JWT in `localStorage`
-3. **Protected Requests**: Frontend includes token in `Authorization` header
-4. **Token Verification**: Backend middleware verifies JWT before accessing protected routes
-5. **Role-Based Access**: Middleware checks user role for admin/staff-only endpoints
-
-## 🛠️ Development
-
-### Backend Technologies
-
-- **Express 5.1.0** - Web framework
-- **MySQL2** - Database driver with promise support
-- **bcryptjs** - Password hashing
-- **jsonwebtoken** - JWT token generation/verification
-- **dotenv** - Environment variable management
-- **cors** - Cross-Origin Resource Sharing
-
-### Frontend Technologies
-
-- **React 18** - UI library
-- **Vite 6.3.5** - Build tool and dev server
-- **React Router DOM** - Client-side routing
-- **Framer Motion** - Animation library
-- **Sonner** - Toast notifications
-- **Tailwind CSS** - Utility-first CSS framework
-
-### Project Features
-
-✅ **User Authentication** - Secure registration and login with JWT  
-✅ **Role-Based Access Control** - Customer, Staff, and Admin roles  
-✅ **Shopping Cart** - Add meals, update quantities, checkout  
-✅ **Order Management** - Place orders, track status, view history  
-✅ **Responsive Design** - Mobile-friendly UI with Tailwind CSS  
-✅ **Real-time Validation** - Form validation and error handling  
-
-## 📝 Common Commands
-
-### Backend Commands
-
-```powershell
-# Start server
-node server.js
-
-# Generate password hashes (for testing)
-node generate-hashes.js
-
-# Test authentication endpoints
-node test-auth.js
-```
-
-### Frontend Commands
-
-```powershell
-# Start dev server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-## 🐛 Troubleshooting
-
-### Backend Won't Start
-
-1. **Check if port 3001 is in use**:
-   ```powershell
-   netstat -ano | findstr :3001
-   ```
-
-2. **Kill existing Node processes**:
-   ```powershell
-   Get-Process -Name node | Stop-Process -Force
-   ```
-
-3. **Verify database connection** in `.env` file
-
-### Frontend Won't Start
-
-1. **Check if port 3000 is in use** - Vite will auto-select next available port
-2. **Clear node_modules and reinstall**:
-   ```powershell
-   Remove-Item -Recurse -Force node_modules
-   npm install
-   ```
-
-### Login/Register Errors
-
-1. **"Unexpected end of JSON input"** - Backend not running or wrong API URL
-2. **"Invalid credentials"** - Check username/password match database
-3. **CORS errors** - Verify `FRONTEND_URL` in backend `.env` matches frontend port
-
-### Database Connection Issues
-
-1. **Check AWS RDS security group** allows your IP
-2. **Verify credentials** in backend `.env`
-3. **Test connection**:
-   ```powershell
-   mysql -h team-9.c9oog4w20uqy.us-east-2.rds.amazonaws.com -u admin -p bento_pos
-   ```
-
-## 🔒 Security Notes
-
-- **Never commit `.env` files** - Contains sensitive credentials
-- **JWT tokens expire after 24 hours** - Users must re-login
-- **Passwords are hashed with bcrypt** - 10 salt rounds
-- **CORS is configured** - Only allowed origins can access API
-- **SQL injection protected** - Using parameterized queries
-
-## 📦 Dependencies
-
-### Backend Dependencies
-
-```json
-{
-  "express": "^5.1.0",
-  "mysql2": "^3.12.0",
-  "bcryptjs": "^2.4.3",
-  "jsonwebtoken": "^9.0.2",
-  "dotenv": "^17.2.3",
-  "cors": "^2.8.5"
-}
-```
-
-### Frontend Dependencies
-
-```json
-{
-  "react": "^18.3.1",
-  "react-dom": "^18.3.1",
-  "react-router-dom": "^7.1.1",
-  "framer-motion": "^11.18.0",
-  "sonner": "^1.7.2"
-}
-```
-
-## 👥 Team
-
-**Team 9 - Database Systems (CS 3380)**
-
-## 📄 License
-
-This project is for educational purposes as part of CS 3380 coursework.
-
-## 🤝 Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Commit changes: `git commit -m "Add your feature"`
-3. Push to branch: `git push origin feature/your-feature`
-4. Create a Pull Request
-
-## 📞 Support
-
-For issues or questions, please create an issue in the GitHub repository.
-
----
-
-**Happy Coding! 🚀**
+A full-stack Point of Sale (POS) system for a meal prep delivery service, built with React (frontend) hosted on AWS Amplify, Node.js (backend) hosted on AWS EC2, and MySQL (database) hosted on AWS RDS.
+
+# Link to our deployed website 
+
+https://main.d7s422gb89fta.amplifyapp.com/
+
+- If the authentication giving a networkerror please message Carl Aguinaldo on teams to check on the EC2 instance and make sure the server is running.
+
+- Otherwise ...
+
+# Running Locally
+
+- clone the repo
+- cd to backend folder and npm install (to install dependencies)
+- add the .env to the backend folder (attached in your email)
+- then run node server.js to run the server
+- then cd frontend/pos-system and npm install
+- add the .env for front end to this folder (attached in your email)
+- then npm run dev
+
+# Regarding the Five Must-Haves
+
+## User Authentication 
+- We have three different types of users that all have different dashboards : Customer, Staff, Admin
+- Staff also have dashboards unique to their permissions decided by the admin
+- User Authentication is implementation:
+  - When someone log ins or registers the backend queries the database to create a new user (for customer registration or staff creation) or verify an existing user
+  - If the credentials match data in our database, the backend generates a JWT token to prove the user is authenticated -> Our database as a separate USER_ACCOUNT table than our CUSTOMER table or STAFF table that contains the email, hashed password, user_id.
+  - Front end stores token and user info locally to maintain the user's session for ease of use.
+ 
+## Data Entry Forms
+- There are many areas in our web app for users to add, modify, or delete data in our database which we will be going over in the key features section
+- Some data entry areas include: Edit Profile (CUSTOMER CRUD), Meal Management (STAFF CRU), Stock Management (STAFF RU -> only Read and Update because when a staff creates a MEAL an associated STOCK is created with it), Promo Code Management (STAFF CRUD), Seasonal Discount Management (STAFF CRUD), STAFF creation (STAFF (admin) CRUD)
+
+## Triggers
+- We have two triggers set up:
+  - Low Stock Trigger -> A database trigger that sends an event to the EVENT_OUTBOX table when a STOCK quantity falls below it's reorder threshold. The staff dashboard then reads these events to display low-stock alerts, which allows the staff to easily restock the meal and mark that _event_ as resolved in the table.
+  - Delivery Notification Trigger -> A database trigger that logs order-related events to the EVENT_OUTBOX when an order's status or tracking number changes. We are currently working on an implementation to send real-time notifcations to customers on their dashboard when their order has been processed, shipped, delivered, or refunded as well a tracking number (WIP).
+ 
+## Data Queries / Reports 
+- We have 3 Data Queries / Reports set up:
+  - Admin Dashboard:
+    - An admin can generate a report on staff meal creation between a date range(can also query based on staff name / id)
+    - An admin can generate a report on staff meal updates between a date range(can also query based on staff name / id)
+  - Staff Dashboard:
+    - A staff (with Report perms) can generate a Revenue Report between dates that will also show the meal that generated the highest revenue, the meal that sold the most, and what percent of the revenue period the meal covered.
+    - (Thinking of also implementing a profit report as well)
+- These reports are generating using VIEW tables as well as backend functions for data processing + aggregation (revenue report)
+
+# Sign-Ins
+
+## Customer
+- User: labubulover
+- Password: password1
+- Or register your own Customer !
+
+## Staff
+- User: staff
+- Password: staff
+- This particular account has all staff perms, if you want an example of a staff with limited views you can create one through the admin account or log in to the following:
+- User: julio
+- Password: password
+- This one doesn't have permission to view the Seasonl Discount tab
+
+## Admin
+- User: admin
+- Password: admin
+
+**Feel free to add meals, promo codes, seasonal discounts etc. and watch it update on the web app !**
+   
+# Key Features
+
+## Customer Sign-Up / User Authentication
+
+- When opening the website you are taken to our Sign up / Log in page.
+- Customers can register with an account or log in
+- Staff can log in with their given account
+- Admin can log in with their account
+
+## Customer Dashboard
+
+### Main Page
+
+- Once a customer signs in, they are taken to the customer dashboard
+- On the top we have a simple hero section
+- Below that we have active promo codes
+- Below that we have our meal dashboard where customers can browse meals, view their order history, or go to their profile
+- Customers can add meals to their cart in this section
+
+### Profile
+
+- On the nav bar customers can access their profile where they can edit their info, add payment methods, and view their statistics (loyalty points and reward IN PROGRESS)
+
+### Cart / Checkout
+
+- Once a customer adds meals to their cart they can click the cart icon in the nav bar to access their cart
+- In this section they can add a promo code (limit one)
+- After that they can proceed to check out where fields are auto-filled with their data if available, and they can also edit those fields
+- They can also add more payment methods in this section and buy the meal where a request is sent for processing
+
+## Staff Dashboard
+
+- Our staff dashboard is only accessible by staff users
+- Staff dashboards are also unique based on the permissions the staff member is given by the admin (i.e. some staff will only be able to view the meal tab + stock tab, some will only be able to see the promo + sale event tab)
+- Assuming the staff has all permissions at the top of the page they can generate a **revenue report** within a date range
+- Below that the staff can see low stock notifications (if any) set up by our **Low Stock Notification trigger** which sends a blah into the event outbox and gets shown here
+- Below that we have tabs for the many different tasks staff members can do including: Processing order status, Creating + Updating meals, Restocking meals and editing the stock settings, Creating + Updating + Deleting Promo Codes, Creating + Editing + Deleting Seasonal Discounts.
+
+## Admin Dashboard 
+
+- This is where the admin manages staff members
+- They can create staff members, update their settings/permissions, or delete them.
+- They can also generate two different reports
+  - Meals created by staff members within a date frame
+  - Meals updated by staff members within a date frame
+- On the dashboard the admin can also see a list of staff members hired
+
+# Future Implementations for the Presentation
+- More meaningful reports
+- Review Implementation
+- Refund Requests
+- Tracking Number Implementation
+- Some Quality of Life UI/UX design changes 

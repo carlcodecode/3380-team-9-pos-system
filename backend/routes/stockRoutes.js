@@ -13,9 +13,9 @@ import {
 } from '../controllers/triggerController.js';
 
 export default function stockRoutes(req, res, pathname, method) {
-  // All routes require staff access
+  // All routes require staff or admin access
   const withStaffAuth = (handler) =>
-    authenticateToken(req, res, () => requireRole('staff')(req, res, handler));
+    authenticateToken(req, res, () => requireRole('staff', 'admin')(req, res, handler));
 
   // Get delivery alerts
   if (pathname === '/api/stocks/delivery-alerts' && method === 'GET') {

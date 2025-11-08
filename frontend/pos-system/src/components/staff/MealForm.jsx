@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter
 } from '../ui/dialog';
 import { Input } from '../ui/input';
@@ -144,6 +145,9 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
           <DialogTitle className="text-black text-lg font-semibold">
             {meal ? 'Edit Meal' : 'Add New Meal'}
           </DialogTitle>
+          <DialogDescription>
+            {meal ? 'Update the meal details below.' : 'Fill in the details to create a new meal.'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-4 px-3">

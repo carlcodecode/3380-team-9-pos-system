@@ -8,9 +8,9 @@ import {
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 export default function saleEventRoutes(req, res, pathname, method) {
-  // Allow staff or ad in
+  // Allow staff or admin
   const withStaffAuth = (handler) =>
-    authenticateToken(req, res, () => requireRole('staff')(req, res, handler));
+    authenticateToken(req, res, () => requireRole('staff', 'admin')(req, res, handler));
 
   // Create + list
   if (pathname === '/api/sale-events' && method === 'POST') {

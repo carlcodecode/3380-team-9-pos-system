@@ -69,21 +69,46 @@ export const createStaff = async (req, res) => {
 			return res.status(400).json({ error: 'Phone number, hire date, and salary are required' });
 		}
 
-		if (password.length < 6) {
-			return res.status(400).json({ error: 'Password must be at least 6 characters' });
+	if (password.length < 6) {
+		return res.status(400).json({ error: 'Password must be at least 6 characters' });
+	}
+
+	// Validate hire date is not in the future
+	if (hire_date) {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const hireDateObj = new Date(hire_date);
+		hireDateObj.setHours(0, 0, 0, 0);
+		
+		if (hireDateObj > today) {
+			return res.status(400).json({ error: 'Hire date cannot be in the future' });
 		}
+	}
 
-		await connection.beginTransaction();
-
-		// Check if user exists
-		const [existingUsers] = await connection.query(
-			'SELECT user_id FROM USER_ACCOUNT WHERE email = ? OR username = ?',
-			[email, username]
+	await connection.beginTransaction();		// Check if user exists by email
+		const [emailExists] = await connection.query(
+		'SELECT user_id FROM USER_ACCOUNT WHERE email = ?',
+		[email]
 		);
 
-		if (existingUsers.length > 0) {
-			await connection.rollback();
-			return res.status(409).json({ error: 'Email or username already registered' });
+		// Check if user exists by username
+		const [usernameExists] = await connection.query(
+		'SELECT user_id FROM USER_ACCOUNT WHERE username = ?',
+		[username]
+		);
+
+		if (emailExists.length > 0) {
+		await connection.rollback();
+		res.writeHead(409, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify({ error: 'Email already registered' }));
+		return;
+		}
+
+		if (usernameExists.length > 0) {
+		await connection.rollback();
+		res.writeHead(409, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify({ error: 'Username already taken' }));
+		return;
 		}
 
 		// Hash password
@@ -649,6 +674,56 @@ WHERE activity_type = 'UPDATED'
 		console.error('Get staff meal updated report error:', error);
 		res.status(500).json({
 			error: 'Failed to retrieve staff meal updated report',
+			details: error.message
+		});
+	}
+};
+
+// Get Meal Sales Report
+export const getMealSalesReport = async (req, res) => {
+	try {
+		const { start_date, end_date } = req.query || {};
+
+		let query = `
+SELECT
+    ol.meal_ref as meal_id,
+    m.meal_name,
+    SUM(ol.num_units_ordered) as total_quantity_sold,
+    SUM(ol.price_at_sale * ol.num_units_ordered) as total_revenue,
+    ROUND(AVG(ol.price_at_sale)) as average_price
+FROM ORDER_LINE ol
+JOIN ORDERS o ON ol.order_ref = o.order_id
+JOIN MEAL m ON ol.meal_ref = m.meal_id
+WHERE o.order_status != 3
+`;
+
+		const params = [];
+
+		if (start_date) {
+			query += ' AND o.order_date >= ?';
+			params.push(start_date);
+		}
+
+		if (end_date) {
+			query += ' AND o.order_date <= ?';
+			params.push(end_date);
+		}
+
+		query += ' GROUP BY ol.meal_ref, m.meal_name ORDER BY total_revenue DESC';
+
+		const [results] = await pool.query(query, params);
+
+		res.json({
+			report: 'Meal Sales',
+			filters: { start_date, end_date },
+			data: results,
+			count: results.length
+		});
+
+	} catch (error) {
+		console.error('Get meal sales report error:', error);
+		res.status(500).json({
+			error: 'Failed to retrieve meal sales report',
 			details: error.message
 		});
 	}

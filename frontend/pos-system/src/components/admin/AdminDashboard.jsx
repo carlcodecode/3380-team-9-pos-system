@@ -4,6 +4,11 @@ import { Navbar } from '../shared/Navbar';
 import { AdminOverview } from './AdminOverview';
 import { StaffManagement } from './StaffManagement';
 import { ReportsManagement } from './ReportsManagement';
+import { OrderManagement } from '../staff/OrderManagement';
+import { MealManagement } from '../staff/MealManagement';
+import { StockControl } from '../staff/StockControl';
+import { PromoCodeManagement } from '../staff/PromoCodeManagement';
+import { SeasonalDiscountManagement } from '../staff/SeasonalDiscountManagement';
 import { motion } from 'motion/react';
 
 // Mock Staff Data for stats
@@ -16,17 +21,20 @@ const mockStaff = [
 ];
 
 export const AdminDashboard = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [viewMode, setViewMode] = useState('dashboard');
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Admin has all permissions (63 = 0b111111)
+  const adminPermissions = 63;
 
   const totalStaff = mockStaff.length;
   const activeStaff = mockStaff.filter(s => s.status === 'active').length;
   const inactiveStaff = mockStaff.filter(s => s.status === 'inactive').length;
 
   const handleNavigate = (view) => {
-    setViewMode(view);DES
+    setViewMode(view);
     if (view === 'staff-add') {
       setSelectedStaff(null);
     }
@@ -36,9 +44,14 @@ export const AdminDashboard = () => {
     }
   };
 
+  const handleLogoClick = () => {
+    setViewMode('dashboard');
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <Navbar onLogoClick={handleLogoClick} />
 
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
@@ -48,8 +61,8 @@ export const AdminDashboard = () => {
           className="mb-8"
         >
           <div className="bg-white rounded-lg border border-gray-200 p-8">
-            <h1 className="text-black mb-2">Admin Dashboard - Staff & Reports Management</h1>
-            <p className="text-gray-500">Manage staff and generate meal creation reports</p>
+            <h1 className="text-black mb-2">Admin Dashboard - System Management</h1>
+            <p className="text-gray-500">Complete control over staff, orders, inventory, and promotions</p>
           </div>
         </motion.div>
 
@@ -79,6 +92,26 @@ export const AdminDashboard = () => {
             viewMode={viewMode}
             onNavigate={handleNavigate}
           />
+        )}
+
+        {viewMode === 'orders' && (
+          <OrderManagement onNavigate={handleNavigate} />
+        )}
+
+        {viewMode === 'meals' && (
+          <MealManagement onNavigate={handleNavigate} />
+        )}
+
+        {viewMode === 'stock' && (
+          <StockControl onNavigate={handleNavigate} />
+        )}
+
+        {viewMode === 'promo-codes' && (
+          <PromoCodeManagement onNavigate={handleNavigate} />
+        )}
+
+        {viewMode === 'seasonal-discounts' && (
+          <SeasonalDiscountManagement onNavigate={handleNavigate} />
         )}
       </div>
     </div>

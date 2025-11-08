@@ -22,11 +22,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
-import { Gift, Tag, Plus, Edit, Trash2 } from 'lucide-react';
+import { Gift, Tag, Plus, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import * as api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
-export const PromoCodeManagement = () => {
+export const PromoCodeManagement = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [promos, setPromos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [promoDialogOpen, setPromoDialogOpen] = useState(false);
@@ -117,6 +121,8 @@ export const PromoCodeManagement = () => {
   };
 
   const confirmDeletePromo = async () => {
+    if (!promoToDelete) return;
+    
     try {
       await api.deletePromo(promoToDelete.promotion_id);
       toast.success(`Promo code "${promoToDelete.promo_code}" deleted successfully!`);
@@ -124,8 +130,10 @@ export const PromoCodeManagement = () => {
       setPromoToDelete(null);
       fetchPromos(); // Refresh the list
     } catch (error) {
-      toast.error(error.message || 'Failed to delete promotion');
       console.error('Delete promo error:', error);
+      const errorMessage = error.message || 'Failed to delete promotion';
+      toast.error(errorMessage);
+      // Keep dialog open if there was an error so user can see what happened
     }
   };
 
@@ -136,10 +144,29 @@ export const PromoCodeManagement = () => {
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-black mb-1">Promo Code Management</h3>
+      <div className="space-y-6">
+        {/* Header with Back Button (only show for admin) */}
+        {isAdmin && onNavigate && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                onClick={() => onNavigate('dashboard')}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <h2 className="text-black">Promo Code Management</h2>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-black mb-1">Promo Code Management</h3>
             <p className="text-sm text-gray-500">Create and manage promotional codes for customers</p>
           </div>
           <Button 
@@ -204,7 +231,7 @@ export const PromoCodeManagement = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                      className="border-gray-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors" 
                       onClick={() => handleDeletePromo(promo)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -263,7 +290,7 @@ export const PromoCodeManagement = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="promo-type">Promo Type *</Label>
+                <Label htmlFor="promo-type">Discount percent *</Label>
                 <Input
                   id="promo-type"
                   type="number"
@@ -318,16 +345,20 @@ export const PromoCodeManagement = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel className="rounded-lg border-gray-200">
+              Cancel
+            </AlertDialogCancel>
+            <button
               onClick={confirmDeletePromo}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              className="inline-flex items-center justify-center rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 px-4 py-2 transition-colors"
+              style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
             >
               Delete
-            </AlertDialogAction>
+            </button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </>
   );
 };

@@ -247,7 +247,7 @@ export const deletePromo = async (req, res) => {
       return res.status(404).json({ error: 'Promotion not found' });
     }
 
-    // Explicit delete
+    // Delete promotion - CASCADE will automatically delete related ORDER_PROMOTION records
     await connection.query('DELETE FROM PROMOTION WHERE promotion_id = ?', [id]);
 
     await connection.commit();

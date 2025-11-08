@@ -4,8 +4,13 @@ import { StockRestockForm } from './StockRestockForm';
 import { StockSettingsForm } from './StockSettingsForm';
 import { motion } from 'framer-motion';
 import * as api from '../../services/api';
+import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
-export const StockControl = () => {
+export const StockControl = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,8 +55,9 @@ export const StockControl = () => {
   // ==============================
   const handleRestock = async (stockId, quantity) => {
     try {
-      await api.restockMeal(stockId, { quantity_to_add: quantity });
-      // Optimistic UI update
+      const response = await api.restockMeal(stockId, { quantity_to_add: quantity });
+      const { newQuantity, additionalCost, newTotalSpent } = response.data;
+      
       setStocks((prev) =>
         prev.map((s) =>
           s.stock_id === stockId
@@ -61,6 +67,7 @@ export const StockControl = () => {
                   s.quantity_in_stock + quantity,
                   s.max_stock
                 ),
+                total_spent: newTotalSpent ?? (Number(s.total_spent) || 0) + additionalCost
               }
             : s
         )
@@ -102,22 +109,41 @@ export const StockControl = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      className="space-y-6"
     >
-      <div className="flex items-center justify-between">
-        <h3 className="text-black text-lg font-medium">Inventory Management</h3>
+      {/* Header with Back Button (only show for admin) */}
+      {isAdmin && onNavigate && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => onNavigate('dashboard')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <h2 className="text-black">Stock Control</h2>
+          </div>
+        </div>
+      )}
 
-        {/* Future feature: bulk restock button */}
-        {/*
-        <Button
-          size="sm"
-          className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-          onClick={() => alert('Will restock all low-stock items (coming soon)')}
-        >
-          Restock All Low Items
-        </Button>
-        */}
-      </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-black text-lg font-medium">Inventory Management</h3>
+
+          {/* Future feature: bulk restock button */}
+          {/*
+          <Button
+            size="sm"
+            className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+            onClick={() => alert('Will restock all low-stock items (coming soon)')}
+          >
+            Restock All Low Items
+          </Button>
+          */}
+        </div>
 
       <div className="space-y-3">
         {stocks.map((stock) => {
@@ -154,9 +180,12 @@ export const StockControl = () => {
                       <span className="text-black">
                         {quantity} / {max}
                       </span>
+                      <p className="text-xs text-gray-500 mt-1">
+                      Total spent: ${(stock.total_spent / 100).toFixed(2)}
+                    </p>
                     </div>
 
-                    {/* ✅ Black progress bar */}
+                    {/* Black progress bar */}
                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-black rounded-full transition-all duration-500"
@@ -216,6 +245,7 @@ export const StockControl = () => {
           onSave={handleUpdateSettings}
         />
       )}
+      </div>
     </motion.div>
   );
 };

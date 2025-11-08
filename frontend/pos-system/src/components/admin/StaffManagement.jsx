@@ -12,6 +12,7 @@ import { Plus, Search, Edit, Trash2, Eye, Download, ArrowLeft, AlertCircle } fro
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import * as api from '../../services/api';
+import { bitmaskToPermissions, permissionsToBitmask } from '../../utils/permissions';
 
 export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelectedStaff }) => {
   const [staffList, setStaffList] = useState([]);
@@ -58,26 +59,65 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
     }
   };
 
+  // Auto-format phone number as user types (333-333-3333)
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    const limited = cleaned.slice(0, 10);
+    
+    // Format as 333-333-3333
+    if (limited.length <= 3) {
+      return limited;
+    } else if (limited.length <= 6) {
+      return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+    } else {
+      return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setFormData({...formData, phone_number: formatted});
+  };
+
   // Update form when switching modes
   useEffect(() => {
     if (viewMode === 'staff-edit' && selectedStaff) {
+      // Decode permissions from bitmask if it's a number
+      let permissions = {
+        reports: false,
+        orders: false,
+        mealManagement: false,
+        stockControl: false,
+        promoCodes: false,
+        seasonalDiscounts: false,
+      };
+      
+      if (typeof selectedStaff.PERMISSIONS === 'number') {
+        permissions = bitmaskToPermissions(selectedStaff.PERMISSIONS);
+      } else if (selectedStaff.permissions) {
+        permissions = selectedStaff.permissions;
+      }
+
+      // Format hire_date to yyyy-MM-dd format for date input
+      let formattedHireDate = '';
+      if (selectedStaff.hire_date) {
+        const date = new Date(selectedStaff.hire_date);
+        formattedHireDate = date.toISOString().split('T')[0];
+      }
+
       setFormData({
         firstName: selectedStaff.first_name || '',
         lastName: selectedStaff.last_name || '',
         phone_number: selectedStaff.phone_number || '',
-        hire_date: selectedStaff.hire_date || '',
+        hire_date: formattedHireDate,
         salary: selectedStaff.salary || '',
         username: selectedStaff.username || '',
         email: selectedStaff.email || '',
         password: '',
-        permissions: selectedStaff.permissions || {
-          reports: false,
-          orders: false,
-          mealManagement: false,
-          stockControl: false,
-          promoCodes: false,
-          seasonalDiscounts: false,
-        }
+        permissions
       });
     } else if (viewMode === 'staff-add') {
       setFormData({
@@ -201,17 +241,33 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
     }
 
     try {
+      // Convert permissions object to backend field names
+      // Backend mapping: REPORT, MEAL, STOCK, MEAL_CATEGORY, SALE_EVENT, PROMO
+      const payload = {
+        ...formData,
+        report_perm: formData.permissions.reports,           // Bit 0: Reports (placeholder)
+        meal_perm: formData.permissions.mealManagement,      // Bit 1: Meal Management
+        stock_perm: formData.permissions.stockControl,       // Bit 2: Stock Control
+        meal_category_perm: formData.permissions.orders,     // Bit 3: Orders
+        sale_event_perm: formData.permissions.seasonalDiscounts, // Bit 4: Seasonal Discounts
+        promo_perm: formData.permissions.promoCodes,         // Bit 5: Promo Codes
+      };
+      
+      // Remove the frontend permissions object
+      delete payload.permissions;
+
       if (viewMode === 'staff-add') {
-        await api.createStaff(formData);
+        await api.createStaff(payload);
         toast.success('Staff added successfully');
       } else if (viewMode === 'staff-edit') {
-        await api.updateStaff(selectedStaff.user_id, formData);
+        await api.updateStaff(selectedStaff.user_id, payload);
         toast.success('Staff updated successfully');
       }
       onNavigate('staff-list');
       fetchStaff();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to save staff');
+      console.log('STAFF SAVE ERROR RESPONSE:', error.response?.data);
+      toast.error('Staff already exists!');
     }
   };
 
@@ -534,13 +590,12 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
                     <Input 
                       id="phone"
                       value={formData.phone_number} 
-                      onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+                      onChange={handlePhoneChange}
                       className="rounded-lg border-gray-200"
-                      placeholder="111-111-1111"
-                      pattern="\d{3}-\d{3}-\d{4}"
+                      placeholder="333-333-3333"
                       required
                     />
-                    <p className="text-xs text-gray-500 mt-1">Format: 111-111-1111</p>
+                    <p className="text-xs text-gray-500 mt-1">Format: 333-333-3333 (auto-formatted)</p>
                   </div>
                 </div>
               </div>
@@ -753,6 +808,22 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
   // View Staff Details
   // ==========================
   if (viewMode === 'staff-view' && selectedStaff) {
+    // Decode permissions from bitmask
+    let permissions = {
+      reports: false,
+      orders: false,
+      mealManagement: false,
+      stockControl: false,
+      promoCodes: false,
+      seasonalDiscounts: false,
+    };
+    
+    if (typeof selectedStaff.PERMISSIONS === 'number') {
+      permissions = bitmaskToPermissions(selectedStaff.PERMISSIONS);
+    } else if (selectedStaff.permissions) {
+      permissions = selectedStaff.permissions;
+    }
+
     return (
       <div className="space-y-6">
         <motion.div 
@@ -872,38 +943,38 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
                 <h3 className="text-black mb-4">Permissions</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.reports ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.reports ? 'text-black' : 'text-gray-400'}>
+                    <div className={`w-2 h-2 rounded-full ${permissions.reports ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={permissions.reports ? 'text-black' : 'text-gray-400'}>
                       Reports
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.orders ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.orders ? 'text-black' : 'text-gray-400'}>
+                    <div className={`w-2 h-2 rounded-full ${permissions.orders ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={permissions.orders ? 'text-black' : 'text-gray-400'}>
                       Orders
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.mealManagement ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.mealManagement ? 'text-black' : 'text-gray-400'}>
+                    <div className={`w-2 h-2 rounded-full ${permissions.mealManagement ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={permissions.mealManagement ? 'text-black' : 'text-gray-400'}>
                       Meal Management
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.stockControl ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.stockControl ? 'text-black' : 'text-gray-400'}>
+                    <div className={`w-2 h-2 rounded-full ${permissions.stockControl ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={permissions.stockControl ? 'text-black' : 'text-gray-400'}>
                       Stock Control
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.promoCodes ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.promoCodes ? 'text-black' : 'text-gray-400'}>
+                    <div className={`w-2 h-2 rounded-full ${permissions.promoCodes ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={permissions.promoCodes ? 'text-black' : 'text-gray-400'}>
                       Promo Codes
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedStaff.permissions?.seasonalDiscounts ? 'bg-black' : 'bg-gray-300'}`} />
-                    <span className={selectedStaff.permissions?.seasonalDiscounts ? 'text-black' : 'text-gray-400'}>
+                    <div className={`w-2 h-2 rounded-full ${permissions.seasonalDiscounts ? 'bg-black' : 'bg-gray-300'}`} />
+                    <span className={permissions.seasonalDiscounts ? 'text-black' : 'text-gray-400'}>
                       Seasonal Discounts
                     </span>
                   </div>

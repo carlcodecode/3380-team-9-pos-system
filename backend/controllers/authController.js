@@ -37,17 +37,30 @@ export const register = async (req, res) => {
 
     await connection.beginTransaction();
 
-    // Check if user exists
-    const [existingUsers] = await connection.query(
-      'SELECT user_id FROM USER_ACCOUNT WHERE email = ? OR username = ?',
-      [email, username]
+// Check if user exists by email
+const [emailExists] = await connection.query(
+  'SELECT user_id FROM USER_ACCOUNT WHERE email = ?',
+  [email]
+);
+
+    // Check if user exists by username
+    const [usernameExists] = await connection.query(
+      'SELECT user_id FROM USER_ACCOUNT WHERE username = ?',
+      [username]
     );
 
-    if (existingUsers.length > 0) {
+    if (emailExists.length > 0) {
       await connection.rollback();
-      return res.json({
-        error: 'Email or username already registered'
-      }, 409);
+      res.writeHead(409, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Email already registered' }));
+      return;
+    }
+
+    if (usernameExists.length > 0) {
+      await connection.rollback();
+      res.writeHead(409, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Username already taken' }));
+      return;
     }
 
     // Hash password
@@ -104,6 +117,13 @@ export const register = async (req, res) => {
         username,
         firstName: firstName || '',
         lastName: lastName || '',
+        address: street || '',
+        city: city || '',
+        state: stateCode || '',
+        zipcode: zipcode || '',
+        phone: phoneNumber || '',
+        loyaltyPoints: 0,
+        totalSpent: 0,
         role: 'customer'
       }
     }, 201);
@@ -178,7 +198,7 @@ export const login = async (req, res) => {
       }
     } else if (role === 'staff' || role === 'admin') {
       const [staff] = await pool.query(
-        'SELECT staff_id, first_name, last_name FROM STAFF WHERE user_ref = ?',
+        'SELECT staff_id, first_name, last_name, PERMISSIONS FROM STAFF WHERE user_ref = ?',
         [user.user_id]
       );
 
@@ -186,7 +206,8 @@ export const login = async (req, res) => {
         additionalData = {
           staffId: staff[0].staff_id,
           firstName: staff[0].first_name,
-          lastName: staff[0].last_name
+          lastName: staff[0].last_name,
+          permissions: staff[0].PERMISSIONS || 0
         };
       }
     }

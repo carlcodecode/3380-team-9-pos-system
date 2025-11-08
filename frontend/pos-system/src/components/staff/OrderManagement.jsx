@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
 import { getAllOrders, updateOrderStatus } from '../../services/api';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Label } from '../ui/label';
-import { Package, Calendar, DollarSign, MapPin, User, RefreshCw } from 'lucide-react';
+import { Package, Calendar, DollarSign, MapPin, User, RefreshCw, Search, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
 
-export const OrderManagement = () => {
+export const OrderManagement = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [updating, setUpdating] = useState(false);
 
@@ -73,13 +79,13 @@ export const OrderManagement = () => {
   const getStatusBadgeClass = (status) => {
     switch(status) {
       case 1: // delivered
-        return 'bg-green-600 text-white border-0';
+        return 'bg-black text-white border-0';
       case 0: // processing
-        return 'bg-blue-600 text-white border-0';
+        return 'bg-black text-white border-0';
       case 2: // shipped
-        return 'bg-gray-800 text-white border-0';
+        return 'bg-black text-white border-0';
       case 3: // refunded
-        return 'bg-red-600 text-white border-0';
+        return 'bg-black text-white border-0';
       default:
         return 'bg-gray-300 text-black border-0';
     }
@@ -88,26 +94,58 @@ export const OrderManagement = () => {
   const getStatusText = (status) => {
     switch(status) {
       case 0: return 'Processing';
-      case 1: return 'Delivered';
+      case 1: return 'Refunded';
       case 2: return 'Shipped';
-      case 3: return 'Refunded';
+      case 3: return 'Delivered';
       default: return 'Unknown';
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-black">Order Processing</h3>
-        <Button 
-          size="sm" 
-          onClick={fetchOrders}
-          disabled={loading}
-          className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+    <div className="space-y-6">
+      {/* Header with Back Button (only show for admin) */}
+      {isAdmin && onNavigate && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => onNavigate('dashboard')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <h2 className="text-black">Order Management</h2>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-black">Order Processing</h3>
+          <div className="flex items-center gap-2">
+            {/* Search by Order Number */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search order #..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-48 bg-white border-gray-200 focus:border-black rounded-lg h-9"
+              />
+            </div>
+            <Button 
+              size="sm" 
+              onClick={fetchOrders}
+              disabled={loading}
+              className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
+            >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -131,19 +169,53 @@ export const OrderManagement = () => {
             Try Again
           </Button>
         </div>
-      ) : orders.filter(order => order.orderStatus !== 1 && order.orderStatus !== 3).length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
             <Package className="w-10 h-10 text-gray-400" />
           </div>
-          <h3 className="text-black mb-3">No pending orders</h3>
-          <p className="text-gray-500">All orders have been processed!</p>
+          <h3 className="text-black mb-3">No orders</h3>
+          <p className="text-gray-500">No orders available at the moment!</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {orders
-            .filter(order => order.orderStatus !== 1 && order.orderStatus !== 3) // Filter out Delivered (1) and Refunded (3)
-            .map((order) => (
+        (() => {
+          const filteredOrders = orders
+            .filter((order) => {
+              // Filter by order number if search query exists
+              if (searchQuery.trim() === '') return true;
+              return order.id.toString().includes(searchQuery.trim());
+            })
+            .sort((a, b) => {
+              // Sort: Processing (0) and Shipped (2) first, then Delivered (1) and Refunded (3) at bottom
+              const aPriority = (a.orderStatus === 0 || a.orderStatus === 2) ? 0 : 1;
+              const bPriority = (b.orderStatus === 0 || b.orderStatus === 2) ? 0 : 1;
+              if (aPriority !== bPriority) return aPriority - bPriority;
+              // Within same priority, sort by order ID (newest first)
+              return b.id - a.id;
+            });
+
+          if (filteredOrders.length === 0 && searchQuery.trim() !== '') {
+            return (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                  <Search className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-black mb-3">No orders found</h3>
+                <p className="text-gray-500">No orders match "#{searchQuery}"</p>
+                <Button
+                  onClick={() => setSearchQuery('')}
+                  variant="outline"
+                  className="mt-4 border-gray-200 hover:bg-gray-100 rounded-lg"
+                >
+                  Clear Search
+                </Button>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-3">
+              {filteredOrders.map((order) => (
             <div
               key={order.id}
               className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
@@ -171,25 +243,37 @@ export const OrderManagement = () => {
                 {order.orderStatus === 0 && (
                   <Button
                     size="sm"
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      setSelectedStatus(2); // Set to shipped
-                      handleUpdateStatus();
+                    onClick={async () => {
+                      try {
+                        setUpdating(true);
+                        await updateOrderStatus(order.id, 2); // Update to shipped directly
+                        toast.success(`Order #${order.id} marked as shipped`);
+                        await fetchOrders(); // Refresh the list
+                      } catch (error) {
+                        console.error('Failed to update order status:', error);
+                        toast.error('Failed to update order status');
+                      } finally {
+                        setUpdating(false);
+                      }
                     }}
+                    disabled={updating}
                     className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
                   >
-                    Process
+                    {updating ? 'Processing...' : 'Process'}
                   </Button>
                 )}
               </div>
             </div>
           ))}
-        </div>
+            </div>
+          );
+        })()
       )}
 
       {/* Order View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px]">
+          <div className="order-items-scroll px-1">
           <DialogHeader>
             <DialogTitle className="text-black text-xl">Order #{selectedOrder?.id}</DialogTitle>
             <DialogDescription className="flex items-center gap-2">
@@ -200,7 +284,7 @@ export const OrderManagement = () => {
               <span>{selectedOrder?.orderDate ? new Date(selectedOrder.orderDate).toLocaleDateString() : ''}</span>
             </DialogDescription>
           </DialogHeader>
-
+          
           {selectedOrder && (
             <div className="space-y-4 py-2">
               {/* Customer & Address Section */}
@@ -224,7 +308,6 @@ export const OrderManagement = () => {
                   )}
                 </div>
               </div>
-
               {/* Order Items Section */}
               {selectedOrder.items && selectedOrder.items.length > 0 && (
                 <div>
@@ -309,9 +392,9 @@ export const OrderManagement = () => {
                   </button>
 
                   <button
-                    onClick={() => setSelectedStatus(1)}
+                    onClick={() => setSelectedStatus(3)}
                     className={`p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedStatus === 1
+                      selectedStatus === 3
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
@@ -321,9 +404,9 @@ export const OrderManagement = () => {
                   </button>
 
                   <button
-                    onClick={() => setSelectedStatus(3)}
+                    onClick={() => setSelectedStatus(1)}
                     className={`p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedStatus === 3
+                      selectedStatus === 1
                         ? 'border-red-500 bg-red-50'
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
@@ -335,7 +418,7 @@ export const OrderManagement = () => {
               </div>
             </div>
           )}
-
+          </div>
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
@@ -354,6 +437,7 @@ export const OrderManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };

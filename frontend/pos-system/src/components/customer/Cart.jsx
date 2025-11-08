@@ -6,7 +6,7 @@ import { Badge } from '../ui/badge';
 import { ArrowLeft, Minus, Plus, Trash2, Tag } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
-import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { ImageWithFallback } from '../figma/ImageWithFallback.tsx';
 
 export const Cart = ({ onBack, onCheckout }) => {
   const {
@@ -24,7 +24,18 @@ export const Cart = ({ onBack, onCheckout }) => {
   const [promoInput, setPromoInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
 
-  const subtotal = cart.reduce((total, item) => total + item.meal.price * item.quantity, 0);
+  // Calculate subtotal with seasonal discounts applied
+  const subtotal = cart.reduce((total, item) => {
+    const hasDiscount =
+      item.meal.discountInfo &&
+      item.meal.discountInfo.discountedPrice < item.meal.price &&
+      item.meal.discountInfo.event;
+    const pricePerItem = hasDiscount 
+      ? item.meal.discountInfo.discountedPrice 
+      : item.meal.price;
+    return total + pricePerItem * item.quantity;
+  }, 0);
+  
   const discount = getDiscount();
   const tax = subtotal * 0.08; // Tax calculated on subtotal only, NOT on discounted amount
   const total = subtotal - discount + tax;
@@ -112,6 +123,14 @@ export const Cart = ({ onBack, onCheckout }) => {
             <div className="space-y-4">
               {cart.map((item) => {
                 const stock = item.meal.quantity_in_stock ?? 0;
+                const hasDiscount =
+                  item.meal.discountInfo &&
+                  item.meal.discountInfo.discountedPrice < item.meal.price &&
+                  item.meal.discountInfo.event;
+                const pricePerItem = hasDiscount 
+                  ? item.meal.discountInfo.discountedPrice 
+                  : item.meal.price;
+                
                 return (
                   <motion.div
                     key={item.meal.meal_id || item.meal.id}
@@ -134,6 +153,12 @@ export const Cart = ({ onBack, onCheckout }) => {
                       <div className="flex-1">
                         <div className="flex justify-between items-start mb-3">
                           <div>
+                            {/* Sale Event Badge (if applicable) */}
+                            {hasDiscount && (
+                              <Badge className="bg-black text-white border-0 text-xs mb-2">
+                                {item.meal.discountInfo.event.name} – {item.meal.discountInfo.event.discountRate}% OFF
+                              </Badge>
+                            )}
                             <h3 className="text-black mb-1">{item.meal.meal_name}</h3>
                             <div className="flex flex-wrap gap-1.5 mb-2">
                               {item.meal.meal_types.map((type) => (
@@ -190,13 +215,33 @@ export const Cart = ({ onBack, onCheckout }) => {
                             </Button>
                           </div>
                           <div className="text-right">
-                            <p className="text-xl text-black">
-                              ${(item.meal.price * item.quantity / 100).toFixed(2)}
-                            </p>
-                            {item.quantity > 1 && (
-                              <p className="text-sm text-gray-500">
-                                ${(item.meal.price / 100).toFixed(2)} each
-                              </p>
+                            {hasDiscount ? (
+                              <div className="flex flex-col items-end">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400 line-through text-base">
+                                    ${(item.meal.price * item.quantity / 100).toFixed(2)}
+                                  </span>
+                                  <span className="text-xl text-black font-bold">
+                                    ${(pricePerItem * item.quantity / 100).toFixed(2)}
+                                  </span>
+                                </div>
+                                {item.quantity > 1 && (
+                                  <p className="text-sm text-gray-500">
+                                    ${(pricePerItem / 100).toFixed(2)} each
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                <p className="text-xl text-black">
+                                  ${(item.meal.price * item.quantity / 100).toFixed(2)}
+                                </p>
+                                {item.quantity > 1 && (
+                                  <p className="text-sm text-gray-500">
+                                    ${(item.meal.price / 100).toFixed(2)} each
+                                  </p>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -255,13 +300,38 @@ export const Cart = ({ onBack, onCheckout }) => {
 
               {/* Price breakdown */}
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
-                <div className="flex justify-between text-gray-500">
-                  <span>Subtotal</span>
-                  <span>${(subtotal / 100).toFixed(2)}</span>
-                </div>
+                {/* Show seasonal discount savings if any */}
+                {(() => {
+                  const originalSubtotal = cart.reduce(
+                    (total, item) => total + item.meal.price * item.quantity,
+                    0
+                  );
+                  const seasonalSavings = originalSubtotal - subtotal;
+                  
+                  return (
+                    <>
+                      {seasonalSavings > 0 && (
+                        <div className="flex justify-between text-gray-500">
+                          <span>Original Price</span>
+                          <span>${(originalSubtotal / 100).toFixed(2)}</span>
+                        </div>
+                      )}
+                      {seasonalSavings > 0 && (
+                        <div className="flex justify-between text-green-600 font-medium">
+                          <span>Seasonal Savings</span>
+                          <span>-${(seasonalSavings / 100).toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-gray-500">
+                        <span>Subtotal</span>
+                        <span>${(subtotal / 100).toFixed(2)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
                 {discount > 0 && (
                   <div className="flex justify-between text-black">
-                    <span>Discount</span>
+                    <span>Promo Code Discount</span>
                     <span>-${(discount / 100).toFixed(2)}</span>
                   </div>
                 )}

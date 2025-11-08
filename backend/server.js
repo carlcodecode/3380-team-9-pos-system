@@ -10,6 +10,7 @@ import stockRoutes from './routes/stockRoutes.js';
 import promoRoutes from './routes/promoRoutes.js';
 import saleEventRoutes from './routes/saleEventRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import deliveryTriggerRoutes from './routes/deliveryTriggerRoutes.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -22,6 +23,7 @@ function corsMiddleware(req, res) {
         'http://localhost:3001',
         'http://localhost:3002',
         'http://localhost:5173',
+        'https://main.d7s422gb89fta.amplifyapp.com',
         process.env.FRONTEND_URL,
     ].filter(Boolean);
 
@@ -77,6 +79,9 @@ function handleRequest(req, res) {
     const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
     const method = req.method;
+
+    // Attach query parameters to request object
+    req.query = parsedUrl.query || {};
 
     // Enhanced response methods
     res.json = (data, statusCode = 200) => {
@@ -148,6 +153,11 @@ function handleRequest(req, res) {
             // Order routes
             if (pathname.startsWith('/api/orders')) {
                 return orderRoutes(req, res, pathname, method);
+            }
+
+            // Delivery Trigger routes
+            if (pathname.startsWith('/api/triggers')) {
+                return deliveryTriggerRoutes(req, res, pathname, method);
             }
 
             // Health check
