@@ -120,7 +120,7 @@ export const updateStock = async (id, data) => {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update stock item');
-  return res.json();  
+  return res.json();
 };
 
 export const updateStockSettings = async (id, data) => {
@@ -130,7 +130,7 @@ export const updateStockSettings = async (id, data) => {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update stock settings');
-  return res.json();  
+  return res.json();
 };
 
 export const restockMeal = async (id, data) => {
@@ -140,16 +140,16 @@ export const restockMeal = async (id, data) => {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to restock meal');
-  return res.json();  
+  return res.json();
 };
 
 export const getLowStockAlerts = async () => {
   const res = await fetch(`${API_BASE_URL}/stocks/alerts`, {
-    headers: {Authorization: `Bearer ${localStorage.getItem('token')}`},
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
   });
   if (!res.ok) throw new Error('Failed to load low stock alerts');
   return await res.json();
-} 
+};
 
 export const resolveLowStockAlert = async (alertId) => {
   const res = await fetch(`${API_BASE_URL}/stocks/alerts/${alertId}/resolve`, {
@@ -161,8 +161,6 @@ export const resolveLowStockAlert = async (alertId) => {
   if (!res.ok) throw new Error('Failed to resolve alert');
   return res.json();
 };
-
-
 
 // ==============================
 // MEAL MANAGEMENT
@@ -191,12 +189,12 @@ export const createMeal = async (data) => {
     headers: getHeaders(),
     body: JSON.stringify(data),
   });
-  if (![200,201].includes(res.status)) throw new Error('Failed to create meal');
+  if (![200, 201].includes(res.status)) throw new Error('Failed to create meal');
   try {
-      return await res.json();
-    } catch {
-      return { message: 'Meal created successfully' };
-    }
+    return await res.json();
+  } catch {
+    return { message: 'Meal created successfully' };
+  }
 };
 
 export const updateMeal = async (id, data) => {
@@ -295,6 +293,22 @@ export const validatePromoCode = async (code) => {
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.error || 'Invalid promo code');
+  }
+  return res.json();
+};
+
+export const getPromoAnalytics = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.start_date) queryParams.append('start_date', params.start_date);
+  if (params.end_date) queryParams.append('end_date', params.end_date);
+
+  const res = await fetch(`${API_BASE_URL}/promotions/analytics?${queryParams}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Failed to get promotion analytics');
   }
   return res.json();
 };
@@ -420,8 +434,6 @@ export const markDeliveryAlertResolved = async (eventId) => {
   return res.json();
 };
 
-
-
 // ==============================
 // ORDERS
 // ==============================
@@ -484,7 +496,7 @@ export const updateOrderStatus = async (id, status) => {
 
 export const getCustomerDeliveryAlerts = async (customerId) => {
   const res = await fetch(`${API_BASE_URL}/triggers/alerts/customer/${customerId}`, {
-    headers: getHeaders(), 
+    headers: getHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch customer alerts');
   return res.json();

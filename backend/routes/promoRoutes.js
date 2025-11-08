@@ -5,6 +5,7 @@ import {
   updatePromo,
   deletePromo,
   validatePromoCode,
+  getPromoAnalytics,
 } from '../controllers/promoController.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
@@ -24,6 +25,11 @@ export default function promoRoutes(req, res, pathname, method) {
 
   if (pathname === '/api/promotions' && method === 'GET') {
     return withAuth(() => getAllPromos(req, res)); // Changed from withStaffAuth to withAuth
+  }
+
+  // Analytics endpoint
+  if (pathname === '/api/promotions/analytics' && method === 'GET') {
+    return withStaffAuth(() => getPromoAnalytics(req, res));
   }
 
   // Validate promo code by code string
