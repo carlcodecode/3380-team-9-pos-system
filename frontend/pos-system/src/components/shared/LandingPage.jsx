@@ -269,22 +269,22 @@ const meals = [
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-black text-white">
+      <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-normal mb-6">
+            <h2 className="text-4xl md:text-5xl font-normal mb-6 text-black">
               Start Your Healthy Journey Today
             </h2>
-            <p className="text-xl text-gray-300 mb-8">
+            <p className="text-xl text-gray-600 mb-8">
               Join thousands of happy customers eating better, living better
             </p>
             <Button
               onClick={onRegister}
-              className="px-8 py-4 bg-white text-black rounded-lg hover:bg-gray-100 transition shadow-lg hover:shadow-xl inline-flex items-center gap-2 text-lg btn-glossy"
+              className="px-8 py-4 bg-black text-white rounded-lg hover:bg-black transition shadow-lg hover:shadow-xl inline-flex items-center gap-2 text-lg btn-glossy"
             >
               Get Started Now
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,24 +296,9 @@ const meals = [
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-white border-t border-gray-200">
+      <footer className="py-6 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <span className="text-xl font-normal">Bento</span>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
-              {["About", "Contact", "FAQ", "Privacy", "Terms"].map((link) => (
-                <a key={link} href="#" className="hover:text-black transition">
-                  {link}
-                </a>
-              ))}
-            </div>
-          </div>
-          <div className="text-center text-sm text-gray-500 mt-8">
+          <div className="text-center text-sm text-gray-500">
             © 2025 Bento. All rights reserved.
           </div>
         </div>
