@@ -49,12 +49,12 @@ const meals = [
             </svg>
             <span className="text-2xl font-normal">Bento</span>
           </div>
-          <button 
+          <Button
             onClick={onLogin}
-            className="px-4 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition"
+            className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2 px-6 py-2 inline-flex"
           >
             Login
-          </button>
+          </Button>
         </div>
       </nav>
 
@@ -143,7 +143,7 @@ const meals = [
 
       <div className="grid md:grid-cols-3 gap-8">
         {[
-          { icon: "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z", title: "Choose Your Meals", desc: "Browse our weekly menu and select your favorite dishes" },
+          { icon: "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z", title: "Choose Your Meals", desc: "Browse our menu and select your favorite dishes" },
           { icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4", title: "We Prepare", desc: "Our chefs cook fresh meals with premium ingredients" },
           { icon: "M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0", title: "Delivered Fresh", desc: "Meals arrive at your door, ready to heat and eat" },
         ].map((step, i) => (
