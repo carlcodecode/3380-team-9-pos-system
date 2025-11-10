@@ -62,7 +62,7 @@ https://main.d7s422gb89fta.amplifyapp.com/
 - This particular account has all staff perms, if you want an example of a staff with limited views you can create one through the admin account or log in to the following:
 - User: julio
 - Password: password
-- This one doesn't have permission to view the Seasonl Discount tab
+- This one doesn't have permission to view the Seasonal Discount tab
 
 ## Admin
 - User: admin
