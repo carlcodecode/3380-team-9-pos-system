@@ -43,8 +43,8 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
         meal_status: meal.meal_status === 1 ? 'active' : 'inactive',
         start_date: formatDate(meal.start_date) || '',
         end_date: formatDate(meal.end_date) || '',
-        price: meal.price || '',
-        cost_to_make: meal.cost_to_make || '',
+        price: meal.price ? (meal.price / 100).toFixed(2) : '',
+        cost_to_make: meal.cost_to_make ? (meal.cost_to_make / 100).toFixed(2) : '',
         meal_types: meal.meal_types || [],
         meal_id: meal.meal_id,
         nutrition_facts: meal.nutrition_facts || { calories: '', carbs: '', protein: '' },
@@ -117,8 +117,8 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
         ...formData,
         meal_status: formData.meal_status === 'active' ? 1 : 0,
         meal_types: mealTypesInput.split(',').map((t) => t.trim()).filter(Boolean),
-        price: parseFloat(formData.price),
-        cost_to_make: parseFloat(formData.cost_to_make),
+        price: Math.round(parseFloat(formData.price) * 100),
+        cost_to_make: Math.round(parseFloat(formData.cost_to_make) * 100),
         nutrition_facts: {
           calories: Number(formData.nutrition_facts.calories) || 0,
           carbs: Number(formData.nutrition_facts.carbs) || 0,
@@ -197,20 +197,22 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="block mb-1 text-gray-700">Price (cents)*</Label>
+                  <Label className="block mb-1 text-gray-700">Price ($)*</Label>
                   <Input
                     type="number"
                     name="price"
+                    step="0.01"
                     value={formData.price}
                     onChange={handleInputChange}
                     min="0"
                   />
                 </div>
                 <div>
-                  <Label className="block mb-1 text-gray-700">Cost (cents)*</Label>
+                  <Label className="block mb-1 text-gray-700">Cost ($)*</Label>
                   <Input
                     type="number"
                     name="cost_to_make"
+                    step="0.01"
                     value={formData.cost_to_make}
                     onChange={handleInputChange}
                     min="0"
