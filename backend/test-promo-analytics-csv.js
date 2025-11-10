@@ -314,7 +314,7 @@ console.log('\n');
 
 // Show preview of customer demographics
 if (analytics.data.customer_demographics) {
-  console.log('👥 CUSTOMER DEMOGRAPHICS CSV PREVIEW');
+  console.log('CUSTOMER DEMOGRAPHICS CSV PREVIEW');
   console.log('-'.repeat(80));
   console.log('Metric,Value');
   console.log(
@@ -338,7 +338,7 @@ if (analytics.data.customer_demographics) {
 
 // Show preview of top promotions CSV
 if (analytics.data.top_promotions.length > 0) {
-  console.log('🏆 TOP PROMOTIONS CSV PREVIEW');
+  console.log('TOP PROMOTIONS CSV PREVIEW');
   console.log('-'.repeat(80));
   const topLines = generateTopPromotionsCSV(analytics.data).split('\n').slice(0, 6); // Header + 5 rows
   console.log(topLines.join('\n'));
@@ -346,7 +346,7 @@ if (analytics.data.top_promotions.length > 0) {
 }
 
 console.log('='.repeat(80));
-console.log('✅ CSV EXPORT TEST COMPLETED!');
+console.log('CSV EXPORT TEST COMPLETED!');
 console.log('='.repeat(80));
 console.log('\n');
 console.log(`All CSV files have been saved to: ${OUTPUT_DIR}/`);
@@ -360,5 +360,4 @@ console.log('  • How many unique customers used promotions');
 console.log('  • Total orders placed with promotions');
 console.log('  • Average orders per customer (frequency)');
 console.log('  • Total spending by customers using promos');
-console.log('\nYou can open these files in Excel, Google Sheets, or any CSV viewer.');
 console.log('\n');
