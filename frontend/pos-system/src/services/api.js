@@ -226,6 +226,25 @@ export const getAllMealCategories = async () => {
   return res.json();
 };
 
+export const createMealCategory = async ({ name }) => {
+  // Your backend controller expects { meal_type: 'name' }
+  const payload = { meal_type: name }; 
+  
+  const res = await fetch(`${API_BASE_URL}/meal-categories`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (![200, 201].includes(res.status)) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to create meal category');
+  }
+  
+  // Return the JSON response (which includes meal_type_id and message)
+  return res.json();
+};
+
 // ==============================
 // PROMOTION MANAGEMENT
 // ==============================
