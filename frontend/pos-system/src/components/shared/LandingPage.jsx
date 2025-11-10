@@ -4,8 +4,16 @@ import { ImageWithFallback } from '../figma/ImageWithFallback.tsx';
 import { Button } from '../ui/button';
 import { Package } from 'lucide-react';
 import { LandingMealCard } from './LandingMealCard';
+import { FullMenuPage } from './FullMenuPage';
 
 export const LandingPage = ({ onLogin, onRegister }) => {
+  const [showFullMenu, setShowFullMenu] = useState(false);
+
+  // If full menu is requested, show that page instead
+  if (showFullMenu) {
+    return <FullMenuPage onBack={() => setShowFullMenu(false)} onLogin={onLogin} />;
+  }
+
 const heroMeals = [
 ];
 
@@ -118,13 +126,13 @@ const meals = [
             </div>
 
             <Button
-              onClick={onRegister}
+              onClick={() => setShowFullMenu(true)}
               className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2 px-8 py-4 inline-flex mx-auto"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
-              Get Started Today
+              View Our Full Menu Here
             </Button>
 
             <p className="text-xs text-gray-800 mt-4">
@@ -162,7 +170,7 @@ const meals = [
           </div>
         </section>
 
-        {/* How It Works */}
+      {/* How It Works */}
       <section id="how" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
@@ -175,39 +183,37 @@ const meals = [
             <p className="text-xl text-gray-600">Fresh meals in three simple steps</p>
           </motion.div>
 
-      <div className="grid md:grid-cols-3 gap-8">
-        {[
-          { icon: "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z", title: "Choose Your Meals", desc: "Browse our menu and select your favorite dishes" },
-          { icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4", title: "We Prepare", desc: "Our chefs cook fresh meals with premium ingredients" },
-          { icon: "M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0", title: "Delivered Fresh", desc: "Meals arrive at your door, ready to heat and eat" },
-        ].map((step, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.15 }}
-            className="pt-0"
-          >
-            {/* Step number */}
-            <div className="bg-black text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md font-medium mx-auto mb-4">
-              {i + 1}
-            </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { icon: "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z", title: "Choose Your Meals", desc: "Browse our menu and select your favorite dishes" },
+              { icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4", title: "We Prepare", desc: "Our chefs cook fresh meals with premium ingredients" },
+              { icon: "M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0", title: "Delivered Fresh", desc: "Meals arrive at your door, ready to heat and eat" },
+            ].map((step, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                className="bg-white rounded-xl border border-gray-200 p-6 text-center hover:shadow-lg transition card-glow"
+              >
+                {/* Step number */}
+                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md font-medium mx-auto mb-3 text-sm">
+                  {i + 1}
+                </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center hover:shadow-lg transition card-glow">
-            {/* Icon */}
-            <svg className="w-12 h-12 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={step.icon} />
-            </svg>
+                {/* Icon */}
+                <svg className="w-8 h-8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={step.icon} />
+                </svg>
 
-            <h3 className="text-xl font-normal mb-3">{step.title}</h3>
-            <p className="text-gray-600">{step.desc}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+                <h3 className="text-lg font-normal mb-2">{step.title}</h3>
+                <p className="text-sm text-gray-600">{step.desc}</p>
+              </motion.div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
       {/* Featured Meals */}
       <section id="meals" className="py-20">
@@ -283,9 +289,10 @@ const meals = [
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-normal mb-6 text-black">
+            <h2 className="text-3xl md:text-4xl font-normal mb-6 text-black mt-8">
               Start Your Healthy Journey Today
             </h2>
+
             <p className="text-xl text-gray-600 mb-8">
               Join thousands of happy customers eating better, living better
             </p>
