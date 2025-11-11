@@ -56,9 +56,9 @@ export const OrderHistory = ({ onBack, onReorder }) => {
   const getStatusText = (status) => {
     switch (status) {
       case 0: return 'processing';
-      case 1: return 'delivered';
+      case 1: return 'refunded';
       case 2: return 'shipped';
-      case 3: return 'refunded';
+      case 3: return 'delivered';
       default: return 'unknown';
     }
   };
