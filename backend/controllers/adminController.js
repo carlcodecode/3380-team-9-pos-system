@@ -649,39 +649,43 @@ export const getStaffMealCreatedReport = async (req, res) => {
 
 		let query = `
 SELECT
-staff_id,
-first_name,
-last_name,
-activity_type,
-meal_id,
-meal_name,
-meal_description,
-meal_status,
-price_cents,
-cost_cents,
-activity_timestamp
-FROM v_staff_activity
-WHERE activity_type = 'CREATED'
+sa.staff_id,
+sa.first_name,
+sa.last_name,
+sa.activity_type,
+sa.meal_id,
+sa.meal_name,
+sa.meal_description,
+sa.meal_status,
+sa.price_cents,
+sa.cost_cents,
+sa.activity_timestamp,
+GROUP_CONCAT(DISTINCT mt.meal_type ORDER BY mt.meal_type SEPARATOR ', ') as meal_types
+FROM v_staff_activity sa
+LEFT JOIN MEAL_TYPE_LINK mtl ON sa.meal_id = mtl.meal_ref
+LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
+WHERE sa.activity_type COLLATE utf8mb4_unicode_ci = 'CREATED'
 `;
 
 		const params = [];
 
 		if (start_date) {
-			query += ' AND activity_timestamp >= ?';
+			query += ' AND sa.activity_timestamp >= ?';
 			params.push(start_date);
 		}
 
 		if (end_date) {
-			query += ' AND activity_timestamp <= ?';
+			query += ' AND sa.activity_timestamp <= ?';
 			params.push(end_date);
 		}
 
 		if (staff_id) {
-			query += ' AND staff_id = ?';
+			query += ' AND sa.staff_id = ?';
 			params.push(parseInt(staff_id));
 		}
 
-		query += ' ORDER BY activity_timestamp DESC';
+		query += ' GROUP BY sa.staff_id, sa.first_name, sa.last_name, sa.activity_type, sa.meal_id, sa.meal_name, sa.meal_description, sa.meal_status, sa.price_cents, sa.cost_cents, sa.activity_timestamp';
+		query += ' ORDER BY sa.activity_timestamp DESC';
 
 		const [results] = await pool.query(query, params);
 
@@ -708,39 +712,43 @@ export const getStaffMealUpdatedReport = async (req, res) => {
 
 		let query = `
 SELECT
-staff_id,
-first_name,
-last_name,
-activity_type,
-meal_id,
-meal_name,
-meal_description,
-meal_status,
-price_cents,
-cost_cents,
-activity_timestamp
-FROM v_staff_activity
-WHERE activity_type = 'UPDATED'
+sa.staff_id,
+sa.first_name,
+sa.last_name,
+sa.activity_type,
+sa.meal_id,
+sa.meal_name,
+sa.meal_description,
+sa.meal_status,
+sa.price_cents,
+sa.cost_cents,
+sa.activity_timestamp,
+GROUP_CONCAT(DISTINCT mt.meal_type ORDER BY mt.meal_type SEPARATOR ', ') as meal_types
+FROM v_staff_activity sa
+LEFT JOIN MEAL_TYPE_LINK mtl ON sa.meal_id = mtl.meal_ref
+LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_ref = mt.meal_type_id
+WHERE sa.activity_type COLLATE utf8mb4_unicode_ci = 'UPDATED'
 `;
 
 		const params = [];
 
 		if (start_date) {
-			query += ' AND activity_timestamp >= ?';
+			query += ' AND sa.activity_timestamp >= ?';
 			params.push(start_date);
 		}
 
 		if (end_date) {
-			query += ' AND activity_timestamp <= ?';
+			query += ' AND sa.activity_timestamp <= ?';
 			params.push(end_date);
 		}
 
 		if (staff_id) {
-			query += ' AND staff_id = ?';
+			query += ' AND sa.staff_id = ?';
 			params.push(parseInt(staff_id));
 		}
 
-		query += ' ORDER BY activity_timestamp DESC';
+		query += ' GROUP BY sa.staff_id, sa.first_name, sa.last_name, sa.activity_type, sa.meal_id, sa.meal_name, sa.meal_description, sa.meal_status, sa.price_cents, sa.cost_cents, sa.activity_timestamp';
+		query += ' ORDER BY sa.activity_timestamp DESC';
 
 		const [results] = await pool.query(query, params);
 
@@ -806,6 +814,106 @@ WHERE o.order_status != 3
 		res.status(500).json({
 			error: 'Failed to retrieve meal sales report',
 			details: error.message
+		});
+	}
+};
+
+// Get Staff Activity Report (joins STAFF, MEAL, MEAL_TYPE_LINK tables)
+export const getStaffActivityReport = async (req, res) => {
+	try {
+		const { start_date, end_date } = req.query;
+
+		console.log('Staff Activity Report - Params:', { start_date, end_date });
+
+		// Query that joins 3 tables: STAFF, MEAL, and MEAL_TYPE_LINK
+		let query = `
+			SELECT 
+				s.staff_id,
+				s.first_name,
+				s.last_name,
+				s.phone_number,
+				s.hire_date,
+				ua.email,
+				ua.username,
+				CASE 
+					WHEN ua.is_active = 1 THEN 'active' 
+					ELSE 'inactive' 
+				END as status,
+				COUNT(DISTINCT m.meal_id) as total_meals_created,
+				COUNT(DISTINCT mtl.meal_type_id) as meal_types_managed,
+				GROUP_CONCAT(DISTINCT mt.type_name ORDER BY mt.type_name SEPARATOR ', ') as meal_types_list,
+				(
+					SELECT mt2.type_name
+					FROM MEAL_TYPE_LINK mtl2
+					JOIN MEAL_TYPE mt2 ON mtl2.meal_type_id = mt2.meal_type_id
+					JOIN MEAL m2 ON mtl2.meal_id = m2.meal_id
+					WHERE m2.created_by = s.staff_id
+		`;
+
+		// Add date filter for subquery if provided
+		if (start_date && end_date) {
+			query += ` AND m2.created_at BETWEEN ? AND ?`;
+		}
+
+		query += `
+					GROUP BY mt2.type_name
+					ORDER BY COUNT(*) DESC
+					LIMIT 1
+				) as most_common_meal_type,
+				MAX(m.created_at) as latest_meal_date,
+				ua.created_at,
+				ua.updated_at
+			FROM STAFF s
+			INNER JOIN USER_ACCOUNT ua ON s.user_ref = ua.user_id
+			LEFT JOIN MEAL m ON s.staff_id = m.created_by
+		`;
+
+		// Add date filter for main query if provided
+		if (start_date && end_date) {
+			query += ` AND m.created_at BETWEEN ? AND ?`;
+		}
+
+		query += `
+			LEFT JOIN MEAL_TYPE_LINK mtl ON m.meal_id = mtl.meal_id
+			LEFT JOIN MEAL_TYPE mt ON mtl.meal_type_id = mt.meal_type_id
+			WHERE ua.user_role IN (1, 2)
+			GROUP BY 
+				s.staff_id,
+				s.first_name,
+				s.last_name,
+				s.phone_number,
+				s.hire_date,
+				ua.email,
+				ua.username,
+				ua.is_active,
+				ua.created_at,
+				ua.updated_at
+			ORDER BY total_meals_created DESC
+		`;
+
+		let params = [];
+		if (start_date && end_date) {
+			// Add date parameters twice - once for subquery, once for main query
+			params = [start_date, end_date, start_date, end_date];
+		}
+
+		console.log('Executing query with params:', params);
+		const [rows] = await pool.query(query, params);
+		console.log(`Found ${rows.length} staff members`);
+
+		res.status(200).json({
+			success: true,
+			count: rows.length,
+			data: rows,
+			period: start_date && end_date ? { start_date, end_date } : null
+		});
+
+	} catch (error) {
+		console.error('Error fetching staff activity report:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Error fetching staff activity report',
+			error: error.message
 		});
 	}
 };

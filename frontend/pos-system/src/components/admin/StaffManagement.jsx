@@ -23,6 +23,16 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
+  // Staff Report State
+  const [staffReportData, setStaffReportData] = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportDateFrom, setReportDateFrom] = useState(
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  );
+  const [reportDateTo, setReportDateTo] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -170,6 +180,169 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
     }
   };
 
+  // Generate Staff Activity Report
+  const handleGenerateStaffReport = async () => {
+    try {
+      setReportLoading(true);
+      const response = await api.getStaffActivityReport(reportDateFrom, reportDateTo);
+      console.log('Staff report response:', response);
+      
+      if (response.success && response.data) {
+        setStaffReportData(response.data);
+        onNavigate('staff-report-view');
+        toast.success(`Staff activity report generated successfully (${response.data.length} staff found)`);
+      } else {
+        toast.error('Failed to generate report');
+        setStaffReportData([]);
+      }
+    } catch (error) {
+      console.error('Report generation error:', error);
+      toast.error(error.message || 'Failed to generate staff report');
+      setStaffReportData([]);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  // Export Staff Report to CSV
+  const exportStaffReportToCSV = () => {
+    try {
+      const headers = [
+        'Staff ID',
+        'Staff Name',
+        'Email',
+        'Total Meals Created',
+        'Meal Types Managed',
+        'Most Common Meal Type',
+        'Latest Meal Created',
+        'Account Status'
+      ];
+
+      const rows = staffReportData.map(staff => [
+        staff.staff_id,
+        `${staff.first_name} ${staff.last_name}`,
+        staff.email,
+        staff.total_meals_created,
+        staff.meal_types_managed,
+        staff.most_common_meal_type || 'N/A',
+        staff.latest_meal_date ? new Date(staff.latest_meal_date).toLocaleDateString() : 'N/A',
+        staff.status
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `staff_activity_report_${reportDateFrom}_to_${reportDateTo}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('CSV exported successfully');
+    } catch (error) {
+      console.error('CSV export error:', error);
+      toast.error('Failed to export CSV');
+    }
+  };
+
+  // Export Staff Report to PDF
+  const exportStaffReportToPDF = () => {
+    try {
+      const totalMeals = staffReportData.reduce((sum, s) => sum + (s.total_meals_created || 0), 0);
+      const activeStaff = staffReportData.filter(s => s.status === 'active').length;
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Staff Activity Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; color: #000; }
+            h1 { color: #000; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .summary { background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; margin-bottom: 30px; border-radius: 8px; }
+            .summary h2 { margin-top: 0; color: #000; font-size: 18px; }
+            .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
+            .summary-item { background: white; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; }
+            .summary-label { color: #6b7280; font-size: 12px; margin-bottom: 5px; }
+            .summary-value { color: #000; font-weight: 600; font-size: 18px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #f9fafb; color: #000; font-weight: 600; text-align: left; padding: 12px; border: 1px solid #e5e7eb; }
+            th.right, td.right { text-align: right; }
+            td { padding: 10px 12px; border: 1px solid #e5e7eb; }
+            tr:nth-child(even) { background-color: #f9fafb; }
+            .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; }
+            .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+            .badge-active { background-color: #000; color: #fff; }
+            .badge-inactive { background-color: #f3f4f6; color: #374151; }
+          </style>
+        </head>
+        <body>
+          <h1>Staff Activity Report</h1>
+          <p style="color: #6b7280; margin-bottom: 30px;">Report Period: ${reportDateFrom} to ${reportDateTo}</p>
+          <div class="summary">
+            <h2>Summary</h2>
+            <div class="summary-grid">
+              <div class="summary-item"><div class="summary-label">Total Staff</div><div class="summary-value">${staffReportData.length}</div></div>
+              <div class="summary-item"><div class="summary-label">Active Staff</div><div class="summary-value">${activeStaff}</div></div>
+              <div class="summary-item"><div class="summary-label">Total Meals Created</div><div class="summary-value">${totalMeals}</div></div>
+            </div>
+          </div>
+          <h2 style="margin-bottom: 15px;">Staff Activity Details</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Staff ID</th><th>Name</th><th>Email</th><th class="right">Meals Created</th>
+                <th>Meal Types</th><th>Most Common Type</th><th>Latest Meal</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${staffReportData.sort((a, b) => (b.total_meals_created || 0) - (a.total_meals_created || 0)).map(staff => `
+                <tr>
+                  <td>${staff.staff_id}</td>
+                  <td><strong>${staff.first_name} ${staff.last_name}</strong></td>
+                  <td>${staff.email}</td>
+                  <td class="right"><strong>${staff.total_meals_created || 0}</strong></td>
+                  <td>${staff.meal_types_managed || 0}</td>
+                  <td>${staff.most_common_meal_type || 'N/A'}</td>
+                  <td>${staff.latest_meal_date ? new Date(staff.latest_meal_date).toLocaleDateString() : 'N/A'}</td>
+                  <td><span class="badge badge-${staff.status === 'active' ? 'active' : 'inactive'}">${staff.status}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="footer">
+            <p>Generated on ${new Date().toLocaleString()}</p>
+            <p>POS System - Staff Activity Report</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+            toast.success('PDF ready for printing/saving');
+          }, 250);
+        };
+      } else {
+        toast.error('Please allow popups to export PDF');
+      }
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to export PDF');
+    }
+  };
+
   const validateForm = () => {
     // Required field validation
     if (!formData.firstName.trim()) {
@@ -305,13 +478,23 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
                 </Button>
                 <h2 className="text-black">Staff Management</h2>
               </div>
-              <Button 
-                className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2" 
-                onClick={() => onNavigate('staff-add')}
-              >
-                <Plus className="w-4 h-4" />
-                Add Staff
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  className="rounded-lg border-gray-200 gap-2"
+                  onClick={() => onNavigate('staff-report')}
+                >
+                  <Download className="w-4 h-4" />
+                  Generate Report
+                </Button>
+                <Button 
+                  className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2" 
+                  onClick={() => onNavigate('staff-add')}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Staff
+                </Button>
+              </div>
             </div>
 
             {/* Filters */}
@@ -991,6 +1174,237 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
                 </div>
               </div>
             </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ==========================
+  // Staff Report Selection View
+  // ==========================
+  if (viewMode === 'staff-report') {
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-lg border border-gray-200 p-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                onClick={() => onNavigate('staff-list')}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <h2 className="text-black">Staff Activity Report</h2>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Filters */}
+            <div>
+              <h3 className="text-black mb-4">Filters</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Date Range - From</Label>
+                  <Input
+                    type="date"
+                    value={reportDateFrom}
+                    onChange={(e) => setReportDateFrom(e.target.value)}
+                    className="rounded-lg border-gray-200"
+                  />
+                </div>
+                <div>
+                  <Label>Date Range - To</Label>
+                  <Input
+                    type="date"
+                    value={reportDateTo}
+                    onChange={(e) => setReportDateTo(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="rounded-lg border-gray-200"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Generate Report Button */}
+            <div>
+              <Button
+                onClick={handleGenerateStaffReport}
+                disabled={reportLoading}
+                className="bg-black hover:bg-black text-white rounded-lg btn-glossy gap-2 w-full"
+              >
+                <Download className="w-4 h-4" />
+                {reportLoading ? 'Generating Report...' : 'Generate Staff Activity Report'}
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ==========================
+  // Staff Report View
+  // ==========================
+  if (viewMode === 'staff-report-view') {
+    const totalMeals = staffReportData.reduce((sum, s) => sum + (s.total_meals_created || 0), 0);
+    const activeStaff = staffReportData.filter(s => s.status === 'active').length;
+    const topPerformer = staffReportData.length > 0 
+      ? [...staffReportData].sort((a, b) => (b.total_meals_created || 0) - (a.total_meals_created || 0))[0]
+      : null;
+
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-lg border border-gray-200 p-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                onClick={() => onNavigate('staff-report')}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <h2 className="text-black">
+                Staff Activity Report ({reportDateFrom} - {reportDateTo})
+              </h2>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg border-gray-200 gap-2"
+                onClick={exportStaffReportToCSV}
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg border-gray-200 gap-2"
+                onClick={exportStaffReportToPDF}
+              >
+                <Download className="w-4 h-4" />
+                Export PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg border-gray-200"
+                onClick={() => onNavigate('staff-report')}
+              >
+                New Report
+              </Button>
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="text-black mb-4">Summary</h3>
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div className="flex flex-col">
+                <span className="text-gray-500 mb-1">Total Staff</span>
+                <span className="text-black text-2xl font-semibold">{staffReportData.length}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-gray-500 mb-1">Active Staff</span>
+                <span className="text-black text-2xl font-semibold">{activeStaff}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-gray-500 mb-1">Total Meals Created</span>
+                <span className="text-black text-2xl font-semibold">{totalMeals}</span>
+              </div>
+            </div>
+            {topPerformer && topPerformer.total_meals_created > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <span className="text-gray-500 text-sm">Top Performer:</span>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-black font-semibold">
+                    {topPerformer.first_name} {topPerformer.last_name}
+                  </span>
+                  <Badge className="bg-black text-white">
+                    {topPerformer.total_meals_created} meals
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Detailed Table */}
+          <div>
+            <h3 className="text-black mb-4">Staff Activity Details</h3>
+            {staffReportData.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No staff activity data found for the selected date range
+              </div>
+            ) : (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="text-black">Staff ID</TableHead>
+                      <TableHead className="text-black">Name</TableHead>
+                      <TableHead className="text-black">Email</TableHead>
+                      <TableHead className="text-black text-right">Meals Created</TableHead>
+                      <TableHead className="text-black">Meal Types</TableHead>
+                      <TableHead className="text-black">Most Common Type</TableHead>
+                      <TableHead className="text-black">Latest Meal</TableHead>
+                      <TableHead className="text-black">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...staffReportData]
+                      .sort((a, b) => (b.total_meals_created || 0) - (a.total_meals_created || 0))
+                      .map((staff) => (
+                        <TableRow key={staff.staff_id}>
+                          <TableCell className="text-black">{staff.staff_id}</TableCell>
+                          <TableCell className="text-black font-medium">
+                            {staff.first_name} {staff.last_name}
+                          </TableCell>
+                          <TableCell className="text-gray-600">{staff.email}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge className="bg-black text-white">
+                              {staff.total_meals_created || 0}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {staff.meal_types_managed || 0}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {staff.most_common_meal_type || 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {staff.latest_meal_date 
+                              ? new Date(staff.latest_meal_date).toLocaleDateString()
+                              : 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={staff.status === 'active' 
+                              ? 'bg-black text-white border-0' 
+                              : 'bg-gray-300 text-black border-0'}>
+                              {staff.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
