@@ -39,6 +39,7 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
         'Staff ID',
         'Meal ID',
         'Meal Name',
+        'Meal Types',
         'Price',
         'Cost',
         'Status',
@@ -51,6 +52,7 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
         report.staff_id,
         report.meal_id,
         report.meal_name,
+        report.meal_types || 'N/A',
         `$${((report.price_cents || 0) / 100).toFixed(2)}`,
         `$${((report.cost_cents || 0) / 100).toFixed(2)}`,
         report.meal_status || 'N/A',
@@ -214,6 +216,7 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
                 <th>Staff ID</th>
                 <th>Meal ID</th>
                 <th>Meal Name</th>
+                <th>Meal Types</th>
                 <th>Price</th>
                 <th>Cost</th>
                 <th>Status</th>
@@ -227,6 +230,7 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
                   <td>${report.staff_id}</td>
                   <td>${report.meal_id}</td>
                   <td>${report.meal_name}</td>
+                  <td>${report.meal_types || 'N/A'}</td>
                   <td>$${((report.price_cents || 0) / 100).toFixed(2)}</td>
                   <td>$${((report.cost_cents || 0) / 100).toFixed(2)}</td>
                   <td>${report.meal_status || 'N/A'}</td>
@@ -541,6 +545,7 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
                       <TableHead className="text-black">Staff ID</TableHead>
                       <TableHead className="text-black">Meal ID</TableHead>
                       <TableHead className="text-black">Meal Name</TableHead>
+                      <TableHead className="text-black">Meal Types</TableHead>
                       <TableHead className="text-black">Price</TableHead>
                       <TableHead className="text-black">Cost</TableHead>
                       <TableHead className="text-black">Status</TableHead>
@@ -556,6 +561,9 @@ export const ReportsManagement = ({ viewMode, onNavigate }) => {
                         <TableCell className="text-gray-600">{report.staff_id}</TableCell>
                         <TableCell className="text-gray-600">{report.meal_id}</TableCell>
                         <TableCell className="text-black">{report.meal_name}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {report.meal_types || 'N/A'}
+                        </TableCell>
                         <TableCell className="text-gray-600">
                           ${((report.price_cents || 0) / 100).toFixed(2)}
                         </TableCell>

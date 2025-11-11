@@ -1,4 +1,4 @@
-import { createStaff, getAllStaff, getStaffById, updateStaff, deleteStaff, getStaffMealCreatedReport, getStaffMealUpdatedReport, getMealSalesReport } from '../controllers/adminController.js';
+import { createStaff, getAllStaff, getStaffById, updateStaff, deleteStaff, getStaffMealCreatedReport, getStaffMealUpdatedReport, getMealSalesReport, getStaffActivityReport } from '../controllers/adminController.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 export default function adminRoutes(req, res, pathname, method) {
@@ -34,6 +34,10 @@ export default function adminRoutes(req, res, pathname, method) {
   }
 
   // Report routes
+  if (pathname === '/api/admin/staff/report' && method === 'GET') {
+    return withAuth(() => getStaffActivityReport(req, res));
+  }
+
   if (pathname === '/api/admin/reports/staff-meal-created' && method === 'GET') {
     return withAuth(() => getStaffMealCreatedReport(req, res));
   }

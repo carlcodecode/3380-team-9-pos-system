@@ -92,6 +92,15 @@ export const deleteStaff = async (id) => {
   return res.json();
 };
 
+export const getStaffActivityReport = async (startDate, endDate) => {
+  const res = await fetch(`${API_BASE_URL}/admin/staff/report?start_date=${startDate}&end_date=${endDate}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to generate staff report');
+  return res.json();
+};
+
 // ==============================
 // STOCK MANAGEMENT
 // ==============================
