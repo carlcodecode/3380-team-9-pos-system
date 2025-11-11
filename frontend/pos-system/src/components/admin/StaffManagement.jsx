@@ -476,16 +476,17 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
                     <p className="text-sm text-black mb-2">Impact:</p>
                     <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                       <li>Meals created by this staff will be reassigned to 'System'.</li>
-                      <li>Orders/Stock updates unaffected.</li>
+                      <li>Stock records created by this staff will be reassigned to 'System'.</li>
+                      <li>Orders/Other updates unaffected.</li>
                     </ul>
                   </div>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
+              <AlertDialogCancel className="rounded-lg border-gray-200">Cancel</AlertDialogCancel>
               <AlertDialogAction 
-                className="bg-red-600 hover:bg-red-700 text-white rounded-lg" 
+                className="bg-black hover:bg-black text-white rounded-lg btn-glossy" 
                 onClick={handleDeleteConfirm}
               >
                 Delete Staff
@@ -539,12 +540,11 @@ export const StaffManagement = ({ viewMode, onNavigate, selectedStaff, setSelect
               </Button>
               {viewMode === 'staff-edit' && selectedStaff && (
                 <Button 
-                  variant="outline" 
-                  className="rounded-lg border-gray-200 text-red-600 hover:text-red-700"
+                  className="bg-black hover:bg-black text-white rounded-lg btn-glossy"
                   onClick={() => handleDeleteClick(selectedStaff)}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  Delete Staff
                 </Button>
               )}
             </div>
