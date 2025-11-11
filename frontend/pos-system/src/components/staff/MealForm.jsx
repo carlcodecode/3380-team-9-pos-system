@@ -189,10 +189,6 @@ export const MealForm = ({ open, onClose, onSave, meal }) => {
         },
       };
 
-      // Remove local price/cost string fields from payload
-      delete payload.price; 
-      delete payload.cost_to_make;
-
       await onSave(payload);
       toast.success(meal ? 'Meal updated successfully' : 'Meal created successfully');
       onClose();
