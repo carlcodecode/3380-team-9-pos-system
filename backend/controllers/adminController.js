@@ -519,7 +519,7 @@ WHERE ua.user_id = ?
 };
 
 
-// Delete staff user (hard delete)
+// Delete staff user (with meal reassignment to System account)
 export const deleteStaff = async (req, res) => {
 	console.log('Delete staff request received:', { id: req.params.id });
 	const connection = await pool.getConnection();
@@ -529,9 +529,9 @@ export const deleteStaff = async (req, res) => {
 
 		await connection.beginTransaction();
 
-		// Check if staff user exists
+		// 1. Check if staff user exists and get staff_id
 		const [existingStaff] = await connection.query(`
-SELECT ua.user_id
+SELECT ua.user_id, s.staff_id, s.first_name, s.last_name
 FROM USER_ACCOUNT ua
 JOIN STAFF s ON ua.user_id = s.user_ref
 WHERE ua.user_id = ? AND ua.user_role = 1
@@ -539,23 +539,104 @@ WHERE ua.user_id = ? AND ua.user_role = 1
 
 		if (existingStaff.length === 0) {
 			await connection.rollback();
-			return res.json({ error: 'Staff user not found' }, 404);
+			return res.status(404).json({ error: 'Staff user not found' });
 		}
 
-		// Delete from STAFF table first (foreign key constraint)
-		await connection.query('DELETE FROM STAFF WHERE user_ref = ?', [id]);
+		const staffInfo = existingStaff[0];
+		const staffIdToDelete = staffInfo.staff_id;
 
-		// Delete from USER_ACCOUNT
+		console.log(`Staff to delete - user_id: ${id}, staff_id: ${staffIdToDelete}`);
+
+		// 2. System account staff_id is 101 (as per your requirement)
+		const systemStaffId = 101;
+
+		// 3. Reassign all meals created by this staff to System account
+		console.log(`Reassigning meals created_by ${staffIdToDelete} to System (${systemStaffId})`);
+		const [reassignResult] = await connection.query(
+			'UPDATE MEAL SET created_by = ? WHERE created_by = ?',
+			[systemStaffId, staffIdToDelete]
+		);
+		console.log(`✓ Reassigned ${reassignResult.affectedRows} meals (created_by) to System account`);
+
+		// 4. Reassign all meals updated by this staff to System account  
+		console.log(`Reassigning meals updated_by ${staffIdToDelete} to System (${systemStaffId})`);
+		const [reassignUpdateResult] = await connection.query(
+			'UPDATE MEAL SET updated_by = ? WHERE updated_by = ?',
+			[systemStaffId, staffIdToDelete]
+		);
+		console.log(`✓ Reassigned ${reassignUpdateResult.affectedRows} meals (updated_by) to System account`);
+
+		// 5. Reassign all stock records created by this staff to System account
+		console.log(`Reassigning stock created_by ${staffIdToDelete} to System (${systemStaffId})`);
+		const [reassignStockResult] = await connection.query(
+			'UPDATE STOCK SET created_by = ? WHERE created_by = ?',
+			[systemStaffId, staffIdToDelete]
+		);
+		console.log(`✓ Reassigned ${reassignStockResult.affectedRows} stock records to System account`);
+
+		// 6. Reassign all stock records updated by this staff to System account
+		console.log(`Reassigning stock updated_by ${staffIdToDelete} to System (${systemStaffId})`);
+		const [reassignStockUpdateResult] = await connection.query(
+			'UPDATE STOCK SET updated_by = ? WHERE updated_by = ?',
+			[systemStaffId, staffIdToDelete]
+		);
+		console.log(`✓ Reassigned ${reassignStockUpdateResult.affectedRows} stock updates to System account`);
+
+		// 7. Verify no meals reference this staff anymore
+		const [mealCheck] = await connection.query(
+			'SELECT COUNT(*) as count FROM MEAL WHERE created_by = ? OR updated_by = ?',
+			[staffIdToDelete, staffIdToDelete]
+		);
+		console.log(`Meals still referencing staff ${staffIdToDelete}: ${mealCheck[0].count}`);
+
+		if (mealCheck[0].count > 0) {
+			throw new Error(`Cannot delete staff: ${mealCheck[0].count} meals still reference this staff member`);
+		}
+
+		// 8. Verify no stock records reference this staff anymore
+		const [stockCheck] = await connection.query(
+			'SELECT COUNT(*) as count FROM STOCK WHERE created_by = ? OR updated_by = ?',
+			[staffIdToDelete, staffIdToDelete]
+		);
+		console.log(`Stock records still referencing staff ${staffIdToDelete}: ${stockCheck[0].count}`);
+
+		if (stockCheck[0].count > 0) {
+			throw new Error(`Cannot delete staff: ${stockCheck[0].count} stock records still reference this staff member`);
+		}
+
+		// 9. Delete from STAFF table first (foreign key constraint)
+		console.log(`Deleting from STAFF table where staff_id = ${staffIdToDelete}`);
+		await connection.query('DELETE FROM STAFF WHERE staff_id = ?', [staffIdToDelete]);
+
+		// 10. Delete from USER_ACCOUNT
+		console.log(`Deleting from USER_ACCOUNT where user_id = ${id}`);
 		await connection.query('DELETE FROM USER_ACCOUNT WHERE user_id = ?', [id]);
 
 		await connection.commit();
+		console.log(`✓ Staff deletion completed successfully`);
 
-		res.json({ message: 'Staff user deleted successfully' });
+		res.json({ 
+			message: `Staff member ${staffInfo.first_name} ${staffInfo.last_name} deleted successfully`,
+			success: true,
+			data: {
+				deletedUserId: id,
+				deletedStaffId: staffIdToDelete,
+				mealsReassigned: reassignResult.affectedRows,
+				mealUpdatesReassigned: reassignUpdateResult.affectedRows,
+				stockReassigned: reassignStockResult.affectedRows,
+				stockUpdatesReassigned: reassignStockUpdateResult.affectedRows,
+				reassignedTo: 'System (staff_id: 101)'
+			}
+		});
 
 	} catch (error) {
 		await connection.rollback();
 		console.error('Delete staff error:', error);
-		res.json({ error: 'Failed to delete staff user', details: error.message }, 500);
+		res.status(500).json({ 
+			success: false,
+			error: 'Failed to delete staff user', 
+			details: error.message 
+		});
 	} finally {
 		connection.release();
 	}
