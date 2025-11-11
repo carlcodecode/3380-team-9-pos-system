@@ -207,7 +207,7 @@ export const StaffDashboard = () => {
 
       <div className="container mx-auto px-6 py-8">
         {/* Show Reports View */}
-        {(viewMode === 'reports' || viewMode === 'report-view') ? (
+        {(viewMode === 'reports' || viewMode === 'report-view' || viewMode === 'promo-report-view') ? (
           <StaffReports 
             viewMode={viewMode}
             onViewModeChange={setViewMode}
