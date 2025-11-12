@@ -169,6 +169,20 @@ export const restockMeal = async (req, res) => {
       [newQuantity, needs_reorder, additionalCost, id]
     );
 
+    // If stock is now above threshold, mark any low stock alerts as resolved
+    if (newQuantity > stock.reorder_threshold) {
+      await connection.query(
+        `
+        UPDATE EVENT_OUTBOX
+        SET resolved = 1, resolved_at = NOW()
+        WHERE event_type = 'INVENTORY_RESTOCK_NEEDED'
+          AND JSON_EXTRACT(payload_json, '$.meal_ref') = ?
+          AND (resolved = 0 OR resolved IS NULL)
+        `,
+        [stock.meal_ref]
+      );
+    }
+
     await connection.commit();
 
     res.json({
