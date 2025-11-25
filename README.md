@@ -13,12 +13,12 @@ https://main.d7s422gb89fta.amplifyapp.com/
 # Running Locally
 
 - clone the repo
-- cd to backend folder and npm install (to install dependencies)
-- add the .env to the backend folder (attached in your email)
-- then run node server.js to run the server
-- then cd frontend/pos-system and npm install
-- add the .env for front end to this folder (attached in your email)
-- then npm run dev
+- `cd backend/` and `npm install` (to install backend dependencies)
+- add the `.env` to `backend/` (attached in your email)
+- then run `node server.js` to run the server
+- then `cd frontend/pos-system/` and `npm install`
+- add the `.env` to `frontend/pos-system/` to this folder (attached in your email)
+- then `npm run dev`
 ## Regarding Tests
   - Tests haven't been kept up to date, especially near the end. Some work, some don't. We recommend not using them for the time being.
 
